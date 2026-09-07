@@ -316,7 +316,14 @@ export interface StoredFile {
   id: string;
   name: string;
   mime: string;
-  blob: Blob;
+  /**
+   * File payload as raw bytes. Stored as an ArrayBuffer rather than a Blob: Blob support in
+   * IndexedDB is uneven across engines and cannot be round-tripped in tests at all, and these
+   * bytes are the patient's scans and letters — the least replaceable thing in the record.
+   */
+  bytes: ArrayBuffer;
+  size: number;
+  stored_at: string;
 }
 
 export type ImagingModality = "OCT" | "fundus" | "visual_field" | "corneal" | "other";
@@ -413,6 +420,12 @@ export interface AppMeta {
   onboarded: boolean;
   theme: "dark" | "light";
   demo_seeded: boolean;
+  /** Schema the stored records conform to; absent means version 1. */
+  schema_version?: number;
+  /** When the record was last exported, so the app can say how much is unbacked-up. */
+  last_export_at?: string;
+  /** Records changed since that export, counted at write time. */
+  changes_since_export?: number;
 }
 
 /** Generic timeline view derived from stored entities (single source of truth for chronology). */

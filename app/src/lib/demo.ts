@@ -171,6 +171,19 @@ const m = (tool: DrawingMark["tool"], patch: Partial<DrawingMark>): DrawingMark 
   ...patch,
 });
 
+/** Demo images are generated as Blobs; the record stores bytes. */
+async function demoFile(id: string, name: string, blob: Blob, mime = "image/png") {
+  const bytes = await blob.arrayBuffer();
+  return {
+    id,
+    name,
+    mime,
+    bytes,
+    size: bytes.byteLength,
+    stored_at: new Date().toISOString(),
+  };
+}
+
 export async function seedDemo(store: StoreShape): Promise<void> {
   if (store.meta?.demo_seeded) return;
   const demo = { demo: true } as const;
@@ -636,9 +649,9 @@ export async function seedDemo(store: StoreShape): Promise<void> {
   const octBlobNew = await syntheticOCT(23, false);
   const fundusBlob = await syntheticFundus(7);
 
-  await store.putFile({ id: "demo-file-oct-old", name: "demo-oct-right-24mo.png", mime: "image/png", blob: octBlobOld });
-  await store.putFile({ id: "demo-file-oct-new", name: "demo-oct-left-16d.png", mime: "image/png", blob: octBlobNew });
-  await store.putFile({ id: "demo-file-fundus", name: "demo-fundus-left-16d.png", mime: "image/png", blob: fundusBlob });
+  await store.putFile(await demoFile("demo-file-oct-old", "demo-oct-right-24mo.png", octBlobOld));
+  await store.putFile(await demoFile("demo-file-oct-new", "demo-oct-left-16d.png", octBlobNew));
+  await store.putFile(await demoFile("demo-file-fundus", "demo-fundus-left-16d.png", fundusBlob));
 
   const octOld = newRecord({
     ...demo,
@@ -705,8 +718,12 @@ Technique: Vitrectomy, PFCL exchange, cryotherapy, 276 band, SF6 20% tamponade.
 Outcome: Uncomplicated. Posture advised for 3 nights.
 
 (This is a synthetic demo document.)`;
-  await store.putFile({ id: "demo-file-letter", name: "demo-clinic-letter.txt", mime: "text/plain", blob: syntheticLetter(letterText) });
-  await store.putFile({ id: "demo-file-surgery", name: "demo-operative-note.txt", mime: "text/plain", blob: syntheticLetter(surgeryText) });
+  await store.putFile(
+    await demoFile("demo-file-letter", "demo-clinic-letter.txt", syntheticLetter(letterText), "text/plain"),
+  );
+  await store.putFile(
+    await demoFile("demo-file-surgery", "demo-operative-note.txt", syntheticLetter(surgeryText), "text/plain"),
+  );
 
   const letter = newRecord({
     ...demo,

@@ -1,8 +1,29 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "../lib/store";
-import { STORES, dbClear, dbPutMany, type AllData } from "../lib/db";
+import { STORES, dbClear } from "../lib/db";
 import { seedDemo, removeDemoData } from "../lib/demo";
-import { dataURLToBlob, downloadArchive } from "../lib/archive";
+import {
+  downloadArchive,
+  decryptArchive,
+  importArchive,
+  inspectArchive,
+  isEncryptedArchive,
+  readArchiveFile,
+  WrongPassphrase,
+  type Archive,
+  type ArchiveSummary,
+  type ImportMode,
+} from "../lib/archive";
+import {
+  backupState,
+  formatBytes,
+  requestPersistence,
+  storageState,
+  type StorageState,
+} from "../lib/backup";
+import { toAllData } from "../lib/store";
+import { Field, Modal } from "../components/ui";
+import { formatDate } from "../lib/util";
 import { ConfirmButton, PageHeader, SafetyNotice } from "../components/ui";
 
 
@@ -10,51 +31,83 @@ export default function Settings() {
   const store = useStore();
   const [status, setStatus] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const checkRef = useRef<HTMLInputElement>(null);
   const theme = store.meta?.theme ?? "dark";
 
+  const [pending, setPending] = useState<{ archive: Archive; summary: ArchiveSummary } | null>(null);
+  const [sealed, setSealed] = useState<unknown | null>(null);
+  const [passphrase, setPassphrase] = useState("");
+  const [exportPassphrase, setExportPassphrase] = useState("");
+  const [encryptOnExport, setEncryptOnExport] = useState(false);
+  const [storage, setStorage] = useState<StorageState>({ supported: false });
+  const [inspectOnly, setInspectOnly] = useState(false);
+
+  const backup = backupState(toAllData(store), store.meta);
+
+  useEffect(() => {
+    void storageState().then(setStorage);
+  }, []);
+
   const exportAll = async () => {
+    if (encryptOnExport && exportPassphrase.length < 8) {
+      setStatus("Choose a passphrase of at least 8 characters, or export without encryption.");
+      return;
+    }
     setStatus("Preparing export…");
-    await downloadArchive();
-    setStatus("Export downloaded. Keep it somewhere safe — it contains sensitive health information.");
+    const archive = await downloadArchive(encryptOnExport ? exportPassphrase : undefined);
+    await store.setMeta({ last_export_at: archive.exported_at, changes_since_export: 0 });
+    setExportPassphrase("");
+    setStatus(
+      `Export downloaded — ${archive.counts ? Object.values(archive.counts).reduce((a, b) => a + b, 0) : 0} records and ${archive.files.length} files. Keep it somewhere safe; it contains sensitive health information.`,
+    );
   };
 
-  const importAll = async (file: File) => {
+  const openArchiveFile = async (file: File, justChecking: boolean) => {
+    setInspectOnly(justChecking);
+    setStatus(justChecking ? "Checking that archive…" : "Reading that archive…");
+    try {
+      const parsed = await readArchiveFile(file);
+      if (isEncryptedArchive(parsed)) {
+        setSealed(parsed);
+        setStatus("");
+        return;
+      }
+      const summary = await inspectArchive(parsed);
+      setPending({ archive: parsed as Archive, summary });
+      setStatus("");
+    } catch (e) {
+      setStatus(`Could not read that file: ${e instanceof Error ? e.message : "unknown error"}`);
+    }
+  };
+
+  const unseal = async () => {
+    try {
+      const archive = await decryptArchive(sealed as never, passphrase);
+      const summary = await inspectArchive(archive);
+      setSealed(null);
+      setPassphrase("");
+      setPending({ archive, summary });
+    } catch (e) {
+      setStatus(
+        e instanceof WrongPassphrase
+          ? "That passphrase does not open this archive. Nothing has been changed."
+          : "That archive could not be opened. Nothing has been changed.",
+      );
+    }
+  };
+
+  const runImport = async (mode: ImportMode) => {
+    if (!pending) return;
     setStatus("Importing…");
     try {
-      const text = await file.text();
-      const parsed = JSON.parse(text) as { app: string; data: unknown };
-      if (parsed.app !== "afterlight") throw new Error("Not an Afterlight export");
-      const d = parsed.data as AllData & {
-        files?: { id: string; name: string; mime: string; data: string }[];
-        meta?: { id: string };
-      };
-      for (const s of STORES) await dbClear(s);
-      const put = <T,>(store: keyof AllData, list: T[] | undefined) =>
-        list ? dbPutMany(store as never, list) : Promise.resolve();
-      await put("symptoms", d.symptoms);
-      await put("dailyLogs", d.dailyLogs);
-      await put("floaters", d.floaters);
-      await put("drawings", d.drawings);
-      await put("appointments", d.appointments);
-      await put("questions", d.questions);
-      await put("diagnoses", d.diagnoses);
-      await put("procedures", d.procedures);
-      await put("medications", d.medications);
-      await put("prescriptions", d.prescriptions);
-      await put("measurements", d.measurements);
-      await put("imaging", d.imaging);
-      await put("documents", d.documents);
-      await put("baselines", d.baselines);
-      await put("briefs", d.briefs);
-      for (const f of d.files ?? []) {
-        const blob = dataURLToBlob(f.data);
-        await dbPutMany("files", [{ id: f.id, name: f.name, mime: blob.type || f.mime, blob }]);
-      }
-      if (d.meta) await dbPutMany("meta", [d.meta]);
-      setStatus("Import complete. Reloading…");
-      setTimeout(() => window.location.reload(), 800);
+      const result = await importArchive(pending.archive, mode);
+      setPending(null);
+      setStatus(
+        `Import complete — ${result.added} added, ${result.updated} updated, ${result.skipped} left alone, ${result.files} files. Reloading…`,
+      );
+      setTimeout(() => window.location.reload(), 1200);
     } catch (e) {
-      setStatus(`Import failed: ${e instanceof Error ? e.message : "unknown error"}`);
+      setStatus(`Import failed, and nothing was changed: ${e instanceof Error ? e.message : "unknown error"}`);
     }
   };
 
@@ -120,17 +173,54 @@ export default function Settings() {
       </section>
 
       <section className="card">
-        <div className="card-title">Export & import</div>
+        <div className="card-title">Backup</div>
         <p className="muted" style={{ marginTop: 0 }}>
-          A full archive as a single JSON file: every record, drawing and original image. Sensitive
-          — store it accordingly.
+          Your record lives in this browser, on this device. Clearing your browser data deletes it.
+          An export is the only copy that survives that, so keep a recent one somewhere safe.
         </p>
-        <div className="btn-row">
+        <p style={{ color: "var(--text-2)", fontSize: "0.92rem" }}>
+          {backup.neverExported
+            ? `This record has never been exported. It holds ${backup.totalRecords} records.`
+            : `Last exported ${formatDate(backup.lastExportAt!.slice(0, 10))}${
+                backup.daysSinceExport !== undefined ? ` — ${backup.daysSinceExport} days ago` : ""
+              }. ${backup.unsavedChanges} record${backup.unsavedChanges === 1 ? "" : "s"} changed since then.`}
+        </p>
+
+        <div className="check-row" style={{ marginTop: 10 }}>
+          <input
+            id="encrypt-export"
+            type="checkbox"
+            checked={encryptOnExport}
+            onChange={(e) => setEncryptOnExport(e.target.checked)}
+          />
+          <label htmlFor="encrypt-export">Protect this export with a passphrase</label>
+        </div>
+        {encryptOnExport && (
+          <>
+            <Field label="Passphrase (at least 8 characters)">
+              <input
+                type="password"
+                value={exportPassphrase}
+                onChange={(e) => setExportPassphrase(e.target.value)}
+                autoComplete="new-password"
+              />
+            </Field>
+            <p className="muted" style={{ fontSize: "0.82rem" }}>
+              There is no way to recover this passphrase. If you lose it, the export cannot be
+              opened by anyone, including you.
+            </p>
+          </>
+        )}
+
+        <div className="btn-row" style={{ marginTop: 12 }}>
           <button className="btn primary" onClick={exportAll}>
-            ⭳ Export everything (JSON)
+            ⭳ Export everything
           </button>
           <button className="btn" onClick={() => fileRef.current?.click()}>
-            ⭱ Import from export
+            ⭱ Import from an export
+          </button>
+          <button className="btn subtle" onClick={() => checkRef.current?.click()}>
+            Test my backup
           </button>
           <input
             ref={fileRef}
@@ -139,12 +229,63 @@ export default function Settings() {
             style={{ display: "none" }}
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) importAll(f);
+              if (f) void openArchiveFile(f, false);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={checkRef}
+            type="file"
+            accept="application/json"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void openArchiveFile(f, true);
               e.target.value = "";
             }}
           />
         </div>
-        <p className="muted" style={{ marginBottom: 0 }}>Import replaces everything currently stored on this device.</p>
+        <p className="muted" style={{ marginBottom: 0 }}>
+          “Test my backup” opens an archive and tells you what is in it, without changing anything
+          on this device.
+        </p>
+      </section>
+
+      <section className="card">
+        <div className="card-title">Storage on this device</div>
+        {storage.supported ? (
+          <>
+            <p style={{ color: "var(--text-2)", fontSize: "0.92rem", marginTop: 0 }}>
+              Afterlight is using {formatBytes(storage.usageBytes)}
+              {storage.quotaBytes ? ` of roughly ${formatBytes(storage.quotaBytes)} available` : ""}.
+            </p>
+            <p style={{ color: "var(--text-2)", fontSize: "0.92rem" }}>
+              {storage.persisted
+                ? "This browser has marked your record as persistent, so it will not be cleared automatically to free space."
+                : "This browser has not marked your record as persistent, which means it could be cleared automatically if the device runs low on space. Exporting regularly is the protection."}
+            </p>
+            {!storage.persisted && (
+              <button
+                className="btn"
+                onClick={async () => {
+                  const granted = await requestPersistence();
+                  setStorage(await storageState());
+                  setStatus(
+                    granted
+                      ? "This browser will now keep your record when space runs low."
+                      : "This browser declined to mark the record as persistent. Keep exporting regularly.",
+                  );
+                }}
+              >
+                Ask this browser to keep my record
+              </button>
+            )}
+          </>
+        ) : (
+          <p className="muted" style={{ marginTop: 0 }}>
+            This browser does not report how much storage it is using.
+          </p>
+        )}
       </section>
 
       <section className="card">
@@ -184,6 +325,102 @@ export default function Settings() {
           {status}
         </p>
       )}
+
+      {sealed !== null && (
+        <Modal title="This archive is protected" onClose={() => setSealed(null)}>
+          <p style={{ color: "var(--text-2)" }}>
+            Enter the passphrase this export was created with. Nothing on this device changes until
+            you choose to import.
+          </p>
+          <Field label="Passphrase">
+            <input
+              type="password"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              autoComplete="current-password"
+            />
+          </Field>
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setSealed(null)}>Cancel</button>
+            <button className="btn primary" onClick={unseal}>Open archive</button>
+          </div>
+        </Modal>
+      )}
+
+      {pending && (
+        <Modal
+          title={inspectOnly ? "What is in this backup" : "Import this archive?"}
+          onClose={() => setPending(null)}
+          wide
+        >
+          <ArchivePreview summary={pending.summary} current={backup.totalRecords} />
+          {pending.summary.problems.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <SafetyNotice>
+                {pending.summary.problems.join(" ")} Importing it could bring in damaged records.
+              </SafetyNotice>
+            </div>
+          )}
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setPending(null)}>
+              {inspectOnly ? "Close" : "Cancel"}
+            </button>
+            {!inspectOnly && (
+              <>
+                <button className="btn" onClick={() => runImport("merge")}>
+                  Merge into my record
+                </button>
+                <ConfirmButton
+                  label="Replace everything"
+                  confirmLabel="Replace all records on this device?"
+                  className="btn danger"
+                  onConfirm={() => runImport("replace")}
+                />
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+}
+
+function ArchivePreview({ summary, current }: { summary: ArchiveSummary; current: number }) {
+  return (
+    <>
+      <p style={{ color: "var(--text-2)" }}>
+        This archive holds <strong>{summary.totalRecords}</strong> records
+        {summary.earliest && summary.latest
+          ? ` from ${formatDate(summary.earliest)} to ${formatDate(summary.latest)}`
+          : ""}
+        , and {summary.fileCount} file{summary.fileCount === 1 ? "" : "s"} (
+        {formatBytes(summary.fileBytes)}). This device currently holds <strong>{current}</strong>{" "}
+        records.
+      </p>
+      <p className="muted">
+        Exported {summary.exported_at ? formatDate(summary.exported_at.slice(0, 10)) : "at an unrecorded time"}
+        {summary.checksumOk === true && " · contents match its checksum"}
+        {summary.checksumOk === false && " · contents do NOT match its checksum"}
+        {summary.checksumOk === undefined && " · no checksum recorded (an older export)"}
+        {summary.needsMigrationFrom !== undefined &&
+          ` · will be upgraded from schema version ${summary.needsMigrationFrom}`}
+      </p>
+      <table className="kv-table">
+        <tbody>
+          {Object.entries(summary.counts)
+            .filter(([, n]) => n > 0)
+            .map(([store, n]) => (
+              <tr key={store}>
+                <td style={{ color: "var(--text-3)", paddingRight: 16 }}>{store}</td>
+                <td>{n}</td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+      <p className="muted" style={{ fontSize: "0.82rem" }}>
+        Merge keeps everything on this device and adds what is missing, preferring whichever copy of
+        a record was updated more recently. Replace discards what is here first.
+      </p>
     </>
   );
 }

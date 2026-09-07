@@ -1,5 +1,13 @@
 // Tiny promise wrapper over IndexedDB. All Afterlight records live locally in the browser.
 
+import {
+  migrate,
+  materialiseFiles,
+  schemaVersionOf,
+  SCHEMA_VERSION,
+  type LegacyOrCurrentFile,
+  type Snapshot,
+} from "./migrations";
 import type {
   AppMeta,
   Appointment,
@@ -21,7 +29,7 @@ import type {
 } from "./models";
 
 export const DB_NAME = "afterlight";
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export const STORES = [
   "symptoms",
@@ -41,6 +49,8 @@ export const STORES = [
   "baselines",
   "briefs",
   "meta",
+  // Pre-migration snapshots, so a schema upgrade is never a one-way door.
+  "backups",
 ] as const;
 
 export type StoreName = (typeof STORES)[number];
@@ -137,20 +147,12 @@ const EMPTY_DATA: AllData = {
   briefs: [],
 };
 
-/**
- * Floaters predate the provenance field. They have always been patient-reported; fill it in on
- * read so no stored record is missing its source. Replace with a real migration in Phase 01.
- */
-function withFloaterProvenance(f: FloaterObject): FloaterObject {
-  return f.source_type ? f : { ...f, source_type: "patient_reported" };
-}
-
 export async function loadAllData(): Promise<AllData & { meta?: AppMeta }> {
   const [data, metaAll] = await Promise.all([
     (async () => ({
       symptoms: await dbGetAll<SymptomEntry>("symptoms"),
       dailyLogs: await dbGetAll<DailyLog>("dailyLogs"),
-      floaters: (await dbGetAll<FloaterObject>("floaters")).map(withFloaterProvenance),
+      floaters: await dbGetAll<FloaterObject>("floaters"),
       drawings: await dbGetAll<VisualFieldDrawing>("drawings"),
       appointments: await dbGetAll<Appointment>("appointments"),
       questions: await dbGetAll<DoctorQuestion>("questions"),
@@ -169,17 +171,116 @@ export async function loadAllData(): Promise<AllData & { meta?: AppMeta }> {
   return { ...data, meta: metaAll[0] };
 }
 
+/** Write many records across many stores in a single transaction — all of it, or none of it. */
+export async function dbWriteSnapshot(
+  entries: { store: StoreName; values: unknown[]; clearFirst?: boolean }[],
+): Promise<void> {
+  const db = await openDB();
+  const stores = Array.from(new Set(entries.map((e) => e.store)));
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(stores, "readwrite");
+    t.oncomplete = () => resolve();
+    t.onerror = () => reject(t.error);
+    t.onabort = () => reject(t.error ?? new Error("write aborted"));
+    for (const entry of entries) {
+      const store = t.objectStore(entry.store);
+      if (entry.clearFirst) store.clear();
+      for (const value of entry.values) store.put(value as object);
+    }
+  });
+}
+
 export async function getStoredFile(id: string): Promise<StoredFile | undefined> {
   return dbGet<StoredFile>("files", id);
 }
 
 export async function fileToStoredFile(file: File): Promise<StoredFile> {
+  const bytes = await file.arrayBuffer();
   return {
     id: crypto.randomUUID(),
     name: file.name,
-    mime: file.type,
-    blob: file,
+    mime: file.type || "application/octet-stream",
+    bytes,
+    size: bytes.byteLength,
+    stored_at: new Date().toISOString(),
   };
 }
 
+export class StorageFullError extends Error {
+  constructor(public readonly bytes: number) {
+    super("There is not enough room on this device to store that file.");
+    this.name = "StorageFullError";
+  }
+}
+
+/**
+ * Save an uploaded file, turning the browser's quota error into something a person can act on.
+ * A silent failure here means a scan the patient believes is saved and is not.
+ */
+export async function saveStoredFile(file: StoredFile): Promise<void> {
+  try {
+    await dbPut("files", file);
+  } catch (e) {
+    const name = (e as { name?: string })?.name;
+    if (name === "QuotaExceededError" || name === "NS_ERROR_DOM_QUOTA_REACHED") {
+      throw new StorageFullError(file.size);
+    }
+    throw e;
+  }
+}
+
+/** Rebuild a Blob for display or download. The stored form is always bytes. */
+export function storedFileToBlob(f: StoredFile): Blob {
+  return new Blob([f.bytes], { type: f.mime || "application/octet-stream" });
+}
+
+/** An object URL for a stored file. Callers must revoke it. */
+export function storedFileURL(f: StoredFile): string {
+  return URL.createObjectURL(storedFileToBlob(f));
+}
+
 export { EMPTY_DATA };
+
+/**
+ * Load the record, bringing it up to the current schema first.
+ *
+ * Migration writes a pre-migration snapshot into `backups` before changing anything, then applies
+ * every step in one transaction. If a migration throws, the stored record is left exactly as it
+ * was and the error surfaces — a half-migrated eye record is worse than an un-migrated one.
+ */
+export async function loadMigrated(): Promise<AllData & { meta?: AppMeta; migrated?: string[] }> {
+  const [data, metaAll, files] = await Promise.all([
+    loadAllData(),
+    dbGetAll<AppMeta>("meta"),
+    dbGetAll<LegacyOrCurrentFile>("files"),
+  ]);
+  const meta = metaAll[0];
+  const from = schemaVersionOf(meta);
+  if (from >= SCHEMA_VERSION) return data;
+
+  const before: Snapshot = { data, files, meta };
+  const result = migrate(before, from);
+  const materialised = await materialiseFiles(result.snapshot.files);
+
+  await dbPut("backups", {
+    id: `pre-migration-v${from}-${new Date().toISOString()}`,
+    created_at: new Date().toISOString(),
+    from_version: from,
+    to_version: result.to,
+    // Records only: file payloads stay where they are, since migrations never delete them.
+    data: before.data,
+    meta: before.meta ?? null,
+  });
+
+  await dbWriteSnapshot([
+    { store: "floaters", values: result.snapshot.data.floaters, clearFirst: true },
+    { store: "files", values: materialised, clearFirst: true },
+    {
+      store: "meta",
+      values: [result.snapshot.meta ?? { id: "meta", onboarded: false, theme: "dark", demo_seeded: false, schema_version: SCHEMA_VERSION }],
+    },
+  ]);
+
+  const reloaded = await loadAllData();
+  return { ...reloaded, migrated: result.applied.map((m) => m.describe) };
+}

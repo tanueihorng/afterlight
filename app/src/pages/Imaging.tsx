@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore, newRecord } from "../lib/store";
-import { getStoredFile, fileToStoredFile, dbDelete } from "../lib/db";
+import {
+  getStoredFile,
+  fileToStoredFile,
+  dbDelete,
+  saveStoredFile,
+  storedFileURL,
+  StorageFullError,
+} from "../lib/db";
 import type { DocumentRecord, Eye, ImagingModality, ImagingRecord, SourceType } from "../lib/models";
 import { EYE_SHORT } from "../lib/models";
 import { ConfirmButton, DemoBadge, EmptyState, EyeBadge, Field, Modal, PageHeader, ProvenanceBadge, SourceSelect } from "../components/ui";
@@ -136,14 +143,14 @@ function OCTCompare({ records }: { records: ImagingRecord[] }) {
     (async () => {
       if (a?.file_ids[0]) {
         const f = await getStoredFile(a.file_ids[0]);
-        if (f?.blob.type.startsWith("image/")) urlA = URL.createObjectURL(f.blob);
+        if (f?.mime.startsWith("image/")) urlA = storedFileURL(f);
         setThumbA(urlA ?? a.thumb);
       } else setThumbA(undefined);
     })();
     (async () => {
       if (b?.file_ids[0]) {
         const f = await getStoredFile(b.file_ids[0]);
-        if (f?.blob.type.startsWith("image/")) urlB = URL.createObjectURL(f.blob);
+        if (f?.mime.startsWith("image/")) urlB = storedFileURL(f);
         setThumbB(urlB ?? b.thumb);
       } else setThumbB(undefined);
     })();
@@ -223,7 +230,7 @@ function ImagingDetail({ record, onClose }: { record: ImagingRecord; onClose: ()
       const out: string[] = [];
       for (const fid of record.file_ids) {
         const f = await getStoredFile(fid);
-        if (f) out.push(URL.createObjectURL(f.blob));
+        if (f) out.push(storedFileURL(f));
       }
       setUrls(out);
       revoked = out;
@@ -318,7 +325,7 @@ function DocumentsList() {
                     style={{ minHeight: 28, padding: "2px 6px" }}
                     onClick={async () => {
                       const f = await getStoredFile(d.file_id);
-                      if (f) window.open(URL.createObjectURL(f.blob), "_blank");
+                      if (f) window.open(storedFileURL(f), "_blank");
                     }}
                   >
                     📄 {d.title}
@@ -358,6 +365,7 @@ function AddRecordModal({
   const store = useStore();
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [img, setImg] = useState({
     modality: defaultModality as ImagingModality,
     date: todayLocal(),
@@ -384,12 +392,14 @@ function AddRecordModal({
 
   const save = async () => {
     setSaving(true);
+    setSaveError("");
+    try {
     if (isDocument) {
       if (!doc.title.trim()) return setSaving(false);
       let fileId = "";
       if (files[0]) {
         const sf = await fileToStoredFile(files[0]);
-        await store.putFile(sf);
+        await saveStoredFile(sf);
         fileId = sf.id;
       }
       const rec: DocumentRecord = newRecord({
@@ -411,7 +421,7 @@ function AddRecordModal({
       let thumb: string | undefined;
       for (const f of files) {
         const sf = await fileToStoredFile(f);
-        await store.putFile(sf);
+        await saveStoredFile(sf);
         fileIds.push(sf.id);
         if (!thumb) thumb = await makeThumb(f);
       }
@@ -430,6 +440,16 @@ function AddRecordModal({
         thumb,
       });
       await store.imaging.put(rec);
+      }
+    } catch (e) {
+      // A scan the patient believes is saved but is not would be a silent, serious failure.
+      setSaveError(
+        e instanceof StorageFullError
+          ? "This device does not have enough free space for that file. Nothing was saved. Freeing space, or exporting and removing older scans, will make room."
+          : `That could not be saved: ${e instanceof Error ? e.message : "unknown error"}`,
+      );
+      setSaving(false);
+      return;
     }
     setSaving(false);
     onClose();
@@ -511,6 +531,11 @@ function AddRecordModal({
             </label>
           </div>
         </>
+      )}
+      {saveError && (
+        <p role="alert" className="save-error">
+          {saveError}
+        </p>
       )}
       <div className="modal-actions">
         <button className="btn" onClick={onClose}>Cancel</button>

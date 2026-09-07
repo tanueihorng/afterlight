@@ -9,7 +9,10 @@ import {
   dbPutMany,
   getStoredFile,
   loadAllData,
+  loadMigrated,
+  storedFileToBlob,
 } from "./db";
+import { SCHEMA_VERSION } from "./migrations";
 import type { FloaterObject, StoredFile } from "./models";
 import { aDrawing, aFloater, anImaging, aSymptom } from "../test/factories";
 
@@ -45,7 +48,9 @@ describe("stored files", () => {
       id: "file-1",
       name: "oct.png",
       mime: "image/png",
-      blob: new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" }),
+      bytes: new Uint8Array([137, 80, 78, 71]).buffer,
+      size: 4,
+      stored_at: "2026-06-01T09:00:00Z",
     };
     await dbPut("files", file);
 
@@ -55,21 +60,38 @@ describe("stored files", () => {
     expect(back!.mime).toBe("image/png");
   });
 
-  // fake-indexeddb's structured clone does not carry a jsdom Blob: it comes back as a plain
-  // object with no bytes, so the payload of every scan and document a patient uploads cannot be
-  // asserted in this environment. This is the highest-value untested path in the app. It needs a
-  // real browser (the Playwright suite in Phase 04) or a switch to ArrayBuffer storage, which
-  // Phase 01 should decide when it defines the archive format.
-  it.skip("round-trips blob bytes — needs a real browser, see Phase 01/04", async () => {
+  // Phase 00 could not assert this at all: fake-indexeddb drops a jsdom Blob in its structured
+  // clone. Storing bytes instead of a Blob makes the patient's scans and letters — the least
+  // replaceable part of the record — verifiable in CI.
+  it("round-trips the payload byte for byte", async () => {
     const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 255, 128]);
     await dbPut("files", {
       id: "file-2",
       name: "oct.png",
       mime: "image/png",
-      blob: new Blob([bytes], { type: "image/png" }),
+      bytes: bytes.buffer,
+      size: bytes.byteLength,
+      stored_at: "2026-06-01T09:00:00Z",
     });
     const back = await getStoredFile("file-2");
-    expect(Array.from(new Uint8Array(await back!.blob.arrayBuffer()))).toEqual(Array.from(bytes));
+    expect(Array.from(new Uint8Array(back!.bytes))).toEqual(Array.from(bytes));
+    expect(back!.size).toBe(bytes.byteLength);
+  });
+
+  it("rebuilds a usable Blob from the stored bytes", async () => {
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+    const stored = {
+      id: "file-3",
+      name: "letter.pdf",
+      mime: "application/pdf",
+      bytes: bytes.buffer,
+      size: 4,
+      stored_at: "2026-06-01T09:00:00Z",
+    };
+    await dbPut("files", stored);
+    const blob = storedFileToBlob((await getStoredFile("file-3"))!);
+    expect(blob.type).toBe("application/pdf");
+    expect(blob.size).toBe(4);
   });
 });
 
@@ -91,19 +113,54 @@ describe("loadAllData", () => {
     expect(data.imaging).toHaveLength(1);
   });
 
-  it("fills in provenance for floaters stored before the field existed", async () => {
-    // A pre-provenance record, exactly as an older build would have written it.
+  it("returns records exactly as stored, without patching them on read", async () => {
+    // Read is a read. Fixing old shapes is migration's job, and it happens once, on write.
     const legacy = { ...aFloater() } as Partial<FloaterObject>;
     delete legacy.source_type;
     await dbPut("floaters", legacy);
 
     const data = await loadAllData();
+    expect(data.floaters[0].source_type).toBeUndefined();
+  });
+});
+
+describe("loadMigrated", () => {
+  it("upgrades a version 1 record and records the new version", async () => {
+    const legacy = { ...aFloater() } as Partial<FloaterObject>;
+    delete legacy.source_type;
+    await dbPut("floaters", legacy);
+    await dbPut("meta", { id: "meta", onboarded: true, theme: "dark", demo_seeded: false });
+
+    const data = await loadMigrated();
     expect(data.floaters[0].source_type).toBe("patient_reported");
+    expect(data.meta?.schema_version).toBe(SCHEMA_VERSION);
+    expect(data.migrated?.length).toBeGreaterThan(0);
   });
 
-  it("does not overwrite provenance that is already recorded", async () => {
+  it("keeps a pre-migration snapshot so the upgrade is not a one-way door", async () => {
+    await dbPut("floaters", { ...aFloater(), source_type: undefined });
+    await dbPut("meta", { id: "meta", onboarded: true, theme: "dark", demo_seeded: false });
+    await loadMigrated();
+
+    const backups = await dbGetAll<{ from_version: number; data: unknown }>("backups");
+    expect(backups).toHaveLength(1);
+    expect(backups[0].from_version).toBe(1);
+    expect(backups[0].data).toBeTruthy();
+  });
+
+  it("does nothing to a record already at the current version", async () => {
+    await dbPut("meta", {
+      id: "meta",
+      onboarded: true,
+      theme: "dark",
+      demo_seeded: false,
+      schema_version: SCHEMA_VERSION,
+    });
     await dbPut("floaters", aFloater({ source_type: "clinician_reported" }));
-    const data = await loadAllData();
+
+    const data = await loadMigrated();
+    expect(data.migrated).toBeUndefined();
     expect(data.floaters[0].source_type).toBe("clinician_reported");
+    expect(await dbGetAll("backups")).toHaveLength(0);
   });
 });

@@ -36,7 +36,9 @@ describe("ErrorBoundary", () => {
   });
 
   it("offers an export that reads the database, not the crashed tree", async () => {
-    const spy = vi.spyOn(archive, "downloadArchive").mockResolvedValue();
+    const spy = vi
+      .spyOn(archive, "downloadArchive")
+      .mockResolvedValue({} as unknown as archive.Archive);
     render(
       <ErrorBoundary where="Imaging">
         <Boom />
