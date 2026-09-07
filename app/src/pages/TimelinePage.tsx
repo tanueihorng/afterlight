@@ -181,6 +181,9 @@ export default function TimelinePage() {
                   </span>
                   <span className="tl-meta">
                     <EyeBadge eye={e.eye} />
+                    {/* The timeline is where patient-reported and clinician-documented entries sit
+                        side by side, so the source has to be visible on the row itself. */}
+                    <ProvenanceBadge source={e.source_type} />
                     <DemoBadge demo={e.demo} />
                     <span className="muted" style={{ fontSize: "0.76rem" }}>
                       {e.date_time.length > 10 ? formatTime(e.date_time) : ""}

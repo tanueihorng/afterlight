@@ -69,9 +69,12 @@ Run everything from `app/`.
 ```bash
 npm install
 npm run dev          # vite dev server
+npm run lint         # eslint — accessibility rules are errors, not warnings
+npm run test         # vitest
 npm run guard        # invariant checks (network calls, banned clinical copy, deps)
-npm run verify       # the gate: typecheck + guard + build   (Phase 00 adds lint + test)
+npm run verify       # the gate: types + lint + guard + tests + build
 npm run build        # production build
+npm run format       # prettier
 npm run build:standalone   # (from Phase 06) single-file offline explorer
 ```
 

@@ -1223,3 +1223,14 @@ input[type="range"] {
   padding: 0 0 18px;
   background: linear-gradient(var(--bg) 70%, transparent);
 }
+
+/* Backdrop dismissal is a mouse convenience; it is hidden from assistive tech,
+   which closes dialogs with Escape or the explicit close button. */
+.backdrop-dismiss {
+  position: fixed;
+  inset: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: default;
+}

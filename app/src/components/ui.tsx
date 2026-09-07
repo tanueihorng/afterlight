@@ -79,12 +79,15 @@ export function Modal({
   }, [onClose]);
 
   return (
-    <div
-      className="modal-backdrop"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <div className="modal-backdrop">
+      {/* Mouse convenience only — keyboard users close with Escape or the close button. */}
+      <button
+        type="button"
+        className="backdrop-dismiss"
+        aria-hidden="true"
+        tabIndex={-1}
+        onClick={onClose}
+      />
       <div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref} style={wide ? { maxWidth: 860 } : undefined}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2>{title}</h2>

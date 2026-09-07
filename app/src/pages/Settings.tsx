@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
 import { useStore } from "../lib/store";
-import { STORES, dbClear, dbGetAll, dbPutMany, type AllData } from "../lib/db";
+import { STORES, dbClear, dbPutMany, type AllData } from "../lib/db";
 import { seedDemo, removeDemoData } from "../lib/demo";
-import type { StoredFile } from "../lib/models";
+import { dataURLToBlob, downloadArchive } from "../lib/archive";
 import { ConfirmButton, PageHeader, SafetyNotice } from "../components/ui";
-import { nowISO } from "../lib/util";
+
 
 export default function Settings() {
   const store = useStore();
@@ -14,45 +14,7 @@ export default function Settings() {
 
   const exportAll = async () => {
     setStatus("Preparing export…");
-    const files = await dbGetAll<StoredFile>("files");
-    const filesOut = await Promise.all(
-      files.map(async (f) => ({
-        id: f.id,
-        name: f.name,
-        mime: f.mime,
-        data: await blobToDataURL(f.blob),
-      }))
-    );
-    const payload = {
-      app: "afterlight",
-      version: 1,
-      exported_at: nowISO(),
-      data: {
-        symptoms: store.symptoms.list,
-        dailyLogs: store.dailyLogs.list,
-        floaters: store.floaters.list,
-        drawings: store.drawings.list,
-        appointments: store.appointments.list,
-        questions: store.questions.list,
-        diagnoses: store.diagnoses.list,
-        procedures: store.procedures.list,
-        medications: store.medications.list,
-        prescriptions: store.prescriptions.list,
-        measurements: store.measurements.list,
-        imaging: store.imaging.list,
-        documents: store.documents.list,
-        baselines: store.baselines.list,
-        briefs: store.briefs.list,
-        files: filesOut,
-        meta: store.meta ?? { id: "meta", onboarded: true, theme: "dark", demo_seeded: false },
-      },
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `afterlight-export-${nowISO().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    await downloadArchive();
     setStatus("Export downloaded. Keep it somewhere safe — it contains sensitive health information.");
   };
 
@@ -226,20 +188,4 @@ export default function Settings() {
   );
 }
 
-function blobToDataURL(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result as string);
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(blob);
-  });
-}
 
-function dataURLToBlob(dataURL: string): Blob {
-  const [meta, b64] = dataURL.split(",");
-  const mime = meta.match(/:(.*?);/)?.[1] ?? "application/octet-stream";
-  const bin = atob(b64);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
-}

@@ -8,7 +8,7 @@ marked blocked.
 
 | # | Phase | State | Branch | Updated | Notes |
 |---|---|---|---|---|---|
-| 00 | Foundations & guardrails | not started | — | — | `npm run verify` currently runs guard + build only; this phase adds lint + tests |
+| 00 | Foundations & guardrails | done | phase-00-foundations | 2026-09-08 | 96 tests; `verify` = types + lint + guard + tests + build; CI green |
 | 01 | Data integrity & portability | not started | — | — | |
 | 02 | Performance & scale | not started | — | — | |
 | 03 | Accessibility for low vision | not started | — | — | |
@@ -25,6 +25,23 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 00 done.** Vitest + Testing Library + fake-indexeddb, ESLint 9 flat
+  config with jsx-a11y as errors, Prettier, test factories, 96 tests, error boundary with a
+  database-level export escape hatch, `npm run verify` gate, GitHub Actions CI. Upgraded Vite 5→7
+  and Vitest 2→3 to clear 5 advisories (1 critical) in the dev toolchain.
+  Three defects found by the new tests, all fixed:
+  (1) `parseQuery` kept the eye word as a required search term, so "glare left eye" silently
+  excluded both-eye records — the eye-leak class the record-integrity reviewer warns about;
+  (2) timeline rows showed eye and demo badges but not provenance, in the one view where
+  patient-reported and clinician-documented entries sit side by side (non-negotiable #2);
+  (3) the ESLint a11y config promoted rules the plugin sets to "off", including the deprecated
+  `label-has-for`, producing 71 false positives against our own `Field` label component.
+  Export logic moved out of `Settings` into `lib/archive.ts` so it works when the UI has crashed —
+  Phase 01 extends that envelope.
+  **Known gap:** `fake-indexeddb` drops jsdom Blobs in its structured clone, so the bytes of
+  uploaded scans and documents cannot be asserted in this environment. Recorded as a skipped test.
+  Phase 01 should decide whether stored files move to `ArrayBuffer`; Phase 04's Playwright suite
+  covers it otherwise. This is the highest-value untested path in the app.
 - **2026-09-08** — Phase 06 revised to a hybrid render pipeline. Blender owns the base anatomy
   mesh, the baked detail maps and Phase 07's procedure animations; the engine keeps everything
   continuous (iris colour, pupil, vessels, fundus, every severity parameter) because baking a

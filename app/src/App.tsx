@@ -11,6 +11,7 @@ import Visualize from "./pages/Visualize";
 import Settings from "./pages/Settings";
 import Onboarding from "./components/Onboarding";
 import CommandPalette from "./components/CommandPalette";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { formatLongDate, todayLocal } from "./lib/util";
 
 const NAV: { route: Route; label: string; icon: string; section?: string }[] = [
@@ -60,7 +61,14 @@ export default function App() {
 
   if (!store.ready) {
     return (
-      <div style={{ display: "grid", placeItems: "center", minHeight: "100vh", color: "var(--text-3)" }}>
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: "100vh",
+          color: "var(--text-3)",
+        }}
+      >
         Opening your local record…
       </div>
     );
@@ -98,7 +106,9 @@ export default function App() {
             ))}
           </nav>
           <button className="nav-item" onClick={() => setPalette("ask")}>
-            <span className="nav-icon" aria-hidden>?</span>
+            <span className="nav-icon" aria-hidden>
+              ?
+            </span>
             <span className="nav-label">Ask my records</span>
           </button>
           <div className="sidebar-footer">
@@ -109,22 +119,20 @@ export default function App() {
           <div className="topbar-date" style={{ marginBottom: 10 }}>
             {formatLongDate(todayLocal())}
           </div>
-          {route === "today" && <Today />}
-          {route === "what-i-see" && <WhatISee />}
-          {route === "timeline" && <TimelinePage />}
-          {route === "my-eyes" && <MyEyes />}
-          {route === "imaging" && <Imaging />}
-          {route === "appointments" && <Appointments />}
-          {route === "visualize" && <Visualize />}
-          {route === "settings" && <Settings />}
+          <ErrorBoundary key={route} where={NAV.find((n) => n.route === route)?.label ?? route}>
+            {route === "today" && <Today />}
+            {route === "what-i-see" && <WhatISee />}
+            {route === "timeline" && <TimelinePage />}
+            {route === "my-eyes" && <MyEyes />}
+            {route === "imaging" && <Imaging />}
+            {route === "appointments" && <Appointments />}
+            {route === "visualize" && <Visualize />}
+            {route === "settings" && <Settings />}
+          </ErrorBoundary>
         </main>
       </div>
       {palette && (
-        <CommandPalette
-          initialMode={palette}
-          onClose={() => setPalette(null)}
-          onNavigate={nav}
-        />
+        <CommandPalette initialMode={palette} onClose={() => setPalette(null)} onNavigate={nav} />
       )}
     </>
   );
