@@ -201,6 +201,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
 
   // ---- floater objects ------------------------------------------------------
   const f01: FloaterObject = newRecord({
+    source_type: "patient_reported" as const,
     ...demo,
     nickname: "F01 — Long Strand",
     eye: "right" as const,
@@ -217,6 +218,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
     drawing_refs: [] as string[],
   });
   const f02: FloaterObject = newRecord({
+    source_type: "patient_reported" as const,
     ...demo,
     nickname: "F02 — Dark Dot",
     eye: "left" as const,
@@ -233,6 +235,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
     drawing_refs: [] as string[],
   });
   const f03: FloaterObject = newRecord({
+    source_type: "patient_reported" as const,
     ...demo,
     nickname: "Left baseline dots",
     eye: "left" as const,

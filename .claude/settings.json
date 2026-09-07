@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd app && npm run verify)",
+      "Bash(cd app && npm run guard)",
+      "Bash(cd app && npm run build)",
+      "Bash(cd app && npm run test:*)",
+      "Bash(cd app && npm run lint)",
+      "Bash(cd app && npx tsc -b)",
+      "Bash(node app/scripts/check-invariants.mjs)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(gh repo:*)",
+      "Bash(gh release:*)",
+      "Bash(npm publish:*)"
+    ],
+    "deny": [
+      "Read(./app/src/**/*.env*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ]
+  }
+}

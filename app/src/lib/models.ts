@@ -130,6 +130,7 @@ export interface FloaterObject {
   status: "active" | "resolved" | "uncertain";
   baseline: boolean;
   drawing_refs: string[];
+  source_type: SourceType;
   demo?: boolean;
   created_at: string;
   updated_at: string;

@@ -137,12 +137,20 @@ const EMPTY_DATA: AllData = {
   briefs: [],
 };
 
+/**
+ * Floaters predate the provenance field. They have always been patient-reported; fill it in on
+ * read so no stored record is missing its source. Replace with a real migration in Phase 01.
+ */
+function withFloaterProvenance(f: FloaterObject): FloaterObject {
+  return f.source_type ? f : { ...f, source_type: "patient_reported" };
+}
+
 export async function loadAllData(): Promise<AllData & { meta?: AppMeta }> {
   const [data, metaAll] = await Promise.all([
     (async () => ({
       symptoms: await dbGetAll<SymptomEntry>("symptoms"),
       dailyLogs: await dbGetAll<DailyLog>("dailyLogs"),
-      floaters: await dbGetAll<FloaterObject>("floaters"),
+      floaters: (await dbGetAll<FloaterObject>("floaters")).map(withFloaterProvenance),
       drawings: await dbGetAll<VisualFieldDrawing>("drawings"),
       appointments: await dbGetAll<Appointment>("appointments"),
       questions: await dbGetAll<DoctorQuestion>("questions"),

@@ -125,6 +125,7 @@ export default function Today() {
           status: "active",
           baseline: false,
           drawing_refs: [],
+          source_type: "patient_reported",
           created_at: nowISO(),
           updated_at: nowISO(),
         };

@@ -138,7 +138,7 @@ export function buildIndex(s: AllData): IndexRow[] {
         snippet: j(x.shape, x.size, x.opacity, x.appearance),
         date: x.first_seen.slice(0, 10),
         eye: x.eye,
-        source_type: "patient_reported",
+        source_type: x.source_type,
         route: "my-eyes",
         demo: x.demo,
       },
