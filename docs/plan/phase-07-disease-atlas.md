@@ -84,8 +84,11 @@ to. **All clinical copy goes into `docs/atlas-review.md` for human sign-off befo
    healthy ↔ affected, before ↔ after treatment, right ↔ left, mild ↔ severe. Locked cameras are
    what make comparison honest; add a sync toggle for deliberate divergence.
 
-5. **Procedure animations.** Staged, scrubbable, narrated in plain language, one stage per step of
-   the Phase-05 explainers already in `education.ts` (reuse that copy — do not fork it):
+5. **Procedure animations.** Authored in Blender via the Phase 06 asset pipeline (shape keys and
+   armatures exported to glTF — these are scripted sequences, not parameterised states, so they
+   belong on the authored side of the line). Staged, scrubbable, narrated in plain language, one
+   stage per step of the Phase-05 explainers already in `education.ts` (reuse that copy — do not
+   fork it):
    vitrectomy (port placement → gel removal → break identification → fluid-air exchange →
    endolaser → tamponade), scleral buckle (band placement → indentation → cryo), laser retinopexy,
    pneumatic retinopexy, intravitreal injection, cataract surgery (phaco → IOL), YAG capsulotomy,
@@ -133,6 +136,8 @@ to. **All clinical copy goes into `docs/atlas-review.md` for human sign-off befo
 - [ ] "Is this like what you see?" produces an editable draft drawing and writes nothing until the
       patient saves.
 - [ ] Atlas entries lazy-load; the initial Visualize load does not pull all 40.
+- [ ] Every atlas render and animation works with the network disabled, and any new asset is
+      recorded in `ASSETS.md` with its licence and hash.
 
 ## Risks & non-goals
 

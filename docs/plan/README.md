@@ -84,7 +84,7 @@ These are invariants, not preferences. A phase that breaks one is not done, howe
 | [03](phase-03-low-vision-access.md) | Accessibility for low vision | The users have eye disease. This is the phase that decides who can use it | 00 |
 | [04](phase-04-daily-loop-mobile.md) | Daily loop & mobile | The record only exists if the daily entry actually happens | 03 |
 | [05](phase-05-clinical-breadth.md) | Clinical breadth & home self-tests | Retina is the start; glaucoma, AMD, DR, cornea deserve the same care | 01 |
-| [06](phase-06-render-engine.md) | Visualization I — realistic eye renderer | "Show me what happened to my eye" deserves a real answer | 02 |
+| [06](phase-06-render-engine.md) | Visualization I — realistic eye renderer | "Show me what happened to my eye" deserves a real answer — Blender-baked detail, procedural everything parameterised, all shipped offline | 02 |
 | [07](phase-07-disease-atlas.md) | Visualization II — whole-eye atlas & simulator | Every condition, plus what it actually looks like from inside | 05, 06 |
 | [08](phase-08-records-intelligence.md) | Records intelligence | Turn ten months of entries into the answer to one question | 01, 05 |
 | [09](phase-09-clinician-handoff.md) | Clinician handoff & sharing | The brief has to survive contact with a real clinic | 08 |
