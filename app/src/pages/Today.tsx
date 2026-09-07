@@ -112,7 +112,7 @@ export default function Today() {
     }
     for (const r of rowsToSave) {
       let floaterId: string | undefined;
-      let existingEntry = r.existingId
+      const existingEntry = r.existingId
         ? store.symptoms.list.find((s) => s.id === r.existingId)
         : undefined;
       if (r.symptom_type === "floaters" && r.comparison === "new" && !existingEntry?.floater_object_id) {

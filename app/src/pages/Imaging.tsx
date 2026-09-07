@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useStore, newRecord } from "../lib/store";
 import { getStoredFile, fileToStoredFile, dbDelete } from "../lib/db";
 import type { DocumentRecord, Eye, ImagingModality, ImagingRecord, SourceType } from "../lib/models";
+import { EYE_SHORT } from "../lib/models";
 import { ConfirmButton, DemoBadge, EmptyState, EyeBadge, Field, Modal, PageHeader, ProvenanceBadge, SourceSelect } from "../components/ui";
 import { formatDate, todayLocal } from "../lib/util";
 
@@ -259,7 +260,7 @@ function ImagingDetail({ record, onClose }: { record: ImagingRecord; onClose: ()
       </dl>
       <div style={{ marginTop: 14 }}>
         {urls.map((u) => (
-          <img key={u} src={u} alt={`${record.modality} image`} style={{ width: "100%", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", marginBottom: 10 }} />
+          <img key={u} src={u} alt={`${record.modality}, ${EYE_SHORT[record.eye]}, ${formatDate(record.date)}`} style={{ width: "100%", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)", marginBottom: 10 }} />
         ))}
       </div>
       <div className="modal-actions">

@@ -40,6 +40,11 @@ export function parseQuery(raw: string): ParsedQuery {
   if (/\b(left|os)\b/.test(q) && !/\bright\b/.test(q)) parsed.eye = "left";
   else if (/\b(right|od)\b/.test(q) && !/\bleft\b/.test(q)) parsed.eye = "right";
 
+  // The eye is now a filter, so drop its words from the free-text terms. Leaving them in would
+  // require the word "left" to appear in the record text, which silently excludes both-eye
+  // records — they read "Both (OU)" — from a search the user meant to include them in.
+  if (parsed.eye) q = q.replace(/\b(left|right|os|od)\b/g, " ");
+
   // "Aug 2026", "August 2026", "2026-08", "2026"
   const monthYear = q.match(
     /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{4})\b/,
@@ -65,7 +70,9 @@ export function parseQuery(raw: string): ParsedQuery {
   parsed.terms = q
     .split(/[^a-z0-9/+.-]+/)
     .map((t) => t.trim())
-    .filter((t) => t.length > 1 && !["the", "and", "for", "eye", "was", "any"].includes(t));
+    .filter(
+      (t) => t.length > 1 && !["the", "and", "for", "eye", "eyes", "was", "any"].includes(t),
+    );
 
   return parsed;
 }

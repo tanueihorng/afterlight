@@ -79,13 +79,20 @@ export default function CommandPalette({
   };
 
   return (
-    <div className="modal-backdrop palette-backdrop" onMouseDown={onClose}>
+    <div className="modal-backdrop palette-backdrop">
+      {/* Mouse convenience only — keyboard users close with Escape. */}
+      <button
+        type="button"
+        className="backdrop-dismiss"
+        aria-hidden="true"
+        tabIndex={-1}
+        onClick={onClose}
+      />
       <div
         className="palette"
         role="dialog"
         aria-modal="true"
         aria-label={mode === "search" ? "Search my records" : "Ask my records"}
-        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="palette-tabs">
           {(["search", "ask"] as Mode[]).map((m) => (
