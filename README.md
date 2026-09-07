@@ -204,9 +204,13 @@ Two design decisions worth calling out:
 
 ## Where this is going
 
-Afterlight is usable today and still early. The obvious next steps: real OCT overlay alignment,
-richer visual-field comparison, encrypted export, and a mobile-shaped daily entry that takes
-fewer taps than it already does.
+Afterlight is usable today and still early. The full build plan lives in
+**[`docs/plan/`](docs/plan/README.md)** — eleven phases, each a self-contained brief that can be
+executed independently: testing foundations, data integrity and portable encrypted archives,
+performance at ten years of entries, accessibility built for people who actually have eye disease,
+a mobile daily loop, clinical breadth beyond the retina with home self-tests, a photoreal eye
+renderer, a whole-eye disease atlas with a "what this looks like from inside" simulator, deeper
+record intelligence, clinician handoff, and release with real clinical review.
 
 If you live with a retinal condition and something here is wrong, missing, or worded in a way
 that would frighten someone at 2am — open an issue. That feedback is worth more than a feature
