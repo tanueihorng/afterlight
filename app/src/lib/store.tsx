@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { EMPTY_DATA, dbDelete, dbPut, loadAllData, type AllData } from "./db";
+import { EMPTY_DATA, dbDelete, dbPut, loadMigrated, type AllData } from "./db";
 import type { AppMeta, EyeBaseline, StoredFile, SymptomEntry, TimelineEvent } from "./models";
 import { isoToDateOnly, nowISO, todayLocal } from "./util";
 
@@ -25,6 +25,8 @@ type EntityProps = {
 export interface StoreShape extends EntityProps {
   ready: boolean;
   meta?: AppMeta;
+  /** Descriptions of any schema migrations applied when this session loaded. */
+  migrationNotes: string[];
   putFile: (v: StoredFile) => Promise<void>;
   setMeta: (patch: Partial<AppMeta>) => Promise<void>;
   clearAll: () => Promise<void>;
@@ -38,11 +40,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<EntityLists>(EMPTY_DATA);
   const [meta, setMetaState] = useState<AppMeta | undefined>(undefined);
   const [ready, setReady] = useState(false);
+  const [migrationNotes, setMigrationNotes] = useState<string[]>([]);
 
   useEffect(() => {
-    loadAllData().then(({ meta: m, ...lists }) => {
-      setData(lists);
+    loadMigrated().then(({ meta: m, migrated, ...lists }) => {
+      setData(lists as EntityLists);
       setMetaState(m);
+      setMigrationNotes(migrated ?? []);
       setReady(true);
     });
   }, []);
@@ -80,6 +84,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       ready,
       meta,
+      migrationNotes,
       symptoms: ops("symptoms"),
       dailyLogs: ops("dailyLogs"),
       floaters: ops("floaters"),
@@ -110,7 +115,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return Promise.resolve();
       },
     };
-  }, [data, meta, ready, put, remove]);
+  }, [data, meta, ready, migrationNotes, put, remove]);
 
   return <StoreCtx.Provider value={store}>{children}</StoreCtx.Provider>;
 }

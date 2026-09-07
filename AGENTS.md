@@ -93,8 +93,13 @@ where the reason isn't obvious from the code. Do not add file-header comments or
 something a dozen lines can do.
 
 **Data model.** New record types belong in `models.ts` and must carry `id`, `created_at`,
-`updated_at`, `eye`, `source_type`, and optional `demo`. Anything schema-changing needs a
-migration (see `docs/plan/phase-01-data-integrity.md`) — never a silent shape change.
+`updated_at`, `eye`, `source_type`, and optional `demo`. Anything schema-changing needs a migration
+in `lib/migrations.ts` with `SCHEMA_VERSION` bumped — never a silent shape change. Migrations are
+pure functions over a snapshot, run once inside a transaction after a pre-migration backup.
+
+**Stored files.** Uploads live in the `files` store as `ArrayBuffer` bytes, never as `Blob`s —
+Blob support in IndexedDB is uneven and untestable. Use `saveStoredFile` (which reports quota
+failures), and `storedFileToBlob` / `storedFileURL` to display them.
 
 **Derived, not duplicated.** The timeline, indexes, briefs and search results are computed from
 stored entities. Do not persist a second copy of the truth.

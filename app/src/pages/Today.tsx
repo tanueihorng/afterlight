@@ -11,6 +11,7 @@ import {
   type SymptomEntry,
 } from "../lib/models";
 import { PageHeader, SafetyNotice, EmptyState } from "../components/ui";
+import BackupNudge from "../components/BackupNudge";
 import { formatLongDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
 
 interface Row {
@@ -293,6 +294,7 @@ export default function Today() {
         title="How is your vision today?"
         sub="Record what changed compared with your usual baseline — or tap “No change today” on ordinary days. Nothing here is a diagnosis."
       />
+      <BackupNudge />
 
       {justSaved && (
         <div className="safety" style={{ borderColor: "color-mix(in srgb, var(--ok) 55%, transparent)", marginBottom: 16 }} role="status">

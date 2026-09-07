@@ -9,7 +9,7 @@ marked blocked.
 | # | Phase | State | Branch | Updated | Notes |
 |---|---|---|---|---|---|
 | 00 | Foundations & guardrails | done | phase-00-foundations | 2026-09-08 | 96 tests; `verify` = types + lint + guard + tests + build; CI green |
-| 01 | Data integrity & portability | not started | — | — | |
+| 01 | Data integrity & portability | done | phase-01-data-integrity | 2026-09-08 | archive v2 + migrations + encryption + merge; files now stored as bytes |
 | 02 | Performance & scale | not started | — | — | |
 | 03 | Accessibility for low vision | not started | — | — | |
 | 04 | Daily loop & mobile | not started | — | — | |
@@ -25,6 +25,21 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 01 done.** Schema versioning with tested migrations (v1→v3) that write a
+  pre-migration snapshot into a new `backups` store before touching anything; archive v2 with a
+  canonical-JSON SHA-256 checksum, per-store counts and date span; import preview that validates and
+  summarises before writing, with replace and merge modes (merge resolves by `updated_at`, newest
+  wins); optional AES-GCM encryption with PBKDF2-SHA256 at 250k iterations; backup-age tracking with
+  a once-a-week calm nudge; storage estimate with `navigator.storage.persist()` reported honestly;
+  a non-destructive "test my backup" validator; and `dbWriteSnapshot` so multi-store writes are one
+  transaction. 146 tests.
+  **Decision: stored files moved from `Blob` to `ArrayBuffer`** (`StoredFile.bytes`, plus `size` and
+  `stored_at`), which is what Phase 00 flagged. Blobs are unevenly supported in IndexedDB and could
+  not be asserted at all in tests; bytes round-trip everywhere. The Phase 00 skipped test is now a
+  real one, and `saveStoredFile` turns a quota failure into a message instead of a silent loss.
+  Verified in a real browser as well as in CI: 72 demo records and 5 files exported, database wiped,
+  re-imported — checksum verified and the fundus image byte-identical; encrypted round trip rejects
+  the wrong passphrase and leaks no plaintext.
 - **2026-09-08** — **Phase 00 done.** Vitest + Testing Library + fake-indexeddb, ESLint 9 flat
   config with jsx-a11y as errors, Prettier, test factories, 96 tests, error boundary with a
   database-level export escape hatch, `npm run verify` gate, GitHub Actions CI. Upgraded Vite 5→7

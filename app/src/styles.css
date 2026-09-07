@@ -1234,3 +1234,27 @@ input[type="range"] {
   padding: 0;
   cursor: default;
 }
+
+.kv-table {
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 10px 0;
+}
+
+.kv-table td {
+  padding: 2px 0;
+}
+
+/* A backup reminder is information, not an alarm: same surface as any other card. */
+.nudge {
+  border-left: 2px solid var(--border);
+}
+
+.save-error {
+  border: 1px solid color-mix(in srgb, var(--diagram-alert) 55%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  color: var(--text);
+  margin-top: 12px;
+}
