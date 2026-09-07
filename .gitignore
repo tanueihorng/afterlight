@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+
+# build output
+app/dist/
+*.tsbuildinfo
+
+# generated: copied from the repo-root EyeExplorer.html by app/scripts/sync-explorer.mjs
+app/public/EyeExplorer.html
+
+# editor / OS
+.DS_Store
+.vscode/
+.idea/
+*.log

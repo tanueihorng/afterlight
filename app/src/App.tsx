@@ -1,0 +1,131 @@
+import { useEffect, useState } from "react";
+import { useHashRoute, type Route } from "./lib/router";
+import { useStore } from "./lib/store";
+import Today from "./pages/Today";
+import WhatISee from "./pages/WhatISee";
+import TimelinePage from "./pages/TimelinePage";
+import MyEyes from "./pages/MyEyes";
+import Imaging from "./pages/Imaging";
+import Appointments from "./pages/Appointments";
+import Visualize from "./pages/Visualize";
+import Settings from "./pages/Settings";
+import Onboarding from "./components/Onboarding";
+import CommandPalette from "./components/CommandPalette";
+import { formatLongDate, todayLocal } from "./lib/util";
+
+const NAV: { route: Route; label: string; icon: string; section?: string }[] = [
+  { route: "today", label: "Today", icon: "◐" },
+  { route: "what-i-see", label: "What I See", icon: "✧" },
+  { route: "timeline", label: "Timeline", icon: "⌁" },
+  { route: "my-eyes", label: "My Eyes", icon: "◉" },
+  { route: "imaging", label: "Imaging & Documents", icon: "▣" },
+  { route: "appointments", label: "Appointments", icon: "✚" },
+  { route: "visualize", label: "Visualize", icon: "◍" },
+  { route: "settings", label: "Settings", icon: "⚙" },
+];
+
+export default function App() {
+  const [route, nav] = useHashRoute();
+  const store = useStore();
+  const [palette, setPalette] = useState<null | "search" | "ask">(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typing =
+        !!target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPalette("search");
+      } else if (e.key === "/" && !typing) {
+        e.preventDefault();
+        setPalette("search");
+      } else if (e.key === "?" && !typing) {
+        e.preventDefault();
+        setPalette("ask");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    const theme = store.meta?.theme ?? "dark";
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [store.meta?.theme]);
+
+  if (!store.ready) {
+    return (
+      <div style={{ display: "grid", placeItems: "center", minHeight: "100vh", color: "var(--text-3)" }}>
+        Opening your local record…
+      </div>
+    );
+  }
+
+  const onboarded = store.meta?.onboarded ?? false;
+
+  return (
+    <>
+      {!onboarded && <Onboarding />}
+      <div className="shell" aria-hidden={!onboarded}>
+        <aside className="sidebar">
+          <div className="brand">
+            <div className="brand-name">Afterlight</div>
+            <div className="brand-tag">A living record of the sight you fought to keep.</div>
+          </div>
+          <button className="sidebar-search" onClick={() => setPalette("search")}>
+            <span aria-hidden>⌕</span>
+            <span>Search my records</span>
+            <kbd>⌘K</kbd>
+          </button>
+          <nav aria-label="Main navigation">
+            {NAV.map((item) => (
+              <button
+                key={item.route}
+                className={`nav-item ${route === item.route ? "active" : ""}`}
+                onClick={() => nav(item.route)}
+                aria-current={route === item.route ? "page" : undefined}
+              >
+                <span className="nav-icon" aria-hidden>
+                  {item.icon}
+                </span>
+                <span className="nav-label">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+          <button className="nav-item" onClick={() => setPalette("ask")}>
+            <span className="nav-icon" aria-hidden>?</span>
+            <span className="nav-label">Ask my records</span>
+          </button>
+          <div className="sidebar-footer">
+            Records are stored locally in this browser. Nothing is uploaded without your action.
+          </div>
+        </aside>
+        <main className="main" id="main">
+          <div className="topbar-date" style={{ marginBottom: 10 }}>
+            {formatLongDate(todayLocal())}
+          </div>
+          {route === "today" && <Today />}
+          {route === "what-i-see" && <WhatISee />}
+          {route === "timeline" && <TimelinePage />}
+          {route === "my-eyes" && <MyEyes />}
+          {route === "imaging" && <Imaging />}
+          {route === "appointments" && <Appointments />}
+          {route === "visualize" && <Visualize />}
+          {route === "settings" && <Settings />}
+        </main>
+      </div>
+      {palette && (
+        <CommandPalette
+          initialMode={palette}
+          onClose={() => setPalette(null)}
+          onNavigate={nav}
+        />
+      )}
+    </>
+  );
+}

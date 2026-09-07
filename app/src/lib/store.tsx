@@ -1,0 +1,362 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { EMPTY_DATA, dbDelete, dbPut, loadAllData, type AllData } from "./db";
+import type { AppMeta, EyeBaseline, StoredFile, SymptomEntry, TimelineEvent } from "./models";
+import { isoToDateOnly, nowISO, todayLocal } from "./util";
+
+export type EntityLists = AllData;
+
+export interface EntityOps<T> {
+  put: (v: T) => Promise<void>;
+  del: (id: string) => Promise<void>;
+}
+
+type EntityProps = {
+  [K in keyof EntityLists]: EntityOps<EntityLists[K][number]> & { list: EntityLists[K] };
+};
+
+export interface StoreShape extends EntityProps {
+  ready: boolean;
+  meta?: AppMeta;
+  putFile: (v: StoredFile) => Promise<void>;
+  setMeta: (patch: Partial<AppMeta>) => Promise<void>;
+  clearAll: () => Promise<void>;
+}
+
+const StoreCtx = createContext<StoreShape | null>(null);
+
+type EntityKey = keyof EntityLists;
+
+export function StoreProvider({ children }: { children: ReactNode }) {
+  const [data, setData] = useState<EntityLists>(EMPTY_DATA);
+  const [meta, setMetaState] = useState<AppMeta | undefined>(undefined);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    loadAllData().then(({ meta: m, ...lists }) => {
+      setData(lists);
+      setMetaState(m);
+      setReady(true);
+    });
+  }, []);
+
+  const put = useCallback((key: EntityKey, value: unknown) => {
+    setData((d) => {
+      const list = d[key] as unknown[];
+      const idx = list.findIndex(
+        (x) => (x as { id: string }).id === (value as { id: string }).id
+      );
+      const next = [...list];
+      if (idx >= 0) next[idx] = value;
+      else next.push(value);
+      return { ...d, [key]: next };
+    });
+    return dbPut(key, value).then(() => undefined);
+  }, []);
+
+  const remove = useCallback((key: EntityKey, id: string) => {
+    setData((d) => ({
+      ...d,
+      [key]: (d[key] as unknown[]).filter((x) => (x as { id: string }).id !== id),
+    }));
+    return dbDelete(key, id).then(() => undefined);
+  }, []);
+
+  const store = useMemo<StoreShape>(() => {
+    function ops<K extends EntityKey>(key: K): EntityProps[K] {
+      return {
+        list: data[key],
+        put: (v) => put(key, v),
+        del: (id: string) => remove(key, id),
+      } as EntityProps[K];
+    }
+    return {
+      ready,
+      meta,
+      symptoms: ops("symptoms"),
+      dailyLogs: ops("dailyLogs"),
+      floaters: ops("floaters"),
+      drawings: ops("drawings"),
+      appointments: ops("appointments"),
+      questions: ops("questions"),
+      diagnoses: ops("diagnoses"),
+      procedures: ops("procedures"),
+      medications: ops("medications"),
+      prescriptions: ops("prescriptions"),
+      measurements: ops("measurements"),
+      imaging: ops("imaging"),
+      documents: ops("documents"),
+      baselines: ops("baselines"),
+      briefs: ops("briefs"),
+      putFile: (v) => dbPut("files", v).then(() => undefined),
+      setMeta: (patch) => {
+        setMetaState((m) => {
+          const next = { id: "meta" as const, onboarded: false, theme: "dark" as const, demo_seeded: false, ...m, ...patch };
+          void dbPut("meta", next);
+          return next;
+        });
+        return Promise.resolve();
+      },
+      clearAll: () => {
+        setData(EMPTY_DATA);
+        setMetaState(undefined);
+        return Promise.resolve();
+      },
+    };
+  }, [data, meta, ready, put, remove]);
+
+  return <StoreCtx.Provider value={store}>{children}</StoreCtx.Provider>;
+}
+
+export function useStore(): StoreShape {
+  const s = useContext(StoreCtx);
+  if (!s) throw new Error("useStore must be used within StoreProvider");
+  return s;
+}
+
+/** Factory for new records: id + timestamps first, caller patches the rest. */
+export function newRecord<T extends object>(
+  patch: T
+): T & { id: string; created_at: string; updated_at: string } {
+  return {
+    id: crypto.randomUUID(),
+    created_at: nowISO(),
+    updated_at: nowISO(),
+    ...patch,
+  };
+}
+
+/** Generic timeline view derived from all stored entities. */
+export function buildTimeline(s: AllData): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  const push = (e: TimelineEvent) => events.push(e);
+
+  for (const l of s.dailyLogs) {
+    push({
+      id: `log-${l.id}`,
+      event_type: "daily_log",
+      entity_id: l.id,
+      date_time: l.date,
+      eye: "both",
+      title: l.overall === "no_change" ? "No change today" : "Daily log",
+      summary: l.note || undefined,
+      source_type: l.source_type,
+      demo: l.demo,
+      icon: "◐",
+    });
+  }
+  for (const x of s.symptoms) {
+    const tag =
+      x.status === "new"
+        ? "New"
+        : x.status === "worse"
+          ? "Worse"
+          : x.status === "better"
+            ? "Better"
+            : x.status === "resolved"
+              ? "Resolved"
+              : "Unchanged";
+    push({
+      id: `sym-${x.id}`,
+      event_type: "symptom",
+      entity_id: x.id,
+      date_time: x.date_time,
+      eye: x.eye,
+      title: `${tag} — ${x.symptom_type}`,
+      summary:
+        x.description ||
+        (x.severity != null && x.severity > 0 ? `Severity ${x.severity}/10` : undefined),
+      source_type: x.source_type,
+      demo: x.demo,
+      icon: "•",
+    });
+  }
+  for (const d of s.drawings) {
+    push({
+      id: `drw-${d.id}`,
+      event_type: "drawing",
+      entity_id: d.id,
+      date_time: d.date_time,
+      eye: d.eye,
+      title: "Visual field drawing",
+      summary: d.description || undefined,
+      source_type: d.source_type,
+      demo: d.demo,
+      icon: "✧",
+    });
+  }
+  for (const f of s.floaters) {
+    if (f.baseline) continue;
+    push({
+      id: `flt-${f.id}`,
+      event_type: "floater",
+      entity_id: f.id,
+      date_time: f.first_seen,
+      eye: f.eye,
+      title: `Floater first recorded — ${f.nickname || f.shape}`,
+      summary: f.appearance,
+      source_type: "patient_reported",
+      demo: f.demo,
+      icon: "·",
+    });
+  }
+  for (const a of s.appointments) {
+    push({
+      id: `apt-${a.id}`,
+      event_type: "appointment",
+      entity_id: a.id,
+      date_time: a.date_time,
+      eye: "not_applicable",
+      title: a.reason || "Appointment",
+      summary: [a.clinic, a.clinician].filter(Boolean).join(" · ") || undefined,
+      source_type: "clinician_reported",
+      demo: a.demo,
+      icon: "✚",
+    });
+  }
+  for (const d of s.diagnoses) {
+    push({
+      id: `dx-${d.id}`,
+      event_type: "diagnosis",
+      entity_id: d.id,
+      date_time: d.first_documented,
+      eye: d.eye,
+      title: `Diagnosis — ${d.name}`,
+      summary: d.status,
+      source_type: d.source_type,
+      demo: d.demo,
+      icon: "❖",
+    });
+  }
+  for (const p of s.procedures) {
+    push({
+      id: `prc-${p.id}`,
+      event_type: "procedure",
+      entity_id: p.id,
+      date_time: p.date,
+      eye: p.eye,
+      title: p.procedure_type,
+      summary: p.surgeon || p.facility,
+      source_type: "clinician_reported",
+      demo: p.demo,
+      icon: "⚕",
+    });
+  }
+  for (const m of s.medications) {
+    push({
+      id: `med-${m.id}`,
+      event_type: "medication",
+      entity_id: m.id,
+      date_time: m.start_date,
+      eye: m.eye,
+      title: `${m.kind === "prescription" ? "Medication" : "Self-care"} — ${m.name}`,
+      summary: [m.dose, m.frequency].filter(Boolean).join(" · ") || undefined,
+      source_type: m.kind === "prescription" ? "clinician_reported" : "patient_reported",
+      demo: m.demo,
+      icon: "℞",
+    });
+  }
+  for (const p of s.prescriptions) {
+    push({
+      id: `rx-${p.id}`,
+      event_type: "prescription",
+      entity_id: p.id,
+      date_time: p.date,
+      eye: "both",
+      title: "Glasses / contact prescription",
+      summary: p.provider,
+      source_type: "clinician_reported",
+      demo: p.demo,
+      icon: "℞",
+    });
+  }
+  for (const m of s.measurements) {
+    push({
+      id: `mea-${m.id}`,
+      event_type: "measurement",
+      entity_id: m.id,
+      date_time: m.date,
+      eye: m.eye,
+      title: `Measurement — ${m.kind}: ${m.value}${m.unit ?? ""}`,
+      summary: m.note,
+      source_type: m.source_type,
+      demo: m.demo,
+      icon: "≡",
+    });
+  }
+  for (const i of s.imaging) {
+    push({
+      id: `img-${i.id}`,
+      event_type: "imaging",
+      entity_id: i.id,
+      date_time: i.date,
+      eye: i.eye,
+      title: `${i.modality.toUpperCase()} imaging`,
+      summary: i.clinic || i.findings,
+      source_type: i.source_type,
+      demo: i.demo,
+      icon: "▣",
+    });
+  }
+  for (const d of s.documents) {
+    push({
+      id: `doc-${d.id}`,
+      event_type: "document",
+      entity_id: d.id,
+      date_time: d.date,
+      eye: d.eye,
+      title: `Document — ${d.title}`,
+      summary: d.doc_type,
+      source_type: d.source_type,
+      demo: d.demo,
+      icon: "▤",
+    });
+  }
+
+  events.sort((a, b) => (a.date_time < b.date_time ? 1 : a.date_time > b.date_time ? -1 : 0));
+  return events;
+}
+
+export function useTimeline(): TimelineEvent[] {
+  const s = useStore();
+  const allData: AllData = useMemo(() => toAllData(s), [s]);
+  return useMemo(() => buildTimeline(allData), [allData]);
+}
+
+/** Extract the plain entity lists from the store (for pure functions like brief generation). */
+export function toAllData(s: StoreShape): AllData {
+  return {
+    symptoms: s.symptoms.list,
+    dailyLogs: s.dailyLogs.list,
+    floaters: s.floaters.list,
+    drawings: s.drawings.list,
+    appointments: s.appointments.list,
+    questions: s.questions.list,
+    diagnoses: s.diagnoses.list,
+    procedures: s.procedures.list,
+    medications: s.medications.list,
+    prescriptions: s.prescriptions.list,
+    measurements: s.measurements.list,
+    imaging: s.imaging.list,
+    documents: s.documents.list,
+    baselines: s.baselines.list,
+    briefs: s.briefs.list,
+  };
+}
+
+export function baselineFor(s: AllData, eye: "right" | "left"): EyeBaseline | undefined {
+  return s.baselines.find((b) => b.id === eye);
+}
+
+export function symptomsOnDate(s: AllData, date: string): SymptomEntry[] {
+  return s.symptoms.filter((x) => isoToDateOnly(x.date_time) === date);
+}
+
+export const TODAY = todayLocal;
