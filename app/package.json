@@ -15,14 +15,17 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "guard": "node scripts/check-invariants.mjs",
-    "verify": "tsc -b && npm run lint && npm run guard && npm run test && npm run build && npm run bundle",
+    "verify": "tsc -b && npm run lint && npm run guard && npm run verify:assets && npm run test && npm run build && npm run bundle",
     "bundle": "node scripts/check-bundle.mjs",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "playwright test --ui",
+    "build:standalone": "node scripts/build-standalone.mjs",
+    "verify:assets": "node scripts/verify-assets.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -32,6 +35,7 @@
     "@types/node": "^26.5.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^5.2.0",
     "axe-core": "^4.13.0",
     "eslint": "^9.39.5",

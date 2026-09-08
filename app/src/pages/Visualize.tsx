@@ -11,11 +11,13 @@ import {
   type RetinaState,
 } from "../lib/education";
 import { useStore } from "../lib/store";
+import EyeStudio from "../components/EyeStudio";
 import { formatDate } from "../lib/util";
 
-type Tab = "explorer" | "retina" | "procedures" | "conditions";
+type Tab = "eye" | "explorer" | "retina" | "procedures" | "conditions";
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: "eye", label: "The eye" },
   { id: "explorer", label: "3D explorer" },
   { id: "retina", label: "Retina states" },
   { id: "procedures", label: "Procedures" },
@@ -23,7 +25,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export default function Visualize() {
-  const [tab, setTab] = useState<Tab>("explorer");
+  const [tab, setTab] = useState<Tab>("eye");
 
   return (
     <>
@@ -45,6 +47,8 @@ export default function Visualize() {
           </button>
         ))}
       </div>
+
+      {tab === "eye" && <EyeStudio />}
 
       {tab === "explorer" && (
         <div className="card" style={{ padding: 10 }}>

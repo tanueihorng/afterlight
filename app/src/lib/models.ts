@@ -572,6 +572,20 @@ export interface AppMeta {
   reduced_motion?: boolean;
   /** Condition profiles chosen by the person. These shape prompts only — never a diagnosis. */
   condition_profiles?: string[];
+  /** Cosmetic tuning of the 3D model so it resembles the person's own eyes. Not clinical data. */
+  eye_appearance?: {
+    iris?: {
+      melanin?: number;
+      warmth?: number;
+      fibreDensity?: number;
+      collarette?: number;
+      crypts?: number;
+      limbalRing?: number;
+      pupilMm?: number;
+    };
+    fundusPigmentation?: number;
+    scleraVessels?: number;
+  };
   glare_comfort?: boolean;
   dim_imagery?: boolean;
   demo_seeded: boolean;

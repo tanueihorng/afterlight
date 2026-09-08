@@ -28,7 +28,7 @@ import {
   aQuestion,
   aSymptom,
 } from "../test/factories";
-import { todayLocal } from "../lib/util";
+import { addDays, todayLocal } from "../lib/util";
 
 const populated = {
   symptoms: [aSymptom({ eye: "left" }), aSymptom({ eye: "right", status: "worse" })],
@@ -93,9 +93,12 @@ describe("modals are free of axe violations", () => {
   });
 
   it("the appointment brief", async () => {
+    // Dated tomorrow on purpose: an appointment "today at 10:00" is upcoming before 10am and past
+    // after it, which made this test pass or fail depending on the time of day.
     const today = todayLocal();
+    const upcoming = addDays(today, 1);
     const { container } = await renderWithStore(<Appointments />, {
-      appointments: [anAppointment({ date_time: `${today}T10:00:00` })],
+      appointments: [anAppointment({ date_time: `${upcoming}T10:00:00` })],
       symptoms: [aSymptom({ date_time: `${today}T09:00:00` })],
     });
     await userEvent.click(await screen.findByRole("button", { name: /prepare appointment brief/i }));

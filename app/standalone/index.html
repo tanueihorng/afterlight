@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Afterlight — eye explorer</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        background: #0a0e16;
+        color: #e8edf6;
+        font: 16px/1.55 "Inter", system-ui, sans-serif;
+      }
+      header { padding: 20px 24px 8px; }
+      h1 { font-family: Georgia, serif; font-weight: 500; font-size: 1.5rem; margin: 0 0 6px; }
+      h2 { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; color: #f2c078; margin: 20px 0 8px; }
+      .boundary { color: #aab6cb; font-size: 0.9rem; max-width: 70ch; margin: 0; }
+      main { display: grid; grid-template-columns: 1fr 320px; gap: 20px; padding: 16px 24px 32px; }
+      @media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+      #eye { width: 100%; height: 62vh; border-radius: 12px; background: #05070c; touch-action: none; cursor: grab; display: block; }
+      #eye:focus-visible { outline: 3px solid #f2c078; outline-offset: 2px; }
+      #fundus { width: 100%; height: auto; border-radius: 50%; border: 1px solid #24304a; }
+      aside label { display: block; margin: 10px 0; font-size: 0.88rem; color: #aab6cb; }
+      aside input[type="range"] { width: 100%; }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; }
+      button { min-height: 44px; padding: 6px 14px; border-radius: 9px; border: 1px solid #5a6885; background: #101623; color: #e8edf6; font: inherit; cursor: pointer; }
+      button:hover { border-color: #f2c078; }
+      .note { color: #7a88a1; font-size: 0.84rem; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
