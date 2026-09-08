@@ -37,7 +37,7 @@ export default function Visualize() {
           <button
             key={t.id}
             className={`btn ${tab === t.id ? "primary" : "subtle"}`}
-            style={{ minHeight: 34 }}
+            style={{ minHeight: "var(--target)" }}
             onClick={() => setTab(t.id)}
             aria-pressed={tab === t.id}
           >
@@ -93,7 +93,7 @@ function RetinaStates() {
           <button
             key={s.id}
             className={`btn ${state === s.id ? "primary" : "subtle"}`}
-            style={{ minHeight: 30, fontSize: "0.82rem" }}
+            style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }}
             onClick={() => setState(s.id)}
             aria-pressed={state === s.id}
           >
@@ -108,14 +108,14 @@ function RetinaStates() {
           <div className="btn-row" style={{ marginTop: 10 }}>
             <button
               className="btn subtle"
-              style={{ minHeight: 30, fontSize: "0.82rem" }}
+              style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }}
               onClick={() => setEye(eye === "right" ? "left" : "right")}
             >
               Show {eye === "right" ? "left (OS)" : "right (OD)"} eye
             </button>
             <button
               className="btn subtle"
-              style={{ minHeight: 30, fontSize: "0.82rem" }}
+              style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }}
               onClick={() => setLabels((l) => !l)}
               aria-pressed={labels}
             >
@@ -125,8 +125,8 @@ function RetinaStates() {
         </div>
         <div>
           <div className="card-title" style={{ marginBottom: 6 }}>{info.label}</div>
-          <p style={{ fontSize: "0.92rem", color: "var(--text-2)", lineHeight: 1.6 }}>{info.blurb}</p>
-          <p className="muted" style={{ fontSize: "0.8rem", marginTop: 12 }}>
+          <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)", lineHeight: 1.6 }}>{info.blurb}</p>
+          <p className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 12 }}>
             Whether any of this applies to you is determined by examination and imaging, not by this
             illustration or by your symptom log.
           </p>
@@ -164,13 +164,13 @@ function Procedures() {
           linked.map(({ procedure, explainer }) => (
             <div key={procedure.id} style={{ borderTop: "1px solid var(--border-soft)", padding: "10px 0" }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <strong style={{ fontSize: "0.95rem" }}>{procedure.procedure_type}</strong>
+                <strong style={{ fontSize: "var(--fs-base)" }}>{procedure.procedure_type}</strong>
                 <EyeBadge eye={procedure.eye} />
                 <span className="muted">{formatDate(procedure.date)}</span>
                 {procedure.surgeon && <span className="muted">· {procedure.surgeon}</span>}
                 <button
                   className="btn subtle"
-                  style={{ minHeight: 28, fontSize: "0.8rem", marginLeft: "auto" }}
+                  style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)", marginLeft: "auto" }}
                   onClick={() => setOpen(open === procedure.id ? null : procedure.id)}
                 >
                   {open === procedure.id ? "Hide explainer" : explainer ? "What this involved" : "No explainer"}
@@ -198,7 +198,7 @@ function Procedures() {
         </p>
         {PROCEDURE_EXPLAINERS.map((e) => (
           <details key={e.title} style={{ borderTop: "1px solid var(--border-soft)", padding: "9px 0" }}>
-            <summary style={{ cursor: "pointer", fontSize: "0.95rem" }}>{e.title}</summary>
+            <summary style={{ cursor: "pointer", fontSize: "var(--fs-base)" }}>{e.title}</summary>
             <ExplainerBlock e={e} />
           </details>
         ))}
@@ -212,11 +212,11 @@ function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
   const state = e.states[Math.min(step, e.states.length - 1)];
   return (
     <div style={{ marginTop: 12 }}>
-      <p style={{ fontSize: "0.92rem", color: "var(--text-2)", marginBottom: 12 }}>{e.summary}</p>
+      <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)", marginBottom: 12 }}>{e.summary}</p>
       <div className="grid-2" style={{ alignItems: "start" }}>
         <div>
           <RetinaDiagram state={state} labels={false} width={360} />
-          <p className="muted" style={{ fontSize: "0.76rem", marginTop: 6 }}>
+          <p className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 6 }}>
             Illustration of the general stage described — schematic, not to scale.
           </p>
         </div>
@@ -234,7 +234,7 @@ function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
                     font: "inherit",
                     cursor: "pointer",
                     color: i === step ? "var(--text)" : "var(--text-2)",
-                    fontSize: "0.9rem",
+                    fontSize: "var(--fs-base)",
                     lineHeight: 1.55,
                   }}
                 >
@@ -247,7 +247,7 @@ function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
             <>
               <div
                 style={{
-                  fontSize: "0.72rem",
+                  fontSize: "var(--fs-xs)",
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
                   color: "var(--accent-strong)",
@@ -259,7 +259,7 @@ function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
               </div>
               <ul style={{ margin: 0, paddingLeft: 20 }}>
                 {e.afterwards.map((a, i) => (
-                  <li key={i} style={{ fontSize: "0.88rem", color: "var(--text-2)", marginBottom: 4 }}>
+                  <li key={i} style={{ fontSize: "var(--fs-sm)", color: "var(--text-2)", marginBottom: 4 }}>
                     {a}
                   </li>
                 ))}
@@ -295,18 +295,18 @@ function Conditions() {
           {matched.map(({ diagnosis, explainer }) => (
             <div key={diagnosis.id} style={{ borderTop: "1px solid var(--border-soft)", padding: "10px 0" }}>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <strong style={{ fontSize: "0.95rem" }}>{diagnosis.name}</strong>
+                <strong style={{ fontSize: "var(--fs-base)" }}>{diagnosis.name}</strong>
                 <EyeBadge eye={diagnosis.eye} />
                 <span className="muted">documented {formatDate(diagnosis.first_documented)}</span>
               </div>
-              <p style={{ fontSize: "0.9rem", color: "var(--text-2)", marginTop: 6 }}>
+              <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)", marginTop: 6 }}>
                 {explainer!.what} {explainer!.why}
               </p>
               <div className="btn-row" style={{ marginTop: 8, flexWrap: "wrap" }}>
                 {explainer!.states.map((s) => (
                   <figure key={s} style={{ margin: 0, textAlign: "center" }}>
                     <RetinaDiagram state={s} eye={diagnosis.eye === "left" ? "left" : "right"} labels={false} width={190} />
-                    <figcaption className="muted" style={{ fontSize: "0.72rem" }}>
+                    <figcaption className="muted" style={{ fontSize: "var(--fs-xs)" }}>
                       {RETINA_STATES.find((r) => r.id === s)?.label}
                     </figcaption>
                   </figure>
@@ -314,7 +314,7 @@ function Conditions() {
               </div>
             </div>
           ))}
-          <p className="muted" style={{ fontSize: "0.78rem", marginTop: 10 }}>
+          <p className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 10 }}>
             Matched to your recorded diagnosis name only. The illustration is generic and shows the
             concept, not your eye.
           </p>
@@ -325,14 +325,14 @@ function Conditions() {
         <div className="card-title">Condition library</div>
         {CONDITION_EXPLAINERS.map((c) => (
           <details key={c.title} style={{ borderTop: "1px solid var(--border-soft)", padding: "9px 0" }}>
-            <summary style={{ cursor: "pointer", fontSize: "0.95rem" }}>{c.title}</summary>
+            <summary style={{ cursor: "pointer", fontSize: "var(--fs-base)" }}>{c.title}</summary>
             <div className="grid-2" style={{ alignItems: "start", marginTop: 10 }}>
               <div>
                 <RetinaDiagram state={c.states[c.states.length - 1]} labels width={340} />
               </div>
               <div>
-                <p style={{ fontSize: "0.9rem", color: "var(--text-2)", marginBottom: 6 }}>{c.what}</p>
-                <p style={{ fontSize: "0.9rem", color: "var(--text-2)" }}>{c.why}</p>
+                <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)", marginBottom: 6 }}>{c.what}</p>
+                <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)" }}>{c.why}</p>
               </div>
             </div>
           </details>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "../lib/store";
 import type { DrawingMark, Eye, VisualFieldDrawing } from "../lib/models";
 import { DARK_PALETTE, drawingToDataURL, renderDrawing, renderMark } from "../lib/render";
+import { describeDrawing, describeMark } from "../lib/describe";
 import { ConfirmButton, DemoBadge, EyeBadge, EmptyState, Field, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
 import { formatDate, formatTime, nowISO } from "../lib/util";
 
@@ -79,7 +80,9 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
   const redraw = () => {
     const c = canvasRef.current;
     if (!c) return;
-    const ctx = c.getContext("2d")!;
+    // A browser can refuse a 2D context. Losing the drawing surface must not take the page down.
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     renderDrawing(ctx, marks, CANVAS_W, CANVAS_H, DARK_PALETTE, { fieldOutline: true });
   };
@@ -156,7 +159,9 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
     }
     redraw();
     const c = canvasRef.current!;
-    const ctx = c.getContext("2d")!;
+    // A browser can refuse a 2D context. Losing the drawing surface must not take the page down.
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     renderMark(ctx, m, CANVAS_W, CANVAS_H, DARK_PALETTE);
   };
@@ -242,12 +247,29 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
             width={CANVAS_W * DPR}
             height={CANVAS_H * DPR}
             style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
-            aria-label={`Visual field drawing canvas for the ${eye} eye. ${marks.length} marks placed.`}
+            role="img"
+            aria-label={describeDrawing(marks, eye)}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
           />
         </div>
+        {/* The canvas is invisible to a screen reader, so the same content exists as text. It is
+            visible to everyone — reading back what you drew is useful sighted too. */}
+        <details className="draw-described">
+          <summary>What this drawing says, in words ({marks.length})</summary>
+          <ul>
+            {marks.length === 0 ? (
+              <li className="muted">Nothing marked yet.</li>
+            ) : (
+              marks.map((m) => <li key={m.id}>{describeMark(m)}</li>)
+            )}
+          </ul>
+          <p className="muted">
+            Prefer not to draw? Describe what you see in the notes field instead — a written
+            description is a first-class entry, not a lesser one.
+          </p>
+        </details>
         <p className="draw-disclaimer">
           Patient-drawn representation of perceived vision — not a clinical retinal image.
         </p>
@@ -300,7 +322,7 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
                   aria-pressed={ink === i.id}
                   title={i.label}
                   className={`tool-btn ${ink === i.id ? "selected" : ""}`}
-                  style={{ width: 42, minHeight: 42 }}
+                  style={{ width: 42, minHeight: "var(--target)" }}
                 >
                   <span style={{ display: "block", width: 16, height: 16, borderRadius: "50%", background: i.css }} aria-hidden />
                 </button>
@@ -397,7 +419,7 @@ function HistoryTab({ onCompare }: { onCompare: () => void }) {
         {drawings.map((d) => (
           <button key={d.id} className="gallery-item" onClick={() => setOpenId(d.id)}>
             {d.thumbnail ? (
-              <img src={d.thumbnail} alt={`Visual field drawing, ${d.eye} eye, ${formatDate(d.date_time.slice(0, 10))}`} />
+              <img src={d.thumbnail} alt={`${formatDate(d.date_time.slice(0, 10))}. ${describeDrawing(d.canvas_data.marks, d.eye)}`} />
             ) : (
               <div className="img-ph" aria-hidden />
             )}
@@ -420,7 +442,7 @@ function DrawingDetail({ drawing, onClose }: { drawing: VisualFieldDrawing; onCl
     <Modal title={`Visual field drawing — ${formatDate(drawing.date_time.slice(0, 10))}`} onClose={onClose} wide>
       <img
         src={big}
-        alt={`Large view of patient-drawn visual field, ${drawing.eye} eye`}
+        alt={describeDrawing(drawing.canvas_data.marks, drawing.eye)}
         style={{ width: "100%", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}
       />
       <p className="draw-disclaimer">Patient-drawn representation of perceived vision — not a clinical retinal image.</p>
@@ -518,11 +540,11 @@ function CompareTab() {
               Overlay — slider reveals the later drawing over the earlier one
             </div>
             <div className="compare-wrap">
-              <img src={drawingToDataURL(b.canvas_data.marks, 800, 740, "#0b0f17")} alt={`Later drawing ${formatDate(b.date_time.slice(0, 10))}`} />
+              <img src={drawingToDataURL(b.canvas_data.marks, 800, 740, "#0b0f17")} alt={`Later, ${formatDate(b.date_time.slice(0, 10))}. ${describeDrawing(b.canvas_data.marks, b.eye)}`} />
               <div className="compare-overlay" style={{ width: `${pos}%` }}>
                 <img
                   src={drawingToDataURL(a.canvas_data.marks, 800, 740, "#0b0f17")}
-                  alt={`Earlier drawing ${formatDate(a.date_time.slice(0, 10))}`}
+                  alt={`Earlier, ${formatDate(a.date_time.slice(0, 10))}. ${describeDrawing(a.canvas_data.marks, a.eye)}`}
                   style={{ width: `${(100 / pos) * 100}%`, maxWidth: "none", position: "absolute", inset: 0, height: "100%", objectFit: "cover" }}
                 />
               </div>
@@ -546,7 +568,7 @@ function CompareTab() {
                 <div className="card-title">
                   {i === 0 ? "Earlier" : "Later"} · {formatDate(d.date_time.slice(0, 10))} <EyeBadge eye={d.eye} />
                 </div>
-                <img src={d.thumbnail} alt={`Drawing from ${formatDate(d.date_time.slice(0, 10))}`} style={{ width: "100%", borderRadius: "var(--radius-sm)" }} />
+                <img src={d.thumbnail} alt={`${formatDate(d.date_time.slice(0, 10))}. ${describeDrawing(d.canvas_data.marks, d.eye)}`} style={{ width: "100%", borderRadius: "var(--radius-sm)" }} />
                 {d.description && <p className="muted" style={{ marginTop: 8 }}>{d.description}</p>}
               </div>
             ))}

@@ -11,7 +11,7 @@ marked blocked.
 | 00 | Foundations & guardrails | done | phase-00-foundations | 2026-09-08 | 96 tests; `verify` = types + lint + guard + tests + build; CI green |
 | 01 | Data integrity & portability | done | phase-01-data-integrity | 2026-09-08 | archive v2 + migrations + encryption + merge; files now stored as bytes |
 | 02 | Performance & scale | not started | — | — | |
-| 03 | Accessibility for low vision | not started | — | — | |
+| 03 | Accessibility for low vision | done | phase-03-low-vision-access | 2026-09-08 | 4 themes, scalable type, axe + keyboard tests, drawings described in words |
 | 04 | Daily loop & mobile | not started | — | — | |
 | 05 | Clinical breadth & self-tests | not started | — | — | |
 | 06 | Visualization I — render engine | not started | — | — | long pole; start the spike early. Hybrid: Blender-authored base mesh + baked detail, procedural for everything parameterised |
@@ -25,6 +25,30 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 03 done.** Type scale tokens with a user setting (100/125/150/200%),
+  four themes including two high-contrast ones, and a contrast test that computes WCAG ratios from
+  the real tokens and fails the build — it found three genuine failures in the original palette:
+  borders at 1.3–1.5:1 (effectively invisible), light-theme muted text at 3.6:1, and an unverifiable
+  focus ring. All fixed. Also: skip link and landmarks, 44px targets (the inline `minHeight: 28`
+  pattern is gone and a test prevents its return), focus trap and focus restore in `Modal`, polite
+  announcements for search results and brief generation, `prefers-reduced-motion` plus explicit
+  reduced-motion / glare-comfort / dimmed-imagery preferences stored in the record.
+  `lib/describe.ts` turns a drawing into words — a summary and a mark-by-mark description, shown to
+  everyone and used as alt text everywhere a drawing appears.
+  Defects found and fixed: **at ≤900px every navigation button lost its accessible name**
+  (`display:none` on the label, icon `aria-hidden` — nameless to a screen reader); the timeline
+  overflowed horizontally by 164px at 200% type; and `WhatISee` crashed outright if a browser
+  refused a 2D canvas context.
+  Verified in a real browser: zero horizontal overflow on all eight pages at 640px with 200% type
+  (equivalent to 1280px at 200% zoom). 267 tests.
+  A flaky test turned out to be a real write race, now fixed in two places: `setMeta` fired its
+  IndexedDB write from inside a React state updater, so two quick preference changes could reach
+  storage out of order; and `loadMigrated` wrote the whole meta record, reverting anything the
+  person changed while a migration was running. Writes to meta are now serialised and use a new
+  `dbPatch`, which merges inside one transaction instead of overwriting the document.
+  **Deliberately not shipped: voice entry.** The browser Speech API sends audio to a third-party
+  service in most browsers, which breaks non-negotiable #1. OS dictation works in every field and
+  keeps the promise. Recorded in `docs/accessibility.md` along with the other known gaps.
 - **2026-09-08** — **Phase 01 done.** Schema versioning with tested migrations (v1→v3) that write a
   pre-migration snapshot into a new `backups` store before touching anything; archive v2 with a
   canonical-JSON SHA-256 checksum, per-store counts and date span; import preview that validates and

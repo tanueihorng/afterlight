@@ -23,6 +23,7 @@ import {
 } from "../lib/backup";
 import { toAllData } from "../lib/store";
 import { Field, Modal } from "../components/ui";
+import DisplaySettings from "../components/DisplaySettings";
 import { formatDate } from "../lib/util";
 import { ConfirmButton, PageHeader, SafetyNotice } from "../components/ui";
 
@@ -32,7 +33,6 @@ export default function Settings() {
   const [status, setStatus] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const checkRef = useRef<HTMLInputElement>(null);
-  const theme = store.meta?.theme ?? "dark";
 
   const [pending, setPending] = useState<{ archive: Archive; summary: ArchiveSummary } | null>(null);
   const [sealed, setSealed] = useState<unknown | null>(null);
@@ -118,25 +118,7 @@ export default function Settings() {
         sub="Your data lives in this browser on this device. Export it, import it elsewhere, or delete it — you are never locked in."
       />
 
-      <section className="card">
-        <div className="card-title">Appearance</div>
-        <div className="btn-row">
-          <button
-            className={`btn ${theme === "dark" ? "primary" : ""}`}
-            onClick={() => store.setMeta({ theme: "dark" })}
-            aria-pressed={theme === "dark"}
-          >
-            ◐ Dark
-          </button>
-          <button
-            className={`btn ${theme === "light" ? "primary" : ""}`}
-            onClick={() => store.setMeta({ theme: "light" })}
-            aria-pressed={theme === "light"}
-          >
-            ◑ Light
-          </button>
-        </div>
-      </section>
+      <DisplaySettings />
 
       <section className="card">
         <div className="card-title">Demo data</div>
@@ -178,7 +160,7 @@ export default function Settings() {
           Your record lives in this browser, on this device. Clearing your browser data deletes it.
           An export is the only copy that survives that, so keep a recent one somewhere safe.
         </p>
-        <p style={{ color: "var(--text-2)", fontSize: "0.92rem" }}>
+        <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)" }}>
           {backup.neverExported
             ? `This record has never been exported. It holds ${backup.totalRecords} records.`
             : `Last exported ${formatDate(backup.lastExportAt!.slice(0, 10))}${
@@ -205,7 +187,7 @@ export default function Settings() {
                 autoComplete="new-password"
               />
             </Field>
-            <p className="muted" style={{ fontSize: "0.82rem" }}>
+            <p className="muted" style={{ fontSize: "var(--fs-sm)" }}>
               There is no way to recover this passphrase. If you lose it, the export cannot be
               opened by anyone, including you.
             </p>
@@ -255,11 +237,11 @@ export default function Settings() {
         <div className="card-title">Storage on this device</div>
         {storage.supported ? (
           <>
-            <p style={{ color: "var(--text-2)", fontSize: "0.92rem", marginTop: 0 }}>
+            <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)", marginTop: 0 }}>
               Afterlight is using {formatBytes(storage.usageBytes)}
               {storage.quotaBytes ? ` of roughly ${formatBytes(storage.quotaBytes)} available` : ""}.
             </p>
-            <p style={{ color: "var(--text-2)", fontSize: "0.92rem" }}>
+            <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)" }}>
               {storage.persisted
                 ? "This browser has marked your record as persistent, so it will not be cleared automatically to free space."
                 : "This browser has not marked your record as persistent, which means it could be cleared automatically if the device runs low on space. Exporting regularly is the protection."}
@@ -305,7 +287,7 @@ export default function Settings() {
 
       <section className="card">
         <div className="card-title">Privacy & boundaries</div>
-        <ul style={{ color: "var(--text-2)", fontSize: "0.9rem", margin: 0, paddingLeft: 20 }}>
+        <ul style={{ color: "var(--text-2)", fontSize: "var(--fs-base)", margin: 0, paddingLeft: 20 }}>
           <li>All records, images and documents stay on this device. Nothing is uploaded.</li>
           <li>Afterlight is a personal record — it does not diagnose disease and does not replace an ophthalmologist.</li>
           <li>Symptom logging is not a substitute for urgent assessment when something is sudden or severe.</li>
@@ -417,7 +399,7 @@ function ArchivePreview({ summary, current }: { summary: ArchiveSummary; current
             ))}
         </tbody>
       </table>
-      <p className="muted" style={{ fontSize: "0.82rem" }}>
+      <p className="muted" style={{ fontSize: "var(--fs-sm)" }}>
         Merge keeps everything on this device and adds what is missing, preferring whichever copy of
         a record was updated more recently. Replace discards what is here first.
       </p>

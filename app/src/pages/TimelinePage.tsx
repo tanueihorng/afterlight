@@ -98,7 +98,7 @@ export default function TimelinePage() {
             <button
               key={r.id}
               className={`btn subtle ${range === r.id ? "primary" : ""}`}
-              style={{ minHeight: 32, padding: "3px 12px", fontSize: "0.82rem" }}
+              style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
               onClick={() => setRange(r.id)}
               aria-pressed={range === r.id}
             >
@@ -119,7 +119,7 @@ export default function TimelinePage() {
             <button
               key={e}
               className={`btn subtle ${eyeFilter === e ? "primary" : ""}`}
-              style={{ minHeight: 32, padding: "3px 12px", fontSize: "0.82rem" }}
+              style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
               onClick={() => setEyeFilter(e)}
               aria-pressed={eyeFilter === e}
             >
@@ -133,7 +133,7 @@ export default function TimelinePage() {
             <button
               key={c.id}
               className={`btn subtle ${cats.has(c.id) ? "primary" : ""}`}
-              style={{ minHeight: 30, padding: "2px 10px", fontSize: "0.78rem" }}
+              style={{ minHeight: "var(--target)", padding: "2px 10px", fontSize: "var(--fs-sm)" }}
               onClick={() =>
                 setCats((prev) => {
                   const next = new Set(prev);
@@ -185,7 +185,7 @@ export default function TimelinePage() {
                         side by side, so the source has to be visible on the row itself. */}
                     <ProvenanceBadge source={e.source_type} />
                     <DemoBadge demo={e.demo} />
-                    <span className="muted" style={{ fontSize: "0.76rem" }}>
+                    <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
                       {e.date_time.length > 10 ? formatTime(e.date_time) : ""}
                     </span>
                   </span>

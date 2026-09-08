@@ -214,7 +214,8 @@ export function drawingToDataURL(marks: DrawingMark[], w: number, h: number, bg:
   const c = document.createElement("canvas");
   c.width = w;
   c.height = h;
-  const ctx = c.getContext("2d")!;
+  const ctx = c.getContext("2d");
+  if (!ctx) return "";
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
   renderDrawing(ctx, marks, w, h, DARK_PALETTE, { fieldOutline: true });

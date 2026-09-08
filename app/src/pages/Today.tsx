@@ -216,7 +216,7 @@ export default function Today() {
                 ✕
               </button>
             </div>
-            <div style={{ margin: "10px 0 4px", fontSize: "0.8rem", color: "var(--text-2)" }}>
+            <div style={{ margin: "10px 0 4px", fontSize: "var(--fs-sm)", color: "var(--text-2)" }}>
               Compared with your usual:
             </div>
             <div className="radio-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
@@ -301,7 +301,7 @@ export default function Today() {
           <span className="safety-icon" style={{ color: "var(--ok)" }} aria-hidden>✓</span>
           <div>
             Today is recorded.{" "}
-            <button className="btn subtle" style={{ minHeight: 28, padding: "2px 8px" }} onClick={() => nav("timeline")}>
+            <button className="btn subtle" style={{ minHeight: "var(--target)", padding: "2px 8px" }} onClick={() => nav("timeline")}>
               View timeline →
             </button>
           </div>
@@ -328,7 +328,7 @@ export default function Today() {
             <button
               key={c}
               className="btn subtle"
-              style={{ minHeight: 32, padding: "3px 12px", fontSize: "0.82rem" }}
+              style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
               onClick={() => addRow("left", c)}
               title={`Add ${c} (left eye — adjust inside)`}
             >

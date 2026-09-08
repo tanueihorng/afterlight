@@ -13,6 +13,7 @@ import Onboarding from "./components/Onboarding";
 import CommandPalette from "./components/CommandPalette";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { formatLongDate, todayLocal } from "./lib/util";
+import { applyPrefs, prefsFromMeta } from "./lib/prefs";
 
 const NAV: { route: Route; label: string; icon: string; section?: string }[] = [
   { route: "today", label: "Today", icon: "◐" },
@@ -55,9 +56,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const theme = store.meta?.theme ?? "dark";
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [store.meta?.theme]);
+    applyPrefs(prefsFromMeta(store.meta), document.documentElement);
+  }, [store.meta]);
 
   if (!store.ready) {
     return (
@@ -79,8 +79,11 @@ export default function App() {
   return (
     <>
       {!onboarded && <Onboarding />}
+      <a className="skip-link" href="#main">
+        Skip to main content
+      </a>
       <div className="shell" aria-hidden={!onboarded}>
-        <aside className="sidebar">
+        <aside className="sidebar" aria-label="Afterlight">
           <div className="brand">
             <div className="brand-name">Afterlight</div>
             <div className="brand-tag">A living record of the sight you fought to keep.</div>
@@ -115,7 +118,7 @@ export default function App() {
             Records are stored locally in this browser. Nothing is uploaded without your action.
           </div>
         </aside>
-        <main className="main" id="main">
+        <main className="main" id="main" tabIndex={-1}>
           <div className="topbar-date" style={{ marginBottom: 10 }}>
             {formatLongDate(todayLocal())}
           </div>
