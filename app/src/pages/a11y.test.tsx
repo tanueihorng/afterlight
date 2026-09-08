@@ -11,6 +11,7 @@ import Imaging from "./Imaging";
 import Appointments from "./Appointments";
 import Settings from "./Settings";
 import Visualize from "./Visualize";
+import SelfTests from "./SelfTests";
 import WhatISee from "./WhatISee";
 import {
   aBaseline,
@@ -54,6 +55,7 @@ const pages: [string, () => JSX.Element][] = [
   ["Appointments", Appointments],
   ["Settings", Settings],
   ["Visualize", Visualize],
+  ["Checks", SelfTests],
 ];
 
 describe("every page is free of axe violations", () => {

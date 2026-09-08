@@ -8,6 +8,7 @@ import TimelinePage from "./pages/TimelinePage";
 // and the 3D explorer are all things you open deliberately, not on the way to recording a day.
 const WhatISee = lazy(() => import("./pages/WhatISee"));
 const MyEyes = lazy(() => import("./pages/MyEyes"));
+const SelfTests = lazy(() => import("./pages/SelfTests"));
 const Imaging = lazy(() => import("./pages/Imaging"));
 const Appointments = lazy(() => import("./pages/Appointments"));
 const Visualize = lazy(() => import("./pages/Visualize"));
@@ -27,6 +28,7 @@ const NAV: { route: Route; label: string; icon: string; section?: string }[] = [
   { route: "what-i-see", label: "What I See", icon: "✧" },
   { route: "timeline", label: "Timeline", icon: "⌁" },
   { route: "my-eyes", label: "My Eyes", icon: "◉" },
+  { route: "self-tests", label: "Checks", icon: "◎" },
   { route: "imaging", label: "Imaging & Documents", icon: "▣" },
   { route: "appointments", label: "Appointments", icon: "✚" },
   { route: "visualize", label: "Visualize", icon: "◍" },
@@ -162,6 +164,7 @@ export default function App() {
             {route === "what-i-see" && <WhatISee />}
             {route === "timeline" && <TimelinePage />}
             {route === "my-eyes" && <MyEyes />}
+            {route === "self-tests" && <SelfTests />}
             {route === "imaging" && <Imaging />}
             {route === "appointments" && <Appointments />}
             {route === "visualize" && <Visualize />}

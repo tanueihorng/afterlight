@@ -132,7 +132,43 @@ if (!/not a reconstruction of your own|not your (eye|anatomy)|generic and educat
   fail(visualize, 0, "generic-boundary", "Visualize is missing its 'generic, not your eye' boundary");
 }
 
-/* ---------- 6. The ask layer never invents ---------- */
+/* ---------- 6. Self-tests are never presented as clinical measurements ---------- */
+
+const selfTestFiles = files.filter(
+  (f) => /selftest|SelfTests|components\/tests\//i.test(f) && !f.endsWith(".test.ts"),
+);
+
+if (selfTestFiles.length > 0) {
+  const selfTestSource = selfTestFiles.map((f) => readFileSync(f, "utf8")).join("\n");
+
+  // The boundary sentence must exist and must be used, not merely defined.
+  if (!/not a measurement of your vision/i.test(selfTestSource)) {
+    fail(
+      join(srcDir, "lib/selftest.ts"),
+      0,
+      "self-test-boundary",
+      "the self-test boundary wording is missing",
+    );
+  }
+
+  // A bare Snellen fraction in self-test UI would read as a clinical acuity.
+  for (const file of selfTestFiles) {
+    const text = readFileSync(file, "utf8");
+    text.split("\n").forEach((line, i) => {
+      if (/^\s*(\/\/|\*)/.test(line)) return;
+      if (/["`>]\s*\d+\/\d+\s*["`<]/.test(line)) {
+        fail(file, i + 1, "self-test-boundary", `bare acuity fraction: ${line.trim().slice(0, 80)}`);
+      }
+      // Options the person picks (room lighting "Normal") describe conditions, not results.
+      const isChoice = /<option|value=/.test(line);
+      if (!isChoice && /\b(pass|fail|passed|failed|normal|abnormal)\b/i.test(line) && /["`]/.test(line)) {
+        warn(file, i + 1, "self-test-boundary", `pass/fail language: ${line.trim().slice(0, 80)}`);
+      }
+    });
+  }
+}
+
+/* ---------- 7. The ask layer never invents ---------- */
 
 const askPath = join(srcDir, "lib/ask.ts");
 const askText = readFileSync(askPath, "utf8");
@@ -142,6 +178,16 @@ if (!/I could not find that in your stored records\./.test(askText)) {
 for (const bad of ["openai", "anthropic", "generateText", "llm", "completion("]) {
   if (askText.toLowerCase().includes(bad)) {
     fail(askPath, 0, "no-invention", `ask.ts must stay deterministic — found "${bad}"`);
+  }
+}
+
+/* ---------- 8. Condition profiles never become diagnoses ---------- */
+
+const conditionsPath = join(srcDir, "lib/conditions.ts");
+const conditionsText = readFileSync(conditionsPath, "utf8");
+for (const [, blurb] of conditionsText.matchAll(/blurb:\s*"([^"]+)"/g)) {
+  if (/\byou have\b(?! had)|\byou are diagnosed\b/i.test(blurb)) {
+    fail(conditionsPath, 0, "no-interpretation", `profile blurb reads as a diagnosis: "${blurb}"`);
   }
 }
 

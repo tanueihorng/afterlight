@@ -13,7 +13,7 @@ marked blocked.
 | 02 | Performance & scale | done | phase-02-performance | 2026-09-08 | indexes, windowed timeline, code splitting, worker thumbnails, PWA (offline unverified) |
 | 03 | Accessibility for low vision | done | phase-03-low-vision-access | 2026-09-08 | 4 themes, scalable type, axe + keyboard tests, drawings described in words |
 | 04 | Daily loop & mobile | done | phase-04-daily-loop-mobile | 2026-09-08 | bottom nav, sheets, two-target Today, Playwright on desktop + iPhone; offline now verified |
-| 05 | Clinical breadth & self-tests | not started | — | — | |
+| 05 | Clinical breadth & self-tests | done, pending clinical review | phase-05-clinical-breadth | 2026-09-08 | 13 profiles, self-checks, unit-aware metrics; **all new clinical copy needs sign-off** |
 | 06 | Visualization I — render engine | not started | — | — | long pole; start the spike early. Hybrid: Blender-authored base mesh + baked detail, procedural for everything parameterised |
 | 07 | Visualization II — disease atlas | not started | — | — | |
 | 08 | Records intelligence | not started | — | — | |
@@ -25,6 +25,27 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 05 done, pending clinical review.** 13 condition profiles beyond the
+  retina (glaucoma, AMD, diabetic eye, vein occlusion, uveitis, cornea, dry eye, cataract, macular
+  surface, inherited retinal, optic nerve) that shape prompts only: they reorder the symptom list
+  and offer relevant metrics and checks, never shorten anything, and never appear as a diagnosis —
+  asserted by a test and by a new guard rule that fails the build on a blurb reading "you have".
+  Metrics are unit- and method-aware: an IOP carries how it was taken, acuity converts exactly
+  between Snellen 6m/20ft, logMAR and decimal (verified against the reference values), and the
+  non-numeric acuities (CF, HM, LP, NLP) are ordered categories that are never turned into numbers.
+  CCT is stored but never applied as an IOP correction — that is a clinical judgement.
+  Home self-checks: Amsler with a drawable overlay reusing the existing drawing engine and its
+  text descriptions, a card-calibrated tumbling-E vision check, and a contrast check. Test
+  conditions (distance, correction, screen brightness, room lighting) are mandatory — a result
+  cannot be saved without them, because a result without them is not comparable with anything,
+  which is the only thing these are for. Two attempts taken differently are reported as not
+  comparable rather than plotted together.
+  Treatment cycles: an injection series now reads "3rd injection, 6-week interval, most recent
+  12 Aug" in the brief rather than a bare start date; tapers are described as tapers.
+  **All new clinical copy is unreviewed and listed in `docs/clinical-copy-review.md`** — boundary
+  statements, check instructions, profile descriptions and measurement methods — with the specific
+  questions a reviewer should answer. Per AGENTS.md §5 an agent must not approve it; this is the
+  gate on releasing the phase.
 - **2026-09-08** — **Phase 04 done.** `Today` is now a decision before it is a form: two large
   targets ("Nothing different today" / "Something changed"), with the form appearing only after the
   second. Quick entries come from `lib/suggestions.ts`, built from the person's own history and

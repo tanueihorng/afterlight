@@ -11,6 +11,7 @@ import {
 import { EMPTY_DATA, dbDelete, dbPatch, dbPut, loadMigrated, type AllData } from "./db";
 import { indexesOf, type RecordIndexes } from "./indexes";
 import type { AppMeta, EyeBaseline, StoredFile, SymptomEntry, TimelineEvent } from "./models";
+import { SELF_TEST_LABELS } from "./models";
 import { isoToDateOnly, nowISO, todayLocal } from "./util";
 
 export type EntityLists = AllData;
@@ -106,6 +107,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       medications: ops("medications"),
       prescriptions: ops("prescriptions"),
       measurements: ops("measurements"),
+      selfTests: ops("selfTests"),
       imaging: ops("imaging"),
       documents: ops("documents"),
       baselines: ops("baselines"),
@@ -330,6 +332,24 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       source_type: i.source_type,
       demo: i.demo,
       icon: "▣",
+    });
+  }
+  for (const t of s.selfTests) {
+    push({
+      id: `selftest-${t.id}`,
+      event_type: "self_test",
+      entity_id: t.id,
+      date_time: t.date_time,
+      eye: t.eye,
+      title: `${SELF_TEST_LABELS[t.kind]} — check you did yourself`,
+      summary:
+        t.result.notation ??
+        (t.result.marks !== undefined
+          ? `${t.result.marks} area${t.result.marks === 1 ? "" : "s"} marked`
+          : undefined),
+      source_type: t.source_type,
+      demo: t.demo,
+      icon: "◎",
     });
   }
   for (const d of s.documents) {
