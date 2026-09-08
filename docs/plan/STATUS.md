@@ -12,7 +12,7 @@ marked blocked.
 | 01 | Data integrity & portability | done | phase-01-data-integrity | 2026-09-08 | archive v2 + migrations + encryption + merge; files now stored as bytes |
 | 02 | Performance & scale | done | phase-02-performance | 2026-09-08 | indexes, windowed timeline, code splitting, worker thumbnails, PWA (offline unverified) |
 | 03 | Accessibility for low vision | done | phase-03-low-vision-access | 2026-09-08 | 4 themes, scalable type, axe + keyboard tests, drawings described in words |
-| 04 | Daily loop & mobile | not started | — | — | |
+| 04 | Daily loop & mobile | done | phase-04-daily-loop-mobile | 2026-09-08 | bottom nav, sheets, two-target Today, Playwright on desktop + iPhone; offline now verified |
 | 05 | Clinical breadth & self-tests | not started | — | — | |
 | 06 | Visualization I — render engine | not started | — | — | long pole; start the spike early. Hybrid: Blender-authored base mesh + baked detail, procedural for everything parameterised |
 | 07 | Visualization II — disease atlas | not started | — | — | |
@@ -25,6 +25,33 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 04 done.** `Today` is now a decision before it is a form: two large
+  targets ("Nothing different today" / "Something changed"), with the form appearing only after the
+  second. Quick entries come from `lib/suggestions.ts`, built from the person's own history and
+  never from a generic list. `lib/streak.ts` states continuity as one plain sentence and stays
+  silent when there is nothing worth saying — no streak, no flame, no guilt; a gap is answered with
+  "Gaps are fine". Entries can be dated to yesterday or an earlier day, so writing up last night's
+  change this morning no longer moves its onset a day later and corrupts the brief.
+  Mobile: sidebar becomes a bottom tab bar with the four primary destinations in the thumb zone and
+  the rest behind a "More" sheet, safe-area insets respected, dialogs become bottom sheets, and the
+  save row sticks above the tab bar. Drawing gained palm rejection (touches ignored once a stylus is
+  in use, and wide contact patches rejected), pinch-vs-stroke discrimination, `touch-action: none`,
+  and ⌘Z / ⇧⌘Z.
+  Playwright runs on Chromium desktop and WebKit iPhone 13 in CI: the daily loop, backdating,
+  persistence across reload, the mobile tab bar and sheet, no sideways scrolling on any page, and
+  the offline suite.
+  **The Phase 02 offline gap is closed** — and it was a real bug, not just an unverified one. The
+  service worker cached on first fetch only, so nothing from the first visit was cached and the
+  next load offline failed; assets are now precached by a post-build step that injects the real
+  content-hashed filenames. A second bug: cache lookups missed because precached responses carry a
+  `Vary` header that did not match the page's own requests, so every asset failed offline while
+  appearing to be cached. Both fixed and covered by tests that load the app, cut the network,
+  reload, and record an entry. A third E2E test asserts zero third-party requests across every page.
+  Also fixed: the "compared with your usual" radios had no accessible group name (now a fieldset
+  with a legend), an empty table header in prescriptions, and Today did not show that today was
+  already recorded after a reload.
+  **Not covered:** offline reload on WebKit — Playwright throws an internal error driving it, so
+  that one test is Chromium-only and needs a manual check on a real iOS device before release.
 - **2026-09-08** — **Phase 02 done.** `lib/indexes.ts` builds the timeline, per-day grouping,
   per-eye and per-type symptom maps and first-seen dates once per data change, cached on the
   identity of the store's `data` object; search caches its own row index the same way. The store

@@ -107,6 +107,11 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
     };
   };
 
+  /** Pointers currently down, so a pinch is never mistaken for a stroke. */
+  const activePointers = useRef<Set<number>>(new Set());
+  /** Once a stylus has been used, treat touches as the resting hand. */
+  const stylusSeen = useRef(false);
+
   const baseMark = (): DrawingMark => ({
     id: crypto.randomUUID(),
     tool: tool === "eraser" ? "pen" : tool,
@@ -116,6 +121,20 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
   });
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    // Palm rejection: once a stylus is in use, ignore the broad touches that come from the hand
+    // resting on the screen. Without this, drawing on a tablet produces stray blobs.
+    if (e.pointerType === "pen") stylusSeen.current = true;
+    if (e.pointerType === "touch" && stylusSeen.current) return;
+    if (e.pointerType === "touch" && (e.width > 45 || e.height > 45)) return;
+
+    // A second finger is a pinch, not a second stroke.
+    activePointers.current.add(e.pointerId);
+    if (activePointers.current.size > 1) {
+      pending.current = null;
+      redraw();
+      return;
+    }
+
     const p = toNorm(e);
     e.currentTarget.setPointerCapture(e.pointerId);
     if (tool === "eraser") {
@@ -144,6 +163,8 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (activePointers.current.size > 1) return;
+    if (e.pointerType === "touch" && stylusSeen.current) return;
     const p = toNorm(e);
     if (tool === "eraser" && e.buttons > 0) {
       eraseAt(p);
@@ -166,7 +187,8 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
     renderMark(ctx, m, CANVAS_W, CANVAS_H, DARK_PALETTE);
   };
 
-  const onPointerUp = () => {
+  const onPointerUp = (e?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e) activePointers.current.delete(e.pointerId);
     const m = pending.current;
     if (!m) return;
     pending.current = null;
@@ -196,6 +218,21 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
     });
     setCount((c) => c + 1);
   };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)) return;
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   const undo = () => {
     if (past.current.length === 0) return;
@@ -246,12 +283,15 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
             ref={canvasRef}
             width={CANVAS_W * DPR}
             height={CANVAS_H * DPR}
-            style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
             role="img"
             aria-label={describeDrawing(marks, eye)}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onPointerLeave={onPointerUp}
+            // The canvas owns its gestures; the page must not scroll or zoom under the stroke.
+            style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}`, touchAction: "none" }}
           />
         </div>
         {/* The canvas is invisible to a screen reader, so the same content exists as text. It is

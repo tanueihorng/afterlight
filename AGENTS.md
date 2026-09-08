@@ -74,6 +74,7 @@ npm run test         # vitest
 npm run guard        # invariant checks (network calls, banned clinical copy, deps)
 npm run bundle       # initial-download budget (120 KB JS gzip, 20 KB CSS)
 npm run verify       # the gate: types + lint + guard + tests + build + bundle
+npm run e2e          # Playwright: desktop and phone, including offline
 npm run build        # production build
 npm run format       # prettier
 npm run build:standalone   # (from Phase 06) single-file offline explorer
@@ -114,6 +115,11 @@ released with `releaseFileURL`, because each one pins a whole scan in memory.
 **Copy.** Plain language, British-leaning spelling as used in the existing strings, no exclamation
 marks, no marketing voice, no false comfort. Write as if the reader is anxious and tired, because
 they are.
+
+**The daily loop.** `Today` is a decision before it is a form: two large targets, then only the
+fields the answer requires. Suggestions come from the person's own history and never from a
+generic list — prompting symptoms someone has not reported puts words in a patient's mouth.
+Entries are dated by when the change started, not when the form was filled in.
 
 **Accessibility.** Enforced by tests, and treated as a product requirement rather than advice.
 Sizes come from the `--fs-*` tokens (never literal `rem`), colours from the theme tokens (a new

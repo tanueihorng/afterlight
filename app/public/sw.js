@@ -35,15 +35,22 @@ self.addEventListener("fetch", (event) => {
   // Navigations: serve the shell when offline so the app still opens.
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("./index.html").then((r) => r ?? Response.error())),
+      fetch(request).catch(() =>
+        caches
+          .match("./index.html", { ignoreVary: true, ignoreSearch: true })
+          .then((r) => r ?? Response.error()),
+      ),
     );
     return;
   }
 
   // Static assets: cache-first, and fill the cache as they are requested. Asset filenames are
   // content-hashed, so a cached asset is never stale.
+  // ignoreVary matters: a precached response can carry a Vary header (Accept-Encoding, typically)
+  // that does not match the page's own request, and the asset would then quietly fail offline —
+  // which is the one moment it must not.
   event.respondWith(
-    caches.match(request).then((cached) => {
+    caches.match(request, { ignoreVary: true }).then((cached) => {
       if (cached) return cached;
       return fetch(request)
         .then((response) => {

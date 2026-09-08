@@ -27,7 +27,7 @@ describe("the daily entry works without a mouse", () => {
     const user = userEvent.setup();
     await renderWithStore(<Today />, {});
 
-    const noChange = await tabTo(user, /no change today/i);
+    const noChange = await tabTo(user, /nothing different today/i);
     await user.keyboard("{Enter}");
     expect(noChange).toBeTruthy();
 
@@ -38,11 +38,14 @@ describe("the daily entry works without a mouse", () => {
     });
   });
 
-  it("adds a symptom row from the keyboard and can fill it in by tabbing", async () => {
+  it("reaches the symptom form from the keyboard and can add a row", async () => {
     const user = userEvent.setup();
     await renderWithStore(<Today />, {});
 
-    await tabTo(user, /add symptom/i);
+    await tabTo(user, /something changed/i);
+    await user.keyboard("{Enter}");
+    const [addSymptom] = await screen.findAllByRole("button", { name: /add symptom/i });
+    addSymptom.focus();
     await user.keyboard("{Enter}");
 
     // The new row's controls must be reachable by continuing to tab, not only by clicking.

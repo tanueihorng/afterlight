@@ -84,6 +84,7 @@ describe("every theme and type scale is free of axe violations", () => {
 describe("modals are free of axe violations", () => {
   it("the symptom entry flow", async () => {
     const { container } = await renderWithStore(<Today />, {});
+    await userEvent.click(await screen.findByRole("button", { name: /something changed/i }));
     const [addSymptom] = await screen.findAllByRole("button", { name: /add symptom/i });
     await userEvent.click(addSymptom);
     await expectNoA11yViolations(container);

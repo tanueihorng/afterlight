@@ -15,8 +15,12 @@ const Settings = lazy(() => import("./pages/Settings"));
 import Onboarding from "./components/Onboarding";
 import CommandPalette from "./components/CommandPalette";
 import ErrorBoundary from "./components/ErrorBoundary";
+import Sheet from "./components/Sheet";
 import { formatLongDate, todayLocal } from "./lib/util";
 import { applyPrefs, prefsFromMeta } from "./lib/prefs";
+
+/** The four destinations that fit the thumb zone; everything else lives behind "More". */
+const PRIMARY: Route[] = ["today", "what-i-see", "timeline", "appointments"];
 
 const NAV: { route: Route; label: string; icon: string; section?: string }[] = [
   { route: "today", label: "Today", icon: "◐" },
@@ -33,6 +37,7 @@ export default function App() {
   const [route, nav] = useHashRoute();
   const store = useStore();
   const [palette, setPalette] = useState<null | "search" | "ask">(null);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -121,6 +126,32 @@ export default function App() {
             Records are stored locally in this browser. Nothing is uploaded without your action.
           </div>
         </aside>
+        <nav className="tabbar" aria-label="Main">
+          {NAV.filter((n) => PRIMARY.includes(n.route)).map((item) => (
+            <button
+              key={item.route}
+              className={`tab ${route === item.route ? "active" : ""}`}
+              onClick={() => nav(item.route)}
+              aria-current={route === item.route ? "page" : undefined}
+            >
+              <span className="tab-icon" aria-hidden>
+                {item.icon}
+              </span>
+              <span className="tab-label">{item.label}</span>
+            </button>
+          ))}
+          <button
+            className={`tab ${!PRIMARY.includes(route) ? "active" : ""}`}
+            onClick={() => setMoreOpen(true)}
+            aria-haspopup="dialog"
+          >
+            <span className="tab-icon" aria-hidden>
+              ⋯
+            </span>
+            <span className="tab-label">More</span>
+          </button>
+        </nav>
+
         <main className="main" id="main" tabIndex={-1}>
           <div className="topbar-date" style={{ marginBottom: 10 }}>
             {formatLongDate(todayLocal())}
@@ -139,6 +170,46 @@ export default function App() {
           </ErrorBoundary>
         </main>
       </div>
+      {moreOpen && (
+        <Sheet title="Go to" onClose={() => setMoreOpen(false)}>
+          <div className="sheet-nav">
+            {NAV.filter((n) => !PRIMARY.includes(n.route)).map((item) => (
+              <button
+                key={item.route}
+                className="sheet-nav-item"
+                onClick={() => {
+                  nav(item.route);
+                  setMoreOpen(false);
+                }}
+              >
+                <span aria-hidden>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+            <button
+              className="sheet-nav-item"
+              onClick={() => {
+                setMoreOpen(false);
+                setPalette("search");
+              }}
+            >
+              <span aria-hidden>⌕</span>
+              <span>Search my records</span>
+            </button>
+            <button
+              className="sheet-nav-item"
+              onClick={() => {
+                setMoreOpen(false);
+                setPalette("ask");
+              }}
+            >
+              <span aria-hidden>?</span>
+              <span>Ask my records</span>
+            </button>
+          </div>
+        </Sheet>
+      )}
+
       {palette && (
         <CommandPalette initialMode={palette} onClose={() => setPalette(null)} onNavigate={nav} />
       )}
