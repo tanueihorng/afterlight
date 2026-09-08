@@ -418,7 +418,13 @@ export interface BriefPayload {
 export interface AppMeta {
   id: "meta";
   onboarded: boolean;
-  theme: "dark" | "light";
+  /** Display theme, including the two high-contrast options. */
+  theme: "dark" | "light" | "hc-dark" | "hc-light";
+  /** Multiplier on the whole type scale: 1, 1.25, 1.5 or 2. */
+  type_scale?: number;
+  reduced_motion?: boolean;
+  glare_comfort?: boolean;
+  dim_imagery?: boolean;
   demo_seeded: boolean;
   /** Schema the stored records conform to; absent means version 1. */
   schema_version?: number;

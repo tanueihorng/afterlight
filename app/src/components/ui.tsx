@@ -65,17 +65,48 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
+    // Remember what opened this, so closing returns the keyboard where it came from rather than
+    // dropping it at the top of the page.
+    openerRef.current = document.activeElement as HTMLElement | null;
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !ref.current) return;
+      // Keep Tab inside the dialog: a modal the keyboard can wander out of is not modal.
+      const focusable = Array.from(
+        ref.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", onKey);
-    // focus first focusable for keyboard users
+
     const first = ref.current?.querySelector<HTMLElement>(
-      "input, textarea, select, button:not(.modal-close)"
+      "input, textarea, select, button:not(.modal-close)",
     );
-    first?.focus();
-    return () => window.removeEventListener("keydown", onKey);
+    (first ?? ref.current)?.focus();
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      const opener = openerRef.current;
+      if (opener && document.body.contains(opener)) opener.focus();
+    };
   }, [onClose]);
 
   return (
@@ -88,7 +119,15 @@ export function Modal({
         tabIndex={-1}
         onClick={onClose}
       />
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref} style={wide ? { maxWidth: 860 } : undefined}>
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={ref}
+        tabIndex={-1}
+        style={wide ? { maxWidth: 860 } : undefined}
+      >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h2>{title}</h2>
           <button className="btn subtle modal-close" onClick={onClose} aria-label="Close dialog">

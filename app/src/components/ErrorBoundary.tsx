@@ -111,7 +111,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <pre
             style={{
               whiteSpace: "pre-wrap",
-              fontSize: "0.75rem",
+              fontSize: "var(--fs-xs)",
               color: "var(--text-3)",
               marginTop: 8,
             }}
@@ -120,7 +120,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           </pre>
         </details>
 
-        <p className="muted" style={{ fontSize: "0.78rem", marginTop: 14 }}>
+        <p className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 14 }}>
           Nothing about this error is sent anywhere. Copying the details is for you to paste into a
           bug report if you choose to.
         </p>

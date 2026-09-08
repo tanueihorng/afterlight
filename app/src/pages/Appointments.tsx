@@ -51,7 +51,7 @@ export default function Appointments() {
       {next ? (
         <section className="card" style={{ borderColor: "color-mix(in srgb, var(--accent) 40%, transparent)" }}>
           <div className="card-title">Next appointment</div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)" }}>
             {formatLongDate(next.date_time.slice(0, 10))} · {next.reason || "Appointment"}
           </div>
           <div className="muted" style={{ marginBottom: 12 }}>
@@ -116,7 +116,7 @@ function ApptRow({ a, onEdit }: { a: Appointment; onEdit: () => void }) {
       </span>
       <span className="tl-meta">
         <DemoBadge demo={a.demo} />
-        <button className="btn subtle" style={{ minHeight: 30 }} onClick={onEdit}>Edit</button>
+        <button className="btn subtle" style={{ minHeight: "var(--target)" }} onClick={onEdit}>Edit</button>
         <ConfirmButton label="Delete" onConfirm={() => store.appointments.del(a.id)} className="btn danger" />
       </span>
     </div>
@@ -249,7 +249,7 @@ function QuestionsModal({ onClose }: { onClose: () => void }) {
             </span>
             <span className="tl-meta">
               <DemoBadge demo={q.demo} />
-              <button className="btn subtle" style={{ minHeight: 30 }} onClick={() => setOpenQ(q)}>Update</button>
+              <button className="btn subtle" style={{ minHeight: "var(--target)" }} onClick={() => setOpenQ(q)}>Update</button>
               <ConfirmButton label="Delete" onConfirm={() => store.questions.del(q.id)} className="btn danger" />
             </span>
           </div>
@@ -327,21 +327,21 @@ function BriefView({ appointmentId, onBack }: { appointmentId: string; onBack: (
         <div className="btn-row" style={{ alignItems: "center", flexWrap: "wrap" }}>
           <button
             className="btn subtle"
-            style={{ minHeight: 32, padding: "3px 12px", fontSize: "0.82rem" }}
+            style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
             onClick={() => setRange(defaultBriefRange(allData, { beforeApptId: appointmentId }))}
           >
             Since previous appointment
           </button>
           <button
             className="btn subtle"
-            style={{ minHeight: 32, padding: "3px 12px", fontSize: "0.82rem" }}
+            style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
             onClick={() => setRange({ range_start: addDays(todayLocal(), -7), range_end: todayLocal() })}
           >
             Last 7 days
           </button>
           <button
             className="btn subtle"
-            style={{ minHeight: 32, padding: "3px 12px", fontSize: "0.82rem" }}
+            style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
             onClick={() => setRange({ range_start: addDays(todayLocal(), -30), range_end: todayLocal() })}
           >
             Last 30 days
@@ -364,6 +364,9 @@ function BriefView({ appointmentId, onBack }: { appointmentId: string; onBack: (
         </div>
       </div>
 
+      <p className="visually-hidden" role="status" aria-live="polite">
+        Brief generated for {formatDate(range.range_start)} to {formatDate(range.range_end)}.
+      </p>
       <BriefDocument payload={payload} title={appt ? `${formatLongDate(appt.date_time.slice(0, 10))} · ${appt.reason || "Appointment"}` : "Appointment brief"} />
 
       <div className="btn-row no-print" style={{ marginTop: 18 }}>
@@ -438,10 +441,10 @@ function BriefSectionBlock({ title, items }: { title: string; items: string[] })
   if (items.length === 0) return null;
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: "0.72rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--accent-strong)", fontWeight: 700, marginBottom: 4 }}>{title}</div>
+      <div style={{ fontSize: "var(--fs-xs)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--accent-strong)", fontWeight: 700, marginBottom: 4 }}>{title}</div>
       <ul style={{ margin: 0, paddingLeft: 20 }}>
         {items.map((t, i) => (
-          <li key={i} style={{ fontSize: "0.9rem", color: "var(--text-2)", marginBottom: 3 }}>{t}</li>
+          <li key={i} style={{ fontSize: "var(--fs-base)", color: "var(--text-2)", marginBottom: 3 }}>{t}</li>
         ))}
       </ul>
     </div>
@@ -452,7 +455,7 @@ function BriefDocument({ payload, title }: { payload: BriefPayload; title: strin
   return (
     <div className="card print-doc">
       <div style={{ textAlign: "center", marginBottom: 18 }}>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem" }}>AFTERLIGHT — APPOINTMENT BRIEF</div>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-xl)" }}>AFTERLIGHT — APPOINTMENT BRIEF</div>
         <div className="muted">{title}</div>
         <div className="muted">
           Period: {formatDate(payload.range_start)} → {formatDate(payload.range_end)} · generated {formatDate(payload.generated_at.slice(0, 10))}
@@ -480,9 +483,9 @@ function BriefDocument({ payload, title }: { payload: BriefPayload; title: strin
             {payload.drawings.slice(0, 8).map((d) => (
               <figure key={d.id} style={{ margin: 0, textAlign: "center" }}>
                 {d.thumbnail && (
-                  <img src={d.thumbnail} alt={`Drawing ${formatDate(d.date_time.slice(0, 10))}`} style={{ width: 130, borderRadius: 8, border: "1px solid var(--border)" }} />
+                  <img src={d.thumbnail} alt={`${formatDate(d.date_time.slice(0, 10))}. ${d.description ?? "Patient drawing of the field of view."}`} style={{ width: 130, borderRadius: 8, border: "1px solid var(--border)" }} />
                 )}
-                <figcaption className="muted" style={{ fontSize: "0.72rem" }}>
+                <figcaption className="muted" style={{ fontSize: "var(--fs-xs)" }}>
                   {formatDate(d.date_time.slice(0, 10))} · {d.eye === "right" ? "OD" : d.eye === "left" ? "OS" : "OU"}
                 </figcaption>
               </figure>
@@ -498,7 +501,7 @@ function BriefDocument({ payload, title }: { payload: BriefPayload; title: strin
         <p className="muted">None recorded in this period.</p>
       ) : (
         payload.clinicalEvents.map((e, i) => (
-          <div key={i} style={{ fontSize: "0.9rem", marginBottom: 4 }}>
+          <div key={i} style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>
             <strong>{formatDate(e.date)}</strong> — {e.kind}: {e.title}
           </div>
         ))
@@ -510,7 +513,7 @@ function BriefDocument({ payload, title }: { payload: BriefPayload; title: strin
         <p className="muted">No active treatment recorded.</p>
       ) : (
         payload.treatment.map((t, i) => (
-          <div key={i} style={{ fontSize: "0.9rem", marginBottom: 4 }}>• {t}</div>
+          <div key={i} style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>• {t}</div>
         ))
       )}
 
@@ -520,12 +523,12 @@ function BriefDocument({ payload, title }: { payload: BriefPayload; title: strin
         <p className="muted">No pending questions.</p>
       ) : (
         payload.questions.map((q, i) => (
-          <div key={i} style={{ fontSize: "0.9rem", marginBottom: 4 }}>• {q}</div>
+          <div key={i} style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>• {q}</div>
         ))
       )}
 
       <hr className="divider" />
-      <p className="muted" style={{ fontSize: "0.75rem" }}>
+      <p className="muted" style={{ fontSize: "var(--fs-xs)" }}>
         Generated by Afterlight from this patient's own records. Patient-reported items are
         subjective descriptions; clinician-documented items are recorded as documented. This brief
         is not a diagnosis and does not replace clinical assessment.

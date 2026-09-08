@@ -87,7 +87,7 @@ function EyeProfile({
 
       <div className="card-title">Your baseline</div>
       {baseline ? (
-        <p style={{ color: "var(--text-2)", fontSize: "0.9rem" }}>
+        <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)" }}>
           {baseline.text}
           <span className="muted"> · established {formatDate(baseline.established_date)}</span>
         </p>
@@ -95,7 +95,7 @@ function EyeProfile({
         <p className="muted">No baseline recorded yet.</p>
       )}
       <div className="btn-row" style={{ marginBottom: 6 }}>
-        <button className="btn subtle" style={{ minHeight: 32, fontSize: "0.82rem" }} onClick={onEditBaseline}>
+        <button className="btn subtle" style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }} onClick={onEditBaseline}>
           Edit baseline
         </button>
       </div>
@@ -106,7 +106,7 @@ function EyeProfile({
         <p className="muted">Nothing recorded in the last two weeks.</p>
       ) : (
         recentSymptoms.slice(0, 6).map((s) => (
-          <div key={s.id} style={{ display: "flex", gap: 8, alignItems: "baseline", marginBottom: 6, fontSize: "0.88rem" }}>
+          <div key={s.id} style={{ display: "flex", gap: 8, alignItems: "baseline", marginBottom: 6, fontSize: "var(--fs-sm)" }}>
             <StatusBadge status={s.status} />
             <span>
               <strong>{s.symptom_type}</strong>
@@ -149,7 +149,7 @@ function EyeProfile({
         <p className="muted">No diagnoses recorded.</p>
       ) : (
         diagnoses.map((d) => (
-          <div key={d.id} style={{ display: "flex", gap: 8, alignItems: "baseline", marginBottom: 6, fontSize: "0.88rem" }}>
+          <div key={d.id} style={{ display: "flex", gap: 8, alignItems: "baseline", marginBottom: 6, fontSize: "var(--fs-sm)" }}>
             <StatusBadge status={d.status === "active" ? "new" : d.status === "monitored" ? "same" : d.status === "resolved" || d.status === "historical" ? "resolved" : "same"} />
             <span>
               <strong>{d.name}</strong>
@@ -166,7 +166,7 @@ function EyeProfile({
         <p className="muted">No procedures recorded.</p>
       ) : (
         procedures.map((p) => (
-          <div key={p.id} style={{ marginBottom: 6, fontSize: "0.88rem" }}>
+          <div key={p.id} style={{ marginBottom: 6, fontSize: "var(--fs-sm)" }}>
             <strong>{p.procedure_type}</strong>
             <span className="muted"> · {formatDate(p.date)}</span>
             {p.outcome && <div className="muted">{p.outcome}</div>}
@@ -180,7 +180,7 @@ function EyeProfile({
         <p className="muted">No active medication recorded.</p>
       ) : (
         meds.map((m) => (
-          <div key={m.id} style={{ marginBottom: 6, fontSize: "0.88rem" }}>
+          <div key={m.id} style={{ marginBottom: 6, fontSize: "var(--fs-sm)" }}>
             <strong>{m.name}</strong>
             <span className="muted"> · {[m.dose, m.frequency].filter(Boolean).join(", ")}</span>
             <span className="badge" style={{ marginLeft: 6 }}>{m.kind === "prescription" ? "Prescription" : "Self-care"}</span>
@@ -190,10 +190,10 @@ function EyeProfile({
 
       <hr className="divider" />
       <div className="btn-row">
-        <button className="btn subtle" style={{ minHeight: 32, fontSize: "0.82rem" }} onClick={() => onAdd("diagnosis")}>+ Diagnosis</button>
-        <button className="btn subtle" style={{ minHeight: 32, fontSize: "0.82rem" }} onClick={() => onAdd("procedure")}>+ Procedure</button>
-        <button className="btn subtle" style={{ minHeight: 32, fontSize: "0.82rem" }} onClick={() => onAdd("medication")}>+ Medication</button>
-        <button className="btn subtle" style={{ minHeight: 32, fontSize: "0.82rem" }} onClick={() => onAdd("measurement")}>+ Measurement</button>
+        <button className="btn subtle" style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }} onClick={() => onAdd("diagnosis")}>+ Diagnosis</button>
+        <button className="btn subtle" style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }} onClick={() => onAdd("procedure")}>+ Procedure</button>
+        <button className="btn subtle" style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }} onClick={() => onAdd("medication")}>+ Medication</button>
+        <button className="btn subtle" style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }} onClick={() => onAdd("measurement")}>+ Measurement</button>
       </div>
     </section>
   );
@@ -214,7 +214,7 @@ function PrescriptionsCard({ onAdd }: { onAdd: () => void }) {
     <section className="card" style={{ marginTop: 16 }}>
       <div className="eye-heading">
         <span className="card-title" style={{ marginBottom: 0 }}>Glasses & contact prescription history</span>
-        <button className="btn subtle" style={{ minHeight: 32, fontSize: "0.82rem" }} onClick={onAdd}>
+        <button className="btn subtle" style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }} onClick={onAdd}>
           + Add prescription
         </button>
       </div>

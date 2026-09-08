@@ -42,7 +42,7 @@ export default function BackupNudge() {
 
   return (
     <div className="card nudge" role="status">
-      <p style={{ margin: 0, color: "var(--text-2)", fontSize: "0.92rem" }}>
+      <p style={{ margin: 0, color: "var(--text-2)", fontSize: "var(--fs-base)" }}>
         {state.neverExported
           ? `Your record holds ${state.totalRecords} entries and has never been exported. If this browser's data is cleared, they are gone.`
           : `${state.unsavedChanges} ${state.unsavedChanges === 1 ? "entry has" : "entries have"} changed since your last export on ${formatDate(state.lastExportAt!.slice(0, 10))}.`}

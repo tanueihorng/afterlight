@@ -136,11 +136,23 @@ export default function CommandPalette({
             aria-label={mode === "search" ? "Search query" : "Question about your records"}
           />
           {mode === "ask" && (
-            <button className="btn primary" style={{ minHeight: 34 }} type="submit">
+            <button className="btn primary" style={{ minHeight: "var(--target)" }} type="submit">
               Ask
             </button>
           )}
         </form>
+
+        <p className="visually-hidden" role="status" aria-live="polite">
+          {mode === "search"
+            ? q.trim().length < 2
+              ? ""
+              : `${hits.length} record${hits.length === 1 ? "" : "s"} match ${q}`
+            : asked
+              ? asked.answer.found
+                ? `Answered, with ${asked.answer.citations.length} source${asked.answer.citations.length === 1 ? "" : "s"}`
+                : "Nothing found in your records"
+              : ""}
+        </p>
 
         <div className="palette-body">
           {mode === "search" ? (
@@ -230,7 +242,7 @@ function AskPanel({
             <button
               key={t}
               className="btn subtle"
-              style={{ minHeight: 30, fontSize: "0.8rem" }}
+              style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }}
               onClick={() => onExample(t)}
             >
               {t}

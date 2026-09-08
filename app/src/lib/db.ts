@@ -100,6 +100,33 @@ export const dbDelete = (store: StoreName, id: string) =>
   tx<undefined>(store, "readwrite", (s) => s.delete(id));
 export const dbClear = (store: StoreName) => tx<undefined>(store, "readwrite", (s) => s.clear());
 
+/**
+ * Merge fields into a stored record inside one transaction: read, merge, write.
+ *
+ * Whole-document writes lose data when two of them overlap — a late write carrying an older copy
+ * of the document silently reverts fields it was not trying to change. Patching only touches the
+ * fields it names.
+ */
+export async function dbPatch<T extends { id: string }>(
+  store: StoreName,
+  id: string,
+  patch: Partial<T>,
+): Promise<T> {
+  const db = await openDB();
+  return new Promise<T>((resolve, reject) => {
+    const t = db.transaction(store, "readwrite");
+    const objectStore = t.objectStore(store);
+    const read = objectStore.get(id);
+    read.onerror = () => reject(read.error);
+    read.onsuccess = () => {
+      const merged = { ...(read.result ?? {}), ...patch, id } as T;
+      const write = objectStore.put(merged);
+      write.onerror = () => reject(write.error);
+      write.onsuccess = () => resolve(merged);
+    };
+  });
+}
+
 export async function dbPutMany<T>(store: StoreName, values: T[]): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -275,11 +302,10 @@ export async function loadMigrated(): Promise<AllData & { meta?: AppMeta; migrat
   await dbWriteSnapshot([
     { store: "floaters", values: result.snapshot.data.floaters, clearFirst: true },
     { store: "files", values: materialised, clearFirst: true },
-    {
-      store: "meta",
-      values: [result.snapshot.meta ?? { id: "meta", onboarded: false, theme: "dark", demo_seeded: false, schema_version: SCHEMA_VERSION }],
-    },
   ]);
+  // Patch rather than overwrite: a migration only owns the schema version. Writing the whole
+  // meta record here would revert any preference the person changed while it was running.
+  await dbPatch<AppMeta>("meta", "meta", { schema_version: result.to });
 
   const reloaded = await loadAllData();
   return { ...reloaded, migrated: result.applied.map((m) => m.describe) };

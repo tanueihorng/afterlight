@@ -108,8 +108,12 @@ stored entities. Do not persist a second copy of the truth.
 marks, no marketing voice, no false comfort. Write as if the reader is anxious and tired, because
 they are.
 
-**Accessibility.** From Phase 03 this is enforced by tests; before then, still: label every
-control, keep focus visible, never carry meaning in colour alone, keep targets ≥ 44 px.
+**Accessibility.** Enforced by tests, and treated as a product requirement rather than advice.
+Sizes come from the `--fs-*` tokens (never literal `rem`), colours from the theme tokens (a new
+colour must pass `contrast.test.ts` in all four themes), targets are ≥ 44px, focus is never
+removed, and meaning is never carried by colour alone. Canvas and image content needs a real text
+equivalent — see `lib/describe.ts`. `npm run test` runs axe over every page, dialog, theme and the
+largest type scale, plus a keyboard-only journey. See `docs/accessibility.md`.
 
 **Demo data.** Every demo record sets `demo: true` and must remain removable in one action.
 Keep the demo story clinically coherent — it is how new users judge the app.

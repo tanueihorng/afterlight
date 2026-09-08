@@ -202,7 +202,7 @@ function OCTCompare({ records }: { records: ImagingRecord[] }) {
             takes precedence over any visual comparison.
           </div>
           {(a.clinician_interpretation || b.clinician_interpretation) && (
-            <div style={{ marginTop: 10, fontSize: "0.88rem" }}>
+            <div style={{ marginTop: 10, fontSize: "var(--fs-sm)" }}>
               {a.clinician_interpretation && (
                 <p>
                   <strong>{formatDate(a.date)}:</strong> {a.clinician_interpretation}
@@ -322,7 +322,7 @@ function DocumentsList() {
                 <td>
                   <button
                     className="btn subtle"
-                    style={{ minHeight: 28, padding: "2px 6px" }}
+                    style={{ minHeight: "var(--target)", padding: "2px 6px" }}
                     onClick={async () => {
                       const f = await getStoredFile(d.file_id);
                       if (f) window.open(storedFileURL(f), "_blank");

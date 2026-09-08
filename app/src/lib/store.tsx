@@ -4,10 +4,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { EMPTY_DATA, dbDelete, dbPut, loadMigrated, type AllData } from "./db";
+import { EMPTY_DATA, dbDelete, dbPatch, dbPut, loadMigrated, type AllData } from "./db";
 import type { AppMeta, EyeBaseline, StoredFile, SymptomEntry, TimelineEvent } from "./models";
 import { isoToDateOnly, nowISO, todayLocal } from "./util";
 
@@ -41,10 +42,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [meta, setMetaState] = useState<AppMeta | undefined>(undefined);
   const [ready, setReady] = useState(false);
   const [migrationNotes, setMigrationNotes] = useState<string[]>([]);
+  /** Latest meta, readable synchronously so successive patches compose. */
+  const metaRef = useRef<AppMeta | undefined>(undefined);
+  /** Serialises meta writes so they reach storage in the order they were made. */
+  const metaWrites = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     loadMigrated().then(({ meta: m, migrated, ...lists }) => {
       setData(lists as EntityLists);
+      metaRef.current = m;
       setMetaState(m);
       setMigrationNotes(migrated ?? []);
       setReady(true);
@@ -102,15 +108,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       briefs: ops("briefs"),
       putFile: (v) => dbPut("files", v).then(() => undefined),
       setMeta: (patch) => {
-        setMetaState((m) => {
-          const next = { id: "meta" as const, onboarded: false, theme: "dark" as const, demo_seeded: false, ...m, ...patch };
-          void dbPut("meta", next);
-          return next;
-        });
-        return Promise.resolve();
+        // Writes are serialised through one chain and performed outside the state updater.
+        // Firing them from inside meant two quick changes — picking a theme and then a text size —
+        // could reach IndexedDB out of order and persist the older value.
+        const next = {
+          id: "meta" as const,
+          onboarded: false,
+          theme: "dark" as const,
+          demo_seeded: false,
+          ...metaRef.current,
+          ...patch,
+        };
+        metaRef.current = next;
+        setMetaState(next);
+        metaWrites.current = metaWrites.current
+          .then(() => dbPatch<AppMeta>("meta", "meta", patch))
+          .then(() => undefined);
+        return metaWrites.current;
       },
       clearAll: () => {
         setData(EMPTY_DATA);
+        metaRef.current = undefined;
         setMetaState(undefined);
         return Promise.resolve();
       },

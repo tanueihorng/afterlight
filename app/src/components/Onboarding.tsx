@@ -74,7 +74,7 @@ export default function Onboarding() {
       <div className="modal" style={{ maxWidth: 560 }}>
         {step === 0 && (
           <>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.6rem" }}>Afterlight</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-xl)" }}>Afterlight</h2>
             <p style={{ color: "var(--text-2)" }}>
               Your vision changes every day. Your medical record usually doesn't.
             </p>
