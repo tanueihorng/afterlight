@@ -6,7 +6,7 @@ import Today from "./Today";
 import Appointments from "./Appointments";
 import Settings from "./Settings";
 import { anAppointment, aSymptom } from "../test/factories";
-import { todayLocal } from "../lib/util";
+import { addDays, todayLocal } from "../lib/util";
 import { dbGetAll } from "../lib/db";
 import type { DailyLog } from "../lib/models";
 import { applyPrefs, DEFAULT_PREFS } from "../lib/prefs";
@@ -59,9 +59,12 @@ describe("the daily entry works without a mouse", () => {
 describe("the appointment brief is reachable without a mouse", () => {
   it("generates a brief from the keyboard", async () => {
     const user = userEvent.setup();
+    // Dated tomorrow on purpose: an appointment "today at 10:00" is upcoming before 10am and past
+    // after it, which made this test pass or fail depending on the time of day.
     const today = todayLocal();
+    const upcoming = addDays(today, 1);
     await renderWithStore(<Appointments />, {
-      appointments: [anAppointment({ date_time: `${today}T10:00:00` })],
+      appointments: [anAppointment({ date_time: `${upcoming}T10:00:00` })],
       symptoms: [aSymptom({ date_time: `${today}T09:00:00`, eye: "left" })],
     });
 
@@ -74,9 +77,12 @@ describe("the appointment brief is reachable without a mouse", () => {
 describe("dialogs manage focus", () => {
   it("moves focus into the dialog and restores it on close", async () => {
     const user = userEvent.setup();
+    // Dated tomorrow on purpose: an appointment "today at 10:00" is upcoming before 10am and past
+    // after it, which made this test pass or fail depending on the time of day.
     const today = todayLocal();
+    const upcoming = addDays(today, 1);
     await renderWithStore(<Appointments />, {
-      appointments: [anAppointment({ date_time: `${today}T10:00:00` })],
+      appointments: [anAppointment({ date_time: `${upcoming}T10:00:00` })],
     });
 
     const opener = await tabTo(user, /questions for/i);

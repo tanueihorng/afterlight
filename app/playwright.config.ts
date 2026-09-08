@@ -16,7 +16,16 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "desktop",
+      use: {
+        ...devices["Desktop Chrome"],
+        launchOptions: {
+          // Software GL, so the renderer itself can be exercised on a machine with no GPU.
+          args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+        },
+      },
+    },
     { name: "mobile", use: { ...devices["iPhone 13"] } },
   ],
   webServer: {

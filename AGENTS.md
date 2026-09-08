@@ -76,6 +76,7 @@ npm run bundle       # initial-download budget (120 KB JS gzip, 20 KB CSS)
 npm run verify       # the gate: types + lint + guard + tests + build + bundle
 npm run e2e          # Playwright: desktop and phone, including offline
 npm run build        # production build
+npm run build:standalone   # single-file offline explorer (EyeExplorer-engine.html)
 npm run format       # prettier
 npm run build:standalone   # (from Phase 06) single-file offline explorer
 ```
@@ -107,6 +108,11 @@ failures), and `storedFileToBlob` / `storedFileURL` to display them.
 stored entities. Do not persist a second copy of the truth. Read them through `lib/indexes.ts`,
 which caches on the identity of the store's `data` object — do not scan the entity arrays directly
 in a component.
+
+**The renderer.** Anatomy comes from `engine/anatomy/dimensions.ts` in millimetres — never a
+number that looked right. Anything that varies between people or conditions is a parameter, not a
+baked asset. Every view carries `GENERIC_MODEL_BOUNDARY`; the more convincing the render, the more
+that matters. See `docs/engine.md` and `docs/asset-pipeline.md`.
 
 **Weight.** Pages other than Today and Timeline are lazy-loaded and must stay that way; the bundle
 check enforces it. Object URLs for stored files are created with `storedFileURL` and must be

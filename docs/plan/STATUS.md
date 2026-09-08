@@ -14,7 +14,7 @@ marked blocked.
 | 03 | Accessibility for low vision | done | phase-03-low-vision-access | 2026-09-08 | 4 themes, scalable type, axe + keyboard tests, drawings described in words |
 | 04 | Daily loop & mobile | done | phase-04-daily-loop-mobile | 2026-09-08 | bottom nav, sheets, two-target Today, Playwright on desktop + iPhone; offline now verified |
 | 05 | Clinical breadth & self-tests | done, pending clinical review | phase-05-clinical-breadth | 2026-09-08 | 13 profiles, self-checks, unit-aware metrics; **all new clinical copy needs sign-off** |
-| 06 | Visualization I — render engine | not started | — | — | long pole; start the spike early. Hybrid: Blender-authored base mesh + baked detail, procedural for everything parameterised |
+| 06 | Visualization I — render engine | done, procedural only | phase-06-render-engine | 2026-09-08 | engine + standalone build shipped; **Blender bake track unrun — Blender not installed** |
 | 07 | Visualization II — disease atlas | not started | — | — | |
 | 08 | Records intelligence | not started | — | — | |
 | 09 | Clinician handoff & sharing | not started | — | — | |
@@ -25,6 +25,35 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 06 done, procedural only.** A framework-agnostic Three.js engine under
+  `app/src/engine/`, built from real ocular dimensions: the sclera's corneal aperture, the corneal
+  cap and the limbus meet where the arithmetic puts them. The first attempt rendered a featureless
+  white ball because the iris was sealed inside an opaque sphere — the anterior geometry is now
+  derived rather than eyeballed. A refractive cornea (IOR 1.376) over a procedural iris (stromal
+  fibres, collarette, crypts, furrows, pupillary ruff, limbal ring, relief from the same painting)
+  and a pupil that eases 2–8 mm on a nonlinear light response.
+  The fundus is grown, not drawn: four arcades from the disc, arteries paler and narrower than
+  their veins at roughly 3:2, tapering along their length, never entering the avascular zone
+  (asserted), with the disc nasal to the fovea and mirrored between eyes. Three rounds of
+  correction there — uniform-width vessels, a sunburst of choroidal lines radiating from centre,
+  and spoke-like striations across the whole image — each of which made it read as drawn rather
+  than photographed.
+  Personalisation is cosmetic and bounded: iris colour from one melanin model rather than four
+  textures, limbal ring, scleral vessels, fundus pigmentation. `GENERIC_MODEL_BOUNDARY` is
+  exported from one place and carried by every view including the canvas's accessible name.
+  Three.js sits entirely in the lazy Visualize chunk: initial JS is unchanged at 73.9 KB.
+  `npm run build:standalone` emits `EyeExplorer-engine.html` — 0.47 MB against a 5 MB budget,
+  verified rendering from `file://` with the network off and zero external references. **The
+  original `EyeExplorer.html` is untouched**: it still carries disease scenarios and a diagnose
+  flow the engine does not have, and replacing it is a human decision once Phase 07 reaches parity.
+  I overwrote it once during this phase and restored it from git; the build script now writes
+  alongside it deliberately.
+  **The Blender bake track is written but has never been run — Blender is not installed here.**
+  `assets-src/build-eye.py`, `ASSETS.md`, `verify-assets.mjs` (in CI) and `docs/asset-pipeline.md`
+  all exist; the engine is fully procedural in the meantime, which is a working state rather than
+  a placeholder. Baking is the first task for whoever has Blender 4.x.
+  Also fixed: two tests were time-dependent — an appointment dated "today at 10:00" is upcoming
+  before 10am and past after it, so they passed in the morning and failed in the afternoon.
 - **2026-09-08** — **Phase 05 done, pending clinical review.** 13 condition profiles beyond the
   retina (glaucoma, AMD, diabetic eye, vein occlusion, uveitis, cornea, dry eye, cataract, macular
   surface, inherited retinal, optic nerve) that shape prompts only: they reorder the symptom list
