@@ -8,7 +8,7 @@
     "predev": "node scripts/sync-explorer.mjs",
     "dev": "vite",
     "prebuild": "node scripts/sync-explorer.mjs",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/build-sw.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
@@ -16,13 +16,16 @@
     "test:watch": "vitest",
     "guard": "node scripts/check-invariants.mjs",
     "verify": "tsc -b && npm run lint && npm run guard && npm run test && npm run build && npm run bundle",
-    "bundle": "node scripts/check-bundle.mjs"
+    "bundle": "node scripts/check-bundle.mjs",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

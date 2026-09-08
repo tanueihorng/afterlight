@@ -73,7 +73,10 @@ describe("every page renders against an empty record", () => {
 describe("Today", () => {
   it("asks the daily question and offers the no-change answer", async () => {
     await renderWithStore(<Today />, {});
-    expect(await screen.findByRole("button", { name: /no change today/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /nothing different today/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /something changed/i })).toBeInTheDocument();
   });
 });
 

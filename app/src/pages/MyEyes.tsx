@@ -229,7 +229,9 @@ function PrescriptionsCard({ onAdd }: { onAdd: () => void }) {
                 <th>Right (OD) SPH / CYL / AXIS</th>
                 <th>Left (OS) SPH / CYL / AXIS</th>
                 <th>Provider</th>
-                <th />
+                <th>
+                  <span className="visually-hidden">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>

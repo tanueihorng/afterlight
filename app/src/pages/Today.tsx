@@ -10,9 +10,12 @@ import {
   type FloaterObject,
   type SymptomEntry,
 } from "../lib/models";
-import { PageHeader, SafetyNotice, EmptyState } from "../components/ui";
+import { PageHeader, SafetyNotice } from "../components/ui";
 import BackupNudge from "../components/BackupNudge";
-import { formatLongDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
+import { addDays, formatDate, formatLongDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
+import { continuity, continuitySentence } from "../lib/streak";
+import { quickEntries } from "../lib/suggestions";
+import { toAllData } from "../lib/store";
 
 interface Row {
   key: string;
@@ -25,7 +28,8 @@ interface Row {
   existingId?: string;
 }
 
-const QUICK_CHIPS = ["floaters", "flashes", "shadow / curtain", "blur", "glare", "halos", "dryness", "pain"];
+/** When the change started, which is not always today. */
+type WhenOption = "today" | "yesterday" | "custom";
 
 export default function Today() {
   const store = useStore();
@@ -57,18 +61,37 @@ export default function Today() {
   );
   const [note, setNote] = useState(existingLog?.note ?? "");
   const [justSaved, setJustSaved] = useState(false);
+  const alreadyRecorded = !!existingLog;
+  // The daily loop is a decision before it is a form: answer the question, then only fill in what
+  // the answer requires.
+  const [mode, setMode] = useState<"asking" | "recording">(() =>
+    todaysSymptoms.length > 0 ? "recording" : "asking",
+  );
+  const [when, setWhen] = useState<WhenOption>("today");
+  const [customDate, setCustomDate] = useState(addDays(date, -1));
+
+  const entryDate = when === "today" ? date : when === "yesterday" ? addDays(date, -1) : customDate;
+
+  const streak = useMemo(
+    () => continuitySentence(continuity(store.dailyLogs.list, date), date),
+    [store.dailyLogs.list, date],
+  );
+  const suggestions = useMemo(
+    () => quickEntries(toAllData(store), date),
+    [store, date],
+  );
 
   const baseline = (eye: "right" | "left") =>
     store.baselines.list.find((b) => b.id === eye)?.text;
 
-  const addRow = (eye: "right" | "left", symptomType?: string) => {
+  const addRow = (eye: "right" | "left", symptomType?: string, comparison?: BaselineComparison) => {
     setRows((r) => [
       ...r,
       {
         key: crypto.randomUUID(),
         eye,
         symptom_type: symptomType ?? "floaters",
-        comparison: "",
+        comparison: comparison ?? "",
         severity: 0,
         description: "",
       },
@@ -120,8 +143,8 @@ export default function Today() {
         const floater: FloaterObject = {
           id: crypto.randomUUID(),
           eye: r.eye,
-          first_seen: date,
-          last_seen: date,
+          first_seen: entryDate,
+          last_seen: entryDate,
           shape: r.floaterShape ?? "custom",
           status: "active",
           baseline: false,
@@ -135,7 +158,11 @@ export default function Today() {
       }
       const entry: SymptomEntry = {
         id: r.existingId ?? crypto.randomUUID(),
-        date_time: existingEntry?.date_time ?? nowISO(),
+        // Dated by when it started, which is not always when it was written down. Recording last
+        // night's change this morning must not move its onset a day later, or the brief is wrong.
+        date_time:
+          existingEntry?.date_time ??
+          (entryDate === date ? nowISO() : `${entryDate}T12:00:00`),
         eye: r.eye,
         symptom_type: r.symptom_type,
         status:
@@ -216,22 +243,26 @@ export default function Today() {
                 ✕
               </button>
             </div>
-            <div style={{ margin: "10px 0 4px", fontSize: "var(--fs-sm)", color: "var(--text-2)" }}>
-              Compared with your usual:
-            </div>
-            <div className="radio-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
-              {(Object.keys(BASELINE_LABELS) as BaselineComparison[]).map((c) => (
-                <label key={c} className={`radio-chip ${r.comparison === c ? "selected" : ""}`}>
-                  <input
-                    type="radio"
-                    name={`cmp-${r.key}`}
-                    checked={r.comparison === c}
-                    onChange={() => updateRow(r.key, { comparison: c })}
-                  />
-                  {BASELINE_LABELS[c]}
-                </label>
-              ))}
-            </div>
+            <fieldset className="comparison">
+              <legend>Compared with your usual</legend>
+              <div
+                className="radio-grid"
+                style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}
+              >
+                {(Object.keys(BASELINE_LABELS) as BaselineComparison[]).map((c) => (
+                  <label key={c} className={`radio-chip ${r.comparison === c ? "selected" : ""}`}>
+                    <input
+                      type="radio"
+                      name={`cmp-${r.key}`}
+                      value={c}
+                      checked={r.comparison === c}
+                      onChange={() => updateRow(r.key, { comparison: c })}
+                    />
+                    {BASELINE_LABELS[c]}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             {r.symptom_type === "floaters" && r.comparison === "new" && (
               <div style={{ marginTop: 10 }}>
                 <span className="field-label">Floater appearance</span>
@@ -296,6 +327,19 @@ export default function Today() {
       />
       <BackupNudge />
 
+      {alreadyRecorded && !justSaved && mode === "asking" && (
+        <div className="safety recorded-note" role="status">
+          <span className="safety-icon" style={{ color: "var(--ok)" }} aria-hidden>
+            ✓
+          </span>
+          <div>
+            Today is recorded
+            {existingLog?.overall === "no_change" ? " as no change" : ""}. You can add to it or
+            change it at any time.
+          </div>
+        </div>
+      )}
+
       {justSaved && (
         <div className="safety" style={{ borderColor: "color-mix(in srgb, var(--ok) 55%, transparent)", marginBottom: 16 }} role="status">
           <span className="safety-icon" style={{ color: "var(--ok)" }} aria-hidden>✓</span>
@@ -318,25 +362,98 @@ export default function Today() {
         </div>
       )}
 
-      <div className="btn-row" style={{ marginBottom: 18 }}>
-        <button className="btn primary" onClick={saveNoChange}>
-          ◐ No change today
-        </button>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-          <span className="muted" style={{ marginRight: 2 }}>Quick add:</span>
-          {QUICK_CHIPS.map((c) => (
-            <button
-              key={c}
-              className="btn subtle"
-              style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
-              onClick={() => addRow("left", c)}
-              title={`Add ${c} (left eye — adjust inside)`}
-            >
-              + {c}
+      {mode === "asking" ? (
+        <>
+          <div className="decision">
+            <button className="decision-btn" onClick={saveNoChange}>
+              <span className="decision-icon" aria-hidden>
+                ◐
+              </span>
+              <span className="decision-label">Nothing different today</span>
+              <span className="decision-hint">One tap. A quiet day is still a record.</span>
             </button>
-          ))}
-        </div>
-      </div>
+            <button className="decision-btn secondary" onClick={() => setMode("recording")}>
+              <span className="decision-icon" aria-hidden>
+                ✎
+              </span>
+              <span className="decision-label">Something changed</span>
+              <span className="decision-hint">Which eye, what, how it compares to your usual.</span>
+            </button>
+          </div>
+
+          {suggestions.length > 0 && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <h2 className="card-title">Same as before?</h2>
+              <p className="muted" style={{ marginTop: 0 }}>
+                Things you have recorded before. Tapping one starts an entry you can adjust — it
+                saves nothing on its own.
+              </p>
+              <div className="btn-row" style={{ flexWrap: "wrap" }}>
+                {suggestions.map((q) => (
+                  <button
+                    key={`${q.symptom_type}|${q.eye}`}
+                    className="btn subtle"
+                    onClick={() => {
+                      addRow(q.eye, q.symptom_type, q.comparison);
+                      setMode("recording");
+                    }}
+                  >
+                    {q.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {streak && (
+            <p className="muted" style={{ marginTop: 18 }}>
+              {streak}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <h2 className="card-title">When did this start?</h2>
+            <div className="btn-row" style={{ flexWrap: "wrap", alignItems: "center" }}>
+              <button
+                className={`btn ${when === "today" ? "primary" : "subtle"}`}
+                aria-pressed={when === "today"}
+                onClick={() => setWhen("today")}
+              >
+                Today
+              </button>
+              <button
+                className={`btn ${when === "yesterday" ? "primary" : "subtle"}`}
+                aria-pressed={when === "yesterday"}
+                onClick={() => setWhen("yesterday")}
+              >
+                Yesterday
+              </button>
+              <button
+                className={`btn ${when === "custom" ? "primary" : "subtle"}`}
+                aria-pressed={when === "custom"}
+                onClick={() => setWhen("custom")}
+              >
+                Another day
+              </button>
+              {when === "custom" && (
+                <input
+                  type="date"
+                  value={customDate}
+                  max={date}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  aria-label="The day this started"
+                  style={{ width: 170 }}
+                />
+              )}
+            </div>
+            {entryDate !== date && (
+              <p className="muted" style={{ marginBottom: 0 }}>
+                This will be recorded as {formatDate(entryDate)}, not today.
+              </p>
+            )}
+          </div>
 
       <div className="grid-2">
         {eyePanel("right")}
@@ -353,20 +470,17 @@ export default function Today() {
         />
       </div>
 
-      <div className="btn-row" style={{ marginTop: 18, justifyContent: "flex-end" }}>
+      <div className="btn-row save-row">
+        <button className="btn subtle" onClick={() => setMode("asking")}>
+          Back
+        </button>
         <button className="btn primary" onClick={save}>
           {existingLog ? "Update today's record" : "Save today's record"}
         </button>
       </div>
-
-      {todaysSymptoms.length === 0 && !existingLog && rows.length === 0 && (
-        <div style={{ marginTop: 26 }}>
-          <EmptyState title="Your record for today starts here.">
-            One tap on “No change today” keeps the record alive on ordinary days. When something
-            feels different, add a symptom and compare it with your baseline.
-          </EmptyState>
-        </div>
+        </>
       )}
+
     </>
   );
 }

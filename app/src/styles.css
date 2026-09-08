@@ -1476,3 +1476,275 @@ input[type="range"] {
 .draw-described li {
   margin-bottom: 3px;
 }
+
+/* ---------- bottom tab bar and sheets (small screens) ---------- */
+
+.tabbar {
+  display: none;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(4, 6, 10, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.sheet {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 1;
+}
+
+.sheet-grip {
+  display: none;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 8px;
+}
+
+.sheet-head h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-lg);
+}
+
+.sheet-body {
+  overflow-y: auto;
+  padding: 8px 20px 20px;
+}
+
+.sheet-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sheet-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--fs-base);
+  padding: 12px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sheet-nav-item:hover {
+  background: var(--accent-soft);
+}
+
+@media (max-width: 760px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .main {
+    padding: 16px 16px calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* The primary destinations sit in the thumb zone, above the home indicator. */
+  .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 2px;
+    background: var(--bg-elev);
+    border-top: 1px solid var(--border);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: var(--target);
+    padding: 6px 2px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-3);
+    font: inherit;
+    font-size: var(--fs-xs);
+    cursor: pointer;
+  }
+
+  .tab.active {
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+  }
+
+  .tab-icon {
+    font-size: var(--fs-md);
+    line-height: 1;
+  }
+
+  .tab-label {
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  /* Dialogs become sheets: anchored to the bottom, within thumb reach. */
+  .sheet-backdrop,
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .sheet,
+  .modal {
+    max-width: none;
+    max-height: 88vh;
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-bottom: none;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+  }
+
+  .sheet-grip {
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    margin: 10px auto 0;
+  }
+
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header h1 {
+    font-size: var(--fs-xl);
+  }
+}
+
+/* ---------- the daily decision ---------- */
+
+.decision {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.decision-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-height: 128px;
+  padding: 20px 22px;
+  background: var(--accent-strong);
+  color: var(--accent-ink);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.decision-btn.secondary {
+  background: var(--bg-elev);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.decision-btn:hover {
+  filter: brightness(1.04);
+}
+
+.decision-btn.secondary:hover {
+  border-color: var(--accent-strong);
+  filter: none;
+}
+
+.decision-icon {
+  font-size: var(--fs-xl);
+  line-height: 1;
+}
+
+.decision-label {
+  font-size: var(--fs-lg);
+  font-weight: 500;
+}
+
+.decision-hint {
+  font-size: var(--fs-sm);
+  opacity: 0.85;
+}
+
+.save-row {
+  margin-top: 18px;
+  justify-content: space-between;
+}
+
+@media (max-width: 760px) {
+  .decision {
+    grid-template-columns: 1fr;
+  }
+
+  .decision-btn {
+    min-height: 104px;
+  }
+
+  .save-row {
+    position: sticky;
+    bottom: calc(78px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg);
+    padding: 10px 0;
+    z-index: 5;
+  }
+}
+
+.comparison {
+  border: none;
+  padding: 0;
+  margin: 10px 0 4px;
+}
+
+.comparison legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+.recorded-note {
+  border-color: color-mix(in srgb, var(--ok) 55%, transparent);
+  margin-bottom: 16px;
+}

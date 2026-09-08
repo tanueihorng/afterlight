@@ -13,3 +13,8 @@ app/public/EyeExplorer.html
 .vscode/
 .idea/
 *.log
+
+# playwright
+app/test-results/
+app/playwright-report/
+app/blob-report/
