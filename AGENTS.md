@@ -105,9 +105,14 @@ Blob support in IndexedDB is uneven and untestable. Use `saveStoredFile` (which 
 failures), and `storedFileToBlob` / `storedFileURL` to display them.
 
 **Derived, not duplicated.** The timeline, indexes, briefs and search results are computed from
-stored entities. Do not persist a second copy of the truth. Read them through `lib/indexes.ts`,
-which caches on the identity of the store's `data` object — do not scan the entity arrays directly
-in a component.
+stored entities. Do not persist a second copy of the truth. Read them through `lib/query.ts`
+(`select(data, "symptoms").eye("left").between(a, b)`), which sits on the cached indexes — do not
+scan the entity arrays directly in a component or a lib.
+
+**Numbers are described, never judged.** `lib/trends.ts` may state counts, dates, values and
+arithmetic differences. It may not use a threshold, a direction word that carries a verdict
+("worsening", "stable"), a prediction, or a colour that means good or bad. Clinic measurements and
+home checks are never plotted as one line. The guard fails the build on verdict language.
 
 **The atlas and the simulator.** A condition is a parameter delta over the normal eye, never its
 own artwork. The atlas is a reference someone navigates: it is never surfaced from their symptoms

@@ -300,7 +300,14 @@ function BriefView({ appointmentId, onBack }: { appointmentId: string; onBack: (
   const [range, setRange] = useState(() => defaultBriefRange(allData, { beforeApptId: appointmentId }));
   const [saved, setSaved] = useState(false);
   const [present, setPresent] = useState(false);
-  const payload = useMemo(() => generateBrief(allData, range), [allData, range]);
+  const [sections, setSections] = useState<{ trends: boolean; selfTests: boolean }>({
+    trends: false,
+    selfTests: false,
+  });
+  const payload = useMemo(
+    () => generateBrief(allData, { ...range, sections }),
+    [allData, range, sections],
+  );
 
   const printBrief = () => {
     const el = document.createElement("div");
@@ -367,6 +374,33 @@ function BriefView({ appointmentId, onBack }: { appointmentId: string; onBack: (
       <p className="visually-hidden" role="status" aria-live="polite">
         Brief generated for {formatDate(range.range_start)} to {formatDate(range.range_end)}.
       </p>
+
+      <div className="card no-print" style={{ marginBottom: 16 }}>
+      <div className="card-title">Extra sections</div>
+      <p className="muted" style={{ marginTop: 0 }}>
+        The brief stays to one page by default, because that is what gets read. Add these only if
+        they are what this appointment is about.
+      </p>
+      <div className="check-row">
+        <input
+          id="brief-trends"
+          type="checkbox"
+          checked={sections.trends}
+          onChange={(e) => setSections({ ...sections, trends: e.target.checked })}
+        />
+        <label htmlFor="brief-trends">Recorded numbers over this period</label>
+      </div>
+      <div className="check-row">
+        <input
+          id="brief-selftests"
+          type="checkbox"
+          checked={sections.selfTests}
+          onChange={(e) => setSections({ ...sections, selfTests: e.target.checked })}
+        />
+        <label htmlFor="brief-selftests">Checks I did myself</label>
+      </div>
+      </div>
+
       <BriefDocument payload={payload} title={appt ? `${formatLongDate(appt.date_time.slice(0, 10))} · ${appt.reason || "Appointment"}` : "Appointment brief"} />
 
       <div className="btn-row no-print" style={{ marginTop: 18 }}>
@@ -431,7 +465,7 @@ function PresentMode({
         <button className="btn" onClick={onClose}>Exit</button>
       </div>
       <div className="present-doc">
-        <BriefDocument payload={payload} title={title} />
+      <BriefDocument payload={payload} title={title} />
       </div>
     </div>
   );
@@ -515,6 +549,36 @@ function BriefDocument({ payload, title }: { payload: BriefPayload; title: strin
         payload.treatment.map((t, i) => (
           <div key={i} style={{ fontSize: "var(--fs-base)", marginBottom: 4 }}>• {t}</div>
         ))
+      )}
+
+      {payload.trends && payload.trends.length > 0 && (
+        <>
+          <hr className="divider" />
+          <div className="card-title">Recorded numbers in this period</div>
+          {payload.trends.map((line, i) => (
+            <div key={i} style={{ fontSize: "var(--fs-sm)", marginBottom: 4 }}>
+              {line}
+            </div>
+          ))}
+          <p className="muted" style={{ fontSize: "var(--fs-xs)" }}>
+            Values as recorded. Afterlight does not interpret them.
+          </p>
+        </>
+      )}
+
+      {payload.selfTestNotes && payload.selfTestNotes.length > 0 && (
+        <>
+          <hr className="divider" />
+          <div className="card-title">Checks the patient did at home</div>
+          {payload.selfTestNotes.map((line, i) => (
+            <div key={i} style={{ fontSize: "var(--fs-sm)", marginBottom: 4 }}>
+              {line}
+            </div>
+          ))}
+          <p className="muted" style={{ fontSize: "var(--fs-xs)" }}>
+            Patient-performed checks under home conditions — not clinical measurements.
+          </p>
+        </>
       )}
 
       <hr className="divider" />

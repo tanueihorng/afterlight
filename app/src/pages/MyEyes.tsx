@@ -10,6 +10,7 @@ import {
   type Procedure,
 } from "../lib/models";
 import { ConfirmButton, Field, Modal, PageHeader, StatusBadge } from "../components/ui";
+import Trends from "../components/Trends";
 import { formatDate, isoToDateOnly, todayLocal } from "../lib/util";
 
 type EyeSide = "right" | "left";
@@ -29,6 +30,7 @@ export default function MyEyes() {
         <EyeProfile eye="right" onEditBaseline={() => { setEditEye("right"); setModal("baseline"); }} onAdd={(k) => setModal(k)} />
         <EyeProfile eye="left" onEditBaseline={() => { setEditEye("left"); setModal("baseline"); }} onAdd={(k) => setModal(k)} />
       </div>
+      <Trends />
       <PrescriptionsCard onAdd={() => setModal("prescription")} />
       {modal === "baseline" && <BaselineModal eye={editEye} onClose={() => setModal(null)} />}
       {modal === "diagnosis" && <DiagnosisModal onClose={() => setModal(null)} />}

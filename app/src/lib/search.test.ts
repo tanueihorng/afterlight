@@ -6,6 +6,7 @@ import {
   aDocument,
   aFloater,
   anImaging,
+  aMeasurement,
   aProcedure,
   aSymptom,
 } from "../test/factories";
@@ -121,5 +122,60 @@ describe("buildIndex", () => {
       }),
     );
     expect(Array.isArray(quiet)).toBe(true);
+  });
+});
+
+describe("field-scoped search", () => {
+  const data = anAllData({
+    symptoms: [
+      aSymptom({ eye: "left", symptom_type: "glare", date_time: "2026-06-01T09:00:00" }),
+      aSymptom({ eye: "right", symptom_type: "glare", date_time: "2026-09-01T09:00:00" }),
+    ],
+    imaging: [anImaging({ modality: "OCT", date: "2026-07-01" })],
+  });
+
+  it("scopes to an eye without needing the word to appear in the record", () => {
+    const hits = searchRecords(data, "eye:left glare");
+    expect(hits).toHaveLength(1);
+    expect(hits[0].eye).toBe("left");
+  });
+
+  it("scopes by date with after: and before:", () => {
+    expect(searchRecords(data, "glare after:2026-08-01")).toHaveLength(1);
+    expect(searchRecords(data, "glare before:2026-07-01")).toHaveLength(1);
+  });
+
+  it("scopes by type", () => {
+    expect(searchRecords(data, "type:glare").length).toBe(2);
+  });
+
+  it("treats an unknown prefix as ordinary text rather than silently filtering", () => {
+    expect(searchRecords(data, "banana:left")).toEqual([]);
+  });
+});
+
+describe("clinical synonyms and typos", () => {
+  const data = anAllData({
+    measurements: [
+      aMeasurement({ kind: "iop", value: "18", note: "intraocular pressure check", date: "2026-06-01" }),
+    ],
+    imaging: [anImaging({ modality: "OCT", date: "2026-06-02" })],
+    symptoms: [aSymptom({ symptom_type: "floaters", description: "muscae, drifting" })],
+  });
+
+  it("finds a record through the word a clinic would use", () => {
+    expect(searchRecords(data, "pressure").length).toBeGreaterThan(0);
+    expect(searchRecords(data, "tomography").length).toBeGreaterThan(0);
+  });
+
+  it("forgives a typo in a long word, but not in a short one", () => {
+    expect(searchRecords(data, "floatera").length).toBeGreaterThan(0);
+    expect(searchRecords(data, "iap")).toEqual([]);
+  });
+
+  it("explains why each hit matched", () => {
+    const [hit] = searchRecords(data, "floaters");
+    expect(hit.why?.length).toBeGreaterThan(0);
+    expect(hit.why?.join(" ")).toMatch(/floaters/);
   });
 });

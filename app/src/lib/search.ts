@@ -18,6 +18,8 @@ export interface SearchHit {
   route: Route;
   demo?: boolean;
   score: number;
+  /** Why this matched, so ranking can be explained rather than trusted. */
+  why?: string[];
 }
 
 const MONTHS = [
@@ -25,17 +27,94 @@ const MONTHS = [
   "july", "august", "september", "october", "november", "december",
 ];
 
+/**
+ * Words a clinic and a patient use for the same thing. Someone searching their own letters should
+ * find them whichever vocabulary they happen to remember.
+ */
+export const SYNONYMS: Record<string, string[]> = {
+  floaters: ["floater", "muscae", "opacity", "opacities", "weiss"],
+  iop: ["pressure", "tension", "intraocular"],
+  pressure: ["iop", "intraocular"],
+  oct: ["tomography", "scan", "thickness"],
+  injection: ["anti-vegf", "antivegf", "aflibercept", "ranibizumab", "bevacizumab", "eylea", "lucentis", "avastin"],
+  detachment: ["rd", "rhegmatogenous", "detached"],
+  oedema: ["edema", "swelling", "thickening"],
+  edema: ["oedema", "swelling", "thickening"],
+  laser: ["photocoagulation", "prp", "retinopexy"],
+  vitrectomy: ["ppv", "vitreo"],
+  acuity: ["vision", "va", "snellen", "logmar"],
+  drops: ["medication", "eyedrops", "eye drops"],
+  field: ["perimetry", "humphrey", "visual field"],
+  distortion: ["metamorphopsia", "wavy", "bent"],
+};
+
+/**
+ * Synonyms are symmetric. Someone who types the clinic's word must find the record labelled with
+ * the abbreviation, and that is the more common direction: a patient reading "tomography" in a
+ * letter looks it up, and their record says "OCT".
+ */
+const SYNONYM_INDEX: Map<string, string[]> = (() => {
+  const index = new Map<string, Set<string>>();
+  const link = (a: string, b: string) => {
+    if (a === b) return;
+    if (!index.has(a)) index.set(a, new Set());
+    index.get(a)!.add(b);
+  };
+  for (const [word, others] of Object.entries(SYNONYMS)) {
+    for (const other of others) {
+      link(word, other);
+      link(other, word);
+      // Words that share a head term are synonyms of each other too.
+      for (const sibling of others) link(other, sibling);
+    }
+  }
+  return new Map([...index].map(([k, v]) => [k, [...v]]));
+})();
+
+export function synonymsOf(term: string): string[] {
+  return SYNONYM_INDEX.get(term) ?? [];
+}
+
+/** Fields a query can scope itself to, e.g. `eye:left type:floaters after:2026-06`. */
+export interface FieldFilters {
+  eye?: "right" | "left" | "both";
+  type?: string;
+  source?: string;
+  kind?: string;
+  after?: string;
+  before?: string;
+}
+
 /** Parsed query: free-text terms plus optional eye and month/year filters. */
 interface ParsedQuery {
   terms: string[];
   eye?: "right" | "left";
   monthPrefix?: string; // YYYY-MM
   year?: string; // YYYY
+  fields: FieldFilters;
+  /** Terms expanded through the synonym table, for matching only. */
+  expanded: string[];
 }
+
+const FIELD_KEYS = ["eye", "type", "source", "kind", "after", "before"] as const;
 
 export function parseQuery(raw: string): ParsedQuery {
   let q = raw.toLowerCase().trim();
-  const parsed: ParsedQuery = { terms: [] };
+  const parsed: ParsedQuery = { terms: [], fields: {}, expanded: [] };
+
+  // Field-scoped terms first, so `eye:left` is a filter rather than a word to match.
+  q = q.replace(/\b(\w+):([\w/-]+)/g, (match, key: string, value: string) => {
+    if (!(FIELD_KEYS as readonly string[]).includes(key)) return match;
+    if (key === "eye" && (value === "right" || value === "left" || value === "both")) {
+      parsed.fields.eye = value;
+      if (value !== "both") parsed.eye = value;
+    } else if (key === "after" || key === "before") {
+      parsed.fields[key] = value;
+    } else {
+      parsed.fields[key as "type" | "source" | "kind"] = value.replace(/[-_]/g, " ");
+    }
+    return " ";
+  });
 
   if (/\b(left|os)\b/.test(q) && !/\bright\b/.test(q)) parsed.eye = "left";
   else if (/\b(right|od)\b/.test(q) && !/\bleft\b/.test(q)) parsed.eye = "right";
@@ -74,7 +153,33 @@ export function parseQuery(raw: string): ParsedQuery {
       (t) => t.length > 1 && !["the", "and", "for", "eye", "eyes", "was", "any"].includes(t),
     );
 
+  parsed.expanded = parsed.terms.flatMap((term) => [term, ...synonymsOf(term)]);
+
   return parsed;
+}
+
+/** Edit distance, capped: only used to forgive a typo in a long word. */
+function closeEnough(term: string, candidate: string): boolean {
+  if (term.length < 6) return false;
+  if (Math.abs(term.length - candidate.length) > 1) return false;
+  let edits = 0;
+  let i = 0;
+  let j = 0;
+  while (i < term.length && j < candidate.length) {
+    if (term[i] === candidate[j]) {
+      i++;
+      j++;
+      continue;
+    }
+    if (++edits > 1) return false;
+    if (term.length > candidate.length) i++;
+    else if (term.length < candidate.length) j++;
+    else {
+      i++;
+      j++;
+    }
+  }
+  return edits + (term.length - i) + (candidate.length - j) <= 1;
 }
 
 /** One indexed record, flattened to searchable text. */
@@ -380,7 +485,8 @@ export function searchIndexOf(s: AllData): IndexRow[] {
 
 export function searchRecords(s: AllData, raw: string, limit = 40): SearchHit[] {
   const q = parseQuery(raw);
-  if (!q.terms.length && !q.eye && !q.monthPrefix && !q.year) return [];
+  const hasFieldFilter = Object.keys(q.fields).length > 0;
+  if (!q.terms.length && !q.eye && !q.monthPrefix && !q.year && !hasFieldFilter) return [];
   const rows = searchIndexOf(s);
   const hits: SearchHit[] = [];
 
@@ -389,18 +495,40 @@ export function searchRecords(s: AllData, raw: string, limit = 40): SearchHit[] 
     if (q.monthPrefix && !row.date.startsWith(q.monthPrefix)) continue;
     if (q.year && !row.date.startsWith(q.year)) continue;
 
+    // Field scopes are filters: a record that fails one is out, whatever else it matches.
+    if (q.fields.eye && row.eye !== q.fields.eye && row.eye !== "both") continue;
+    if (q.fields.after && row.date < q.fields.after) continue;
+    if (q.fields.before && row.date > q.fields.before) continue;
+    if (q.fields.type && !row.haystack.includes(q.fields.type)) continue;
+    if (q.fields.kind && !row.kind.toLowerCase().includes(q.fields.kind)) continue;
+    if (q.fields.source && !row.source_type.includes(q.fields.source.replace(/ /g, "_"))) continue;
+
     let score = 0;
     let matchedAll = true;
+    const why: string[] = [];
     for (const term of q.terms) {
-      if (row.title.toLowerCase().includes(term)) score += 3;
-      else if (row.haystack.includes(term)) score += 1;
-      else matchedAll = false;
+      const synonyms = synonymsOf(term);
+      if (row.title.toLowerCase().includes(term)) {
+        score += 3;
+        why.push(`"${term}" in the title`);
+      } else if (row.haystack.includes(term)) {
+        score += 1;
+        why.push(`"${term}" in the record`);
+      } else if (synonyms.some((syn) => row.haystack.includes(syn))) {
+        score += 1;
+        why.push(`"${term}" matched a clinical synonym`);
+      } else if (row.haystack.split(/\W+/).some((word) => closeEnough(term, word))) {
+        score += 0.5;
+        why.push(`"${term}" matched allowing for a typo`);
+      } else {
+        matchedAll = false;
+      }
     }
     if (q.terms.length && !matchedAll) continue;
     // A pure date/eye query matches everything in range.
     if (!q.terms.length) score = 1;
     // Recency nudge so the newest matching record surfaces first.
-    hits.push({ ...row, score: score * 1000 + dateRank(row.date) });
+    hits.push({ ...row, score: score * 1000 + dateRank(row.date), why });
   }
 
   return hits.sort((a, b) => b.score - a.score).slice(0, limit);

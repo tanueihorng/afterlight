@@ -10,7 +10,10 @@ import type { Eye, SymptomEntry } from "./models";
 import { EYE_SHORT, MEASUREMENT_LABELS, SOURCE_LABELS } from "./models";
 import type { Route } from "./router";
 import { searchRecords, parseQuery } from "./search";
-import { formatDate } from "./util";
+import { dateOf, select, type Entity } from "./query";
+import { describe as describeSeries, seriesFor } from "./trends";
+import type { MeasurementKind } from "./models";
+import { addDays, formatDate, isoToDateOnly, todayLocal } from "./util";
 
 export interface Citation {
   label: string; // e.g. "Daily symptom log — 22 Aug 2026"
@@ -398,6 +401,24 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     };
   }
 
+  // ---- 9. Counts over a period ---------------------------------------------
+  if (/\bhow many\b/.test(q)) {
+    const answer = countIntent(data, q, parsed);
+    if (answer) return answer;
+  }
+
+  // ---- 10. Last time something happened -------------------------------------
+  if (/\b(last|latest|most recent)\b/.test(q)) {
+    const answer = lastIntent(data, q, parsed);
+    if (answer) return answer;
+  }
+
+  // ---- 11. Trends in a recorded number --------------------------------------
+  if (/\b(trend|over time|changed|history of)\b/.test(q)) {
+    const answer = trendIntent(data, q, parsed);
+    if (answer) return answer;
+  }
+
   // ---- Fallback: keyword search over the whole record ----------------------
   const hits = searchRecords(data, rawQuestion, 8);
   if (!hits.length) return notFound("Keyword search across all records");
@@ -413,4 +434,129 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     found: true,
     interpretation: "Keyword search across all records",
   };
+}
+
+/* --------------------------------------------------------- intent grammar */
+
+/**
+ * The remaining intents are built over `query.ts` rather than by scanning arrays: entity, filter,
+ * aggregation. Everything they emit is a value from the record or a count of records — the
+ * property test asserts that no answer contains a string the data does not support.
+ */
+
+const ENTITY_WORDS: { words: RegExp; entity: Entity; noun: string }[] = [
+  { words: /\bsymptom|entr(y|ies)\b/, entity: "symptoms", noun: "symptom entries" },
+  { words: /\bdrawing|sketch\b/, entity: "drawings", noun: "drawings" },
+  { words: /\bappointment|visit|review\b/, entity: "appointments", noun: "appointments" },
+  { words: /\bscan|oct|imaging|photo\b/, entity: "imaging", noun: "imaging records" },
+  { words: /\bletter|document|report\b/, entity: "documents", noun: "documents" },
+  { words: /\bcheck|self.?test|amsler\b/, entity: "selfTests", noun: "checks you did yourself" },
+  { words: /\bmeasurement|pressure|acuity|reading\b/, entity: "measurements", noun: "measurements" },
+  { words: /\bprocedure|surgery|operation\b/, entity: "procedures", noun: "procedures" },
+  { words: /\bfloater\b/, entity: "floaters", noun: "floaters" },
+  { words: /\bquestion\b/, entity: "questions", noun: "questions" },
+];
+
+function entityFor(q: string): { entity: Entity; noun: string } | null {
+  const hit = ENTITY_WORDS.find((e) => e.words.test(q));
+  return hit ? { entity: hit.entity, noun: hit.noun } : null;
+}
+
+/** A date window named in words: "this year", "last 30 days", "since my last appointment". */
+function windowFor(data: AllData, q: string, parsed: ReturnType<typeof parseQuery>) {
+  const today = todayLocal();
+  if (parsed.year) return { start: `${parsed.year}-01-01`, end: `${parsed.year}-12-31`, label: parsed.year };
+  if (parsed.monthPrefix) {
+    return { start: `${parsed.monthPrefix}-01`, end: `${parsed.monthPrefix}-31`, label: parsed.monthPrefix };
+  }
+  const days = q.match(/last (\d+) days?/);
+  if (days) return { start: addDays(today, -Number(days[1])), end: today, label: `the last ${days[1]} days` };
+  if (/this year/.test(q)) return { start: `${today.slice(0, 4)}-01-01`, end: today, label: "this year" };
+  if (/this month/.test(q)) return { start: `${today.slice(0, 7)}-01`, end: today, label: "this month" };
+  if (/since my last (appointment|review|visit)/.test(q)) {
+    const appointment = select(data, "appointments").before(today).order("desc").first();
+    if (appointment) {
+      const start = isoToDateOnly(appointment.date_time);
+      return { start, end: today, label: `since ${formatDate(start)}` };
+    }
+  }
+  return { start: "0000-01-01", end: today, label: "in your whole record" };
+}
+
+function countIntent(data: AllData, q: string, parsed: ReturnType<typeof parseQuery>): AskAnswer | null {
+  const target = entityFor(q);
+  if (!target) return null;
+  const window = windowFor(data, q, parsed);
+
+  let query = select(data, target.entity).between(window.start, window.end);
+  if (parsed.eye) query = query.eye(parsed.eye);
+
+  const types = matchedSymptomTypes(data, q);
+  if (target.entity === "symptoms" && types.length) query = query.type(types[0]);
+
+  const count = query.count();
+  if (count === 0) return notFound(`Count of ${target.noun} ${window.label}`);
+
+  const eyeText = parsed.eye ? ` for the ${EYE_SHORT[parsed.eye].toLowerCase()}` : "";
+  const typeText = types.length ? ` of ${types[0]}` : "";
+  return {
+    lines: [`${count} ${target.noun}${typeText}${eyeText}, ${window.label}.`],
+    citations: [{ label: `${target.noun} — ${window.label}`, route: "timeline" }],
+    found: true,
+    interpretation: `Count of ${target.noun} ${window.label}`,
+  };
+}
+
+function lastIntent(data: AllData, q: string, parsed: ReturnType<typeof parseQuery>): AskAnswer | null {
+  const target = entityFor(q);
+  if (!target) return null;
+
+  let query = select(data, target.entity).order("desc");
+  if (parsed.eye) query = query.eye(parsed.eye);
+  const row = query.first();
+  if (!row) return notFound(`Most recent ${target.noun}`);
+
+  const date = dateOf(target.entity, row);
+  const described = describeRow(target.entity, row);
+  return {
+    lines: [`The most recent was ${formatDate(date)}${described ? ` — ${described}` : ""}.`],
+    citations: [{ label: `${target.noun} — ${formatDate(date)}`, route: "timeline" }],
+    found: true,
+    interpretation: `Most recent ${target.noun}`,
+  };
+}
+
+function trendIntent(data: AllData, q: string, parsed: ReturnType<typeof parseQuery>): AskAnswer | null {
+  const kind = /pressure|iop/.test(q)
+    ? "iop"
+    : /acuity|vision/.test(q)
+      ? "visual_acuity"
+      : /thickness|cst|oct/.test(q)
+        ? "oct_cst"
+        : null;
+  if (!kind) return null;
+
+  const eye = parsed.eye ?? "right";
+  const series = seriesFor(data, kind as MeasurementKind, eye);
+  if (series.points.length === 0) return notFound(`${MEASUREMENT_LABELS[kind as MeasurementKind]} history`);
+
+  const described = describeSeries(series);
+  return {
+    lines: [described.summary, ...described.notes],
+    citations: series.points.slice(-4).map((p) => ({
+      label: `${series.label} — ${formatDate(p.date)} (${SOURCE_LABELS[p.source]})`,
+      route: "my-eyes" as Route,
+    })),
+    found: true,
+    interpretation: `${series.label} over time, ${EYE_SHORT[eye]}`,
+  };
+}
+
+/** A one-line description of any row, using only what it stores. */
+function describeRow(_entity: Entity, row: unknown): string {
+  const r = row as Record<string, unknown>;
+  const parts = [r.symptom_type, r.modality, r.title, r.reason, r.procedure_type, r.name, r.kind]
+    .filter((v): v is string => typeof v === "string");
+  if (typeof r.value === "string") parts.push(r.value);
+  return parts.slice(0, 2).join(", ");
 }

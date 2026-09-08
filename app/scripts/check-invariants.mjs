@@ -224,6 +224,22 @@ if (existsSync(simPath)) {
   });
 }
 
+/* ---------- 7d. Trends describe, they never judge ---------- */
+
+const trendsPath = join(srcDir, "lib/trends.ts");
+if (existsSync(trendsPath)) {
+  const trendsText = readFileSync(trendsPath, "utf8");
+  const VERDICT_WORDS =
+    /"(?:[^"]*\b(worse|worsening|better|improving|improved|declining|deteriorating|stable|normal|abnormal|elevated|concerning|significant)\b[^"]*)"/i;
+  trendsText.split("\n").forEach((line, i) => {
+    if (/^\s*(\/\/|\*)/.test(line)) return;
+    const match = line.match(VERDICT_WORDS);
+    if (match) {
+      fail(trendsPath, i + 1, "no-interpretation", `trend copy passes judgement: ${match[1].slice(0, 80)}`);
+    }
+  });
+}
+
 /* ---------- 8. Condition profiles never become diagnoses ---------- */
 
 const conditionsPath = join(srcDir, "lib/conditions.ts");
