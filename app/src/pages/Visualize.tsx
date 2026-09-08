@@ -2,30 +2,33 @@ import { useMemo, useState } from "react";
 import RetinaDiagram from "../components/RetinaDiagram";
 import { EyeBadge, EmptyState, PageHeader, SafetyNotice } from "../components/ui";
 import {
-  CONDITION_EXPLAINERS,
   PROCEDURE_EXPLAINERS,
   RETINA_STATES,
-  conditionFor,
   explainerFor,
   type ProcedureExplainer,
   type RetinaState,
 } from "../lib/education";
 import { useStore } from "../lib/store";
 import EyeStudio from "../components/EyeStudio";
+import Atlas from "../components/Atlas";
+import { routeParams, useHashRoute } from "../lib/router";
 import { formatDate } from "../lib/util";
 
-type Tab = "eye" | "explorer" | "retina" | "procedures" | "conditions";
+type Tab = "eye" | "explorer" | "retina" | "procedures" | "atlas" | "conditions";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "eye", label: "The eye" },
   { id: "explorer", label: "3D explorer" },
   { id: "retina", label: "Retina states" },
   { id: "procedures", label: "Procedures" },
-  { id: "conditions", label: "Conditions" },
+  { id: "atlas", label: "Condition atlas" },
 ];
 
 export default function Visualize() {
-  const [tab, setTab] = useState<Tab>("eye");
+  const [, nav] = useHashRoute();
+  const params = routeParams();
+  const atlasId = params[0] === "atlas" ? params[1] : undefined;
+  const [tab, setTab] = useState<Tab>(atlasId ? "atlas" : "eye");
 
   return (
     <>
@@ -68,7 +71,23 @@ export default function Visualize() {
 
       {tab === "retina" && <RetinaStates />}
       {tab === "procedures" && <Procedures />}
-      {tab === "conditions" && <Conditions />}
+      {tab === "atlas" && (
+        <Atlas
+          initialId={atlasId}
+          onDraftDrawing={(condition) => {
+            // Never writes: it hands the person a starting point they can adjust and save.
+            try {
+              sessionStorage.setItem(
+                "afterlight.draft-drawing",
+                JSON.stringify({ conditionId: condition.id, simulation: condition.simulation }),
+              );
+            } catch {
+              // A browser that refuses storage just means no pre-fill; the drawing page still opens.
+            }
+            nav("what-i-see");
+          }}
+        />
+      )}
 
       <div style={{ marginTop: 16 }}>
         <SafetyNotice>
@@ -214,6 +233,7 @@ function Procedures() {
 function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
   const [step, setStep] = useState(0);
   const state = e.states[Math.min(step, e.states.length - 1)];
+  const last = e.steps.length - 1;
   return (
     <div style={{ marginTop: 12 }}>
       <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)", marginBottom: 12 }}>{e.summary}</p>
@@ -223,6 +243,39 @@ function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
           <p className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 6 }}>
             Illustration of the general stage described — schematic, not to scale.
           </p>
+
+          {/* Scrubbable, so someone can move through the operation at their own pace rather than
+              hunting for the next step. */}
+          <label className="field">
+            <span className="field-label">
+              Step {step + 1} of {e.steps.length}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={last}
+              step={1}
+              value={step}
+              onChange={(ev) => setStep(Number(ev.target.value))}
+              aria-label={`Step ${step + 1} of ${e.steps.length}: ${e.steps[step]}`}
+            />
+          </label>
+          <div className="btn-row">
+            <button
+              className="btn subtle"
+              onClick={() => setStep((n) => Math.max(0, n - 1))}
+              disabled={step === 0}
+            >
+              ← Previous
+            </button>
+            <button
+              className="btn subtle"
+              onClick={() => setStep((n) => Math.min(last, n + 1))}
+              disabled={step === last}
+            >
+              Next →
+            </button>
+          </div>
         </div>
         <div>
           <ol style={{ margin: 0, paddingLeft: 20 }}>
@@ -273,75 +326,5 @@ function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
         </div>
       </div>
     </div>
-  );
-}
-
-/* ---------------- conditions ---------------- */
-
-function Conditions() {
-  const store = useStore();
-  const mine = store.diagnoses.list;
-
-  const matched = useMemo(
-    () =>
-      mine
-        .map((d) => ({ diagnosis: d, explainer: conditionFor(d.name) }))
-        .filter((x) => x.explainer)
-        .sort((a, b) => b.diagnosis.first_documented.localeCompare(a.diagnosis.first_documented)),
-    [mine],
-  );
-
-  return (
-    <>
-      {matched.length > 0 && (
-        <div className="card">
-          <div className="card-title">Conditions documented in your record</div>
-          {matched.map(({ diagnosis, explainer }) => (
-            <div key={diagnosis.id} style={{ borderTop: "1px solid var(--border-soft)", padding: "10px 0" }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <strong style={{ fontSize: "var(--fs-base)" }}>{diagnosis.name}</strong>
-                <EyeBadge eye={diagnosis.eye} />
-                <span className="muted">documented {formatDate(diagnosis.first_documented)}</span>
-              </div>
-              <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)", marginTop: 6 }}>
-                {explainer!.what} {explainer!.why}
-              </p>
-              <div className="btn-row" style={{ marginTop: 8, flexWrap: "wrap" }}>
-                {explainer!.states.map((s) => (
-                  <figure key={s} style={{ margin: 0, textAlign: "center" }}>
-                    <RetinaDiagram state={s} eye={diagnosis.eye === "left" ? "left" : "right"} labels={false} width={190} />
-                    <figcaption className="muted" style={{ fontSize: "var(--fs-xs)" }}>
-                      {RETINA_STATES.find((r) => r.id === s)?.label}
-                    </figcaption>
-                  </figure>
-                ))}
-              </div>
-            </div>
-          ))}
-          <p className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 10 }}>
-            Matched to your recorded diagnosis name only. The illustration is generic and shows the
-            concept, not your eye.
-          </p>
-        </div>
-      )}
-
-      <div className="card">
-        <div className="card-title">Condition library</div>
-        {CONDITION_EXPLAINERS.map((c) => (
-          <details key={c.title} style={{ borderTop: "1px solid var(--border-soft)", padding: "9px 0" }}>
-            <summary style={{ cursor: "pointer", fontSize: "var(--fs-base)" }}>{c.title}</summary>
-            <div className="grid-2" style={{ alignItems: "start", marginTop: 10 }}>
-              <div>
-                <RetinaDiagram state={c.states[c.states.length - 1]} labels width={340} />
-              </div>
-              <div>
-                <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)", marginBottom: 6 }}>{c.what}</p>
-                <p style={{ fontSize: "var(--fs-base)", color: "var(--text-2)" }}>{c.why}</p>
-              </div>
-            </div>
-          </details>
-        ))}
-      </div>
-    </>
   );
 }

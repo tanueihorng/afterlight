@@ -109,6 +109,11 @@ stored entities. Do not persist a second copy of the truth. Read them through `l
 which caches on the identity of the store's `data` object — do not scan the entity arrays directly
 in a component.
 
+**The atlas and the simulator.** A condition is a parameter delta over the normal eye, never its
+own artwork. The atlas is a reference someone navigates: it is never surfaced from their symptoms
+and never ranked against their record. In the simulator, field loss fades and is never black, and
+retinal locations invert to field locations — both enforced by tests and by the guard.
+
 **The renderer.** Anatomy comes from `engine/anatomy/dimensions.ts` in millimetres — never a
 number that looked right. Anything that varies between people or conditions is a parameter, not a
 baked asset. Every view carries `GENERIC_MODEL_BOUNDARY`; the more convincing the render, the more

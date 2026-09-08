@@ -1853,3 +1853,68 @@ input[type="range"] {
   color: var(--text-2);
   margin-top: 2px;
 }
+
+/* ---------- the atlas ---------- */
+
+.atlas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.atlas-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--bg-elev2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.atlas-card:hover {
+  border-color: var(--accent-strong);
+}
+
+.atlas-card-name {
+  font-size: var(--fs-base);
+  color: var(--text);
+}
+
+.atlas-card-region {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+.atlas-card-desc {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+.atlas-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border-soft);
+  padding: 12px 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.atlas-row:hover {
+  color: var(--accent-strong);
+}

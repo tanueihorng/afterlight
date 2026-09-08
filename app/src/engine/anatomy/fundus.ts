@@ -4,6 +4,73 @@
 // changing these rather than by drawing forty pictures. Nothing here is anyone's actual retina.
 
 import { growVessels, type VesselParams, type VesselSegment } from "./vessels";
+import {
+  drawAtrophy,
+  drawBoneSpicules,
+  drawCottonWool,
+  drawDetachment,
+  drawDotBlot,
+  drawDrusen,
+  drawExudates,
+  drawFlame,
+  drawHaze,
+  drawLaserScars,
+  drawMacularHole,
+  drawMembrane,
+  drawNeovascular,
+  drawPRP,
+  drawSubretinalBleed,
+  drawTear,
+  type LesionContext,
+} from "./lesions";
+
+/**
+ * Lesions layered over the normal fundus. Every condition in the atlas is expressed as some
+ * combination of these rather than as its own picture, which is what makes forty conditions
+ * maintainable and severity a slider rather than a set of images.
+ */
+export interface FundusLesions {
+  /** Dot-and-blot haemorrhages, 0–1. */
+  dotBlot?: number;
+  /** Flame haemorrhages, which follow the nerve fibre layer. */
+  flame?: number;
+  /** Hard exudates: sharp yellow deposits, often ringing an area of leakage. */
+  exudates?: number;
+  /** Cotton-wool spots: soft, pale, indistinct. */
+  cottonWool?: number;
+  /** Drusen: pale deposits at the macula. */
+  drusen?: number;
+  /** Geographic atrophy: sharply defined loss of pigment epithelium. */
+  atrophy?: number;
+  /** Subretinal haemorrhage and exudate, as in neovascular AMD. */
+  subretinalBleed?: number;
+  /** New vessels: fine, chaotic fronds that ignore the normal arcade pattern. */
+  neovascular?: number;
+  /** Laser scars: a ring or scatter of pale, pigmented spots. */
+  laserScars?: number;
+  /** Panretinal photocoagulation: scatter across the periphery. */
+  prp?: number;
+  /** Bone-spicule pigmentation, peripheral first. */
+  boneSpicules?: number;
+  /** A detached area, 0 (attached) to 1 (extensive). */
+  detachment?: number;
+  /** Whether the detachment reaches the macula. */
+  maculaOff?: boolean;
+  /** A retinal break. */
+  tear?: number;
+  /** Vessel changes: attenuation of the arterioles. */
+  attenuation?: number;
+  /** Venous dilation and tortuosity, as in occlusion. */
+  venousEngorgement?: number;
+  /** A sector or hemisphere affected, in radians from the disc. Absent means the whole fundus. */
+  sector?: { from: number; to: number };
+  /** Macular hole at the fovea. */
+  macularHole?: number;
+  /** Epiretinal membrane: a glinting sheet that puckers the surface. */
+  membrane?: number;
+  /** Media haze, as from vitreous haemorrhage or inflammation. */
+  haze?: number;
+}
 
 export interface FundusParams {
   /** Background pigmentation, 0 (fair, choroidal vessels showing) to 1 (deeply pigmented). */
@@ -17,6 +84,7 @@ export interface FundusParams {
   /** Nerve fibre layer striations near the disc. */
   striations: number;
   vessels: Partial<VesselParams>;
+  lesions?: FundusLesions;
   eye: "right" | "left";
   seed: number;
 }
@@ -61,6 +129,50 @@ export function fundusLayout(params: FundusParams): FundusLayout {
     fovea,
   } as VesselParams);
   return { disc, fovea, segments };
+}
+
+/** Deterministic per-fundus randomness, so a condition looks the same every time it is opened. */
+function seededRandom(seed: number): () => number {
+  let state = (seed >>> 0) || 1;
+  return () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return ((state >>> 0) % 100000) / 100000;
+  };
+}
+
+function paintLesions(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  p: FundusParams,
+  layout: FundusLayout,
+): void {
+  const l = p.lesions ?? {};
+  const c: LesionContext = {
+    ctx,
+    size,
+    fovea: layout.fovea,
+    disc: layout.disc,
+    random: seededRandom(p.seed + 977),
+  };
+
+  if (l.atrophy) drawAtrophy(c, l.atrophy);
+  if (l.drusen) drawDrusen(c, l.drusen);
+  if (l.subretinalBleed) drawSubretinalBleed(c, l.subretinalBleed);
+  if (l.prp) drawPRP(c, l.prp);
+  if (l.laserScars) drawLaserScars(c, l.laserScars, { x: 0.5 + 0.26, y: 0.5 - 0.24 });
+  if (l.boneSpicules) drawBoneSpicules(c, l.boneSpicules);
+  if (l.dotBlot) drawDotBlot(c, l.dotBlot, l.sector);
+  if (l.flame) drawFlame(c, l.flame, l.sector);
+  if (l.cottonWool) drawCottonWool(c, l.cottonWool);
+  if (l.exudates) drawExudates(c, l.exudates);
+  if (l.neovascular) drawNeovascular(c, l.neovascular);
+  if (l.detachment) drawDetachment(c, l.detachment, l.maculaOff ?? false, l.sector);
+  if (l.tear) drawTear(c, l.tear);
+  if (l.macularHole) drawMacularHole(c, l.macularHole);
+  if (l.membrane) drawMembrane(c, l.membrane);
+  if (l.haze) drawHaze(c, l.haze);
 }
 
 /**
@@ -237,6 +349,10 @@ export function paintFundus(
     ctx.restore();
     ctx.globalAlpha = 1;
   }
+
+  // Lesions, painted over the healthy fundus in the order they sit in the eye: deep first,
+  // then the retinal layers, then anything on the surface.
+  if (p.lesions) paintLesions(ctx, size, p, layout);
 
   // Vignette: an ophthalmoscope view falls off at the edges.
   const vignette = ctx.createRadialGradient(

@@ -3,6 +3,7 @@ import { useStore } from "../lib/store";
 import type { DrawingMark, Eye, VisualFieldDrawing } from "../lib/models";
 import { DARK_PALETTE, drawingToDataURL, renderDrawing, renderMark } from "../lib/render";
 import { describeDrawing, describeMark } from "../lib/describe";
+import { conditionById } from "../engine/conditions";
 import { ConfirmButton, DemoBadge, EyeBadge, EmptyState, Field, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
 import { formatDate, formatTime, nowISO } from "../lib/util";
 
@@ -30,6 +31,22 @@ const INKS: { id: DrawingMark["ink"]; label: string; css: string }[] = [
   { id: "light", label: "Bright / pale", css: "#e2e8f0" },
   { id: "amber", label: "Light & glare", css: "#f2c078" },
 ];
+
+/**
+ * A starting point handed over from the condition atlas: the person pressed "is this like what
+ * you see?" on an illustration. It pre-fills a description and nothing else — a generic picture
+ * must never become a record of what someone saw without them saying so.
+ */
+function takeDraft(): { conditionId: string } | null {
+  try {
+    const raw = sessionStorage.getItem("afterlight.draft-drawing");
+    if (!raw) return null;
+    sessionStorage.removeItem("afterlight.draft-drawing");
+    return JSON.parse(raw) as { conditionId: string };
+  } catch {
+    return null;
+  }
+}
 
 export default function WhatISee() {
   const [tab, setTab] = useState<"draw" | "history" | "compare">("draw");
@@ -69,7 +86,16 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
   const [size, setSize] = useState(4);
   const [opacity, setOpacity] = useState(0.75);
   const [eye, setEye] = useState<Eye>("left");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(() => {
+    const draft = takeDraft();
+    if (!draft) return "";
+    const condition = conditionById(draft.conditionId);
+    // Their words to finish, not ours to assert. Nothing is saved until they save it.
+    return condition
+      ? `Comparing with the illustration of ${condition.name}: `
+      : "";
+  });
+  const [draftNotice, setDraftNotice] = useState(() => description.length > 0);
   const [labelText, setLabelText] = useState("");
   const [marks, setMarks] = useState<DrawingMark[]>([]);
   const past = useRef<DrawingMark[][]>([]);
@@ -316,6 +342,26 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
       </div>
 
       <div>
+        {draftNotice && (
+          <div className="card" role="status">
+            <p style={{ color: "var(--text-2)", margin: 0 }}>
+              Started from an illustration you were reading about. Draw what <em>you</em> see and
+              adjust the description — nothing has been recorded yet, and nothing from the atlas has
+              been added to your record.
+            </p>
+            <button
+              className="btn subtle"
+              style={{ marginTop: 10 }}
+              onClick={() => {
+                setDescription("");
+                setDraftNotice(false);
+              }}
+            >
+              Start from blank instead
+            </button>
+          </div>
+        )}
+
         <div className="card">
           <div className="card-title">Tools</div>
           <div className="tool-grid" role="toolbar" aria-label="Drawing tools">
