@@ -341,7 +341,10 @@ export interface ImagingRecord {
   patient_notes?: string;
   source_type: SourceType;
   confirmed: boolean;
-  thumb?: string; // dataURL of first page thumbnail
+  /** Data-URL thumbnail written by older versions; new records use `thumb_file_id`. */
+  thumb?: string;
+  /** Id of a stored file holding a compressed thumbnail. */
+  thumb_file_id?: string;
   demo?: boolean;
   created_at: string;
   updated_at: string;

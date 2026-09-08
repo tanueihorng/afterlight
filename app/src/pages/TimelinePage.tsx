@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useStore, useTimeline } from "../lib/store";
 import type { TimelineEvent } from "../lib/models";
 import { EYE_SHORT, SOURCE_LABELS } from "../lib/models";
@@ -29,6 +29,9 @@ const RANGES = [
   { id: "all", label: "All time" },
   { id: "custom", label: "Custom" },
 ] as const;
+
+/** Days rendered at once; the rest load on request. */
+const DAY_PAGE = 60;
 
 export default function TimelinePage() {
   const store = useStore();
@@ -83,6 +86,13 @@ export default function TimelinePage() {
     }
     return Array.from(map.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [filtered]);
+
+  // Render a window of days and extend it as the reader reaches the end. A decade of daily
+  // entries is thousands of days; mounting them all is what makes a long history feel broken.
+  const [visibleDays, setVisibleDays] = useState(DAY_PAGE);
+  useEffect(() => setVisibleDays(DAY_PAGE), [range, eyeFilter, cats, customStart, customEnd]);
+  const shownDays = byDay.slice(0, visibleDays);
+  const moreDays = byDay.length - shownDays.length;
 
   return (
     <>
@@ -193,6 +203,17 @@ export default function TimelinePage() {
               ))}
             </div>
           ))}
+        </div>
+      )}
+
+      {moreDays > 0 && (
+        <div className="btn-row" style={{ justifyContent: "center", marginTop: 16 }}>
+          <button className="btn" onClick={() => setVisibleDays((n) => n + DAY_PAGE)}>
+            Show earlier entries ({moreDays} more {moreDays === 1 ? "day" : "days"})
+          </button>
+          <button className="btn subtle" onClick={() => setVisibleDays(byDay.length)}>
+            Show all
+          </button>
         </div>
       )}
 

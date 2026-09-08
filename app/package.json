@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "guard": "node scripts/check-invariants.mjs",
-    "verify": "tsc -b && npm run lint && npm run guard && npm run test && npm run build"
+    "verify": "tsc -b && npm run lint && npm run guard && npm run test && npm run build && npm run bundle",
+    "bundle": "node scripts/check-bundle.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

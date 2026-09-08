@@ -4,6 +4,7 @@ import {
   getStoredFile,
   fileToStoredFile,
   dbDelete,
+  releaseFileURL,
   saveStoredFile,
   storedFileURL,
   StorageFullError,
@@ -12,6 +13,7 @@ import type { DocumentRecord, Eye, ImagingModality, ImagingRecord, SourceType } 
 import { EYE_SHORT } from "../lib/models";
 import { ConfirmButton, DemoBadge, EmptyState, EyeBadge, Field, Modal, PageHeader, ProvenanceBadge, SourceSelect } from "../components/ui";
 import { formatDate, todayLocal } from "../lib/util";
+import { storeThumbnailFor, thumbnailSrc } from "../lib/thumbs";
 
 export default function Imaging() {
   const [tab, setTab] = useState<"oct" | "other" | "documents">("oct");
@@ -54,25 +56,6 @@ export default function Imaging() {
 
 /* ---------------- thumbnail helper ---------------- */
 
-async function makeThumb(blob: Blob): Promise<string | undefined> {
-  if (!blob.type.startsWith("image/")) return undefined;
-  try {
-    const bmp = await createImageBitmap(blob);
-    const scale = Math.min(1, 360 / Math.max(bmp.width, bmp.height));
-    const w = Math.round(bmp.width * scale);
-    const h = Math.round(bmp.height * scale);
-    const c = document.createElement("canvas");
-    c.width = w;
-    c.height = h;
-    const ctx = c.getContext("2d")!;
-    ctx.drawImage(bmp, 0, 0, w, h);
-    bmp.close?.();
-    return c.toDataURL("image/jpeg", 0.82);
-  } catch {
-    return undefined;
-  }
-}
-
 /* ---------------- imaging list ---------------- */
 
 function ImagingList({ modality, compare }: { modality: "OCT" | "other"; compare?: boolean }) {
@@ -86,6 +69,32 @@ function ImagingList({ modality, compare }: { modality: "OCT" | "other"; compare
     [store.imaging.list, modality]
   );
   const open = list.find((i) => i.id === openId) ?? null;
+
+  // Thumbnails live in their own file records now; resolve them for the visible list and release
+  // the object URLs when the list changes or unmounts.
+  const [thumbs, setThumbs] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let cancelled = false;
+    const created: string[] = [];
+    (async () => {
+      const out: Record<string, string> = {};
+      for (const record of list) {
+        const resolved = await thumbnailSrc(record);
+        if (!resolved) continue;
+        out[record.id] = resolved.src;
+        if (resolved.revocable) created.push(resolved.src);
+      }
+      if (cancelled) {
+        for (const url of created) releaseFileURL(url);
+        return;
+      }
+      setThumbs(out);
+    })();
+    return () => {
+      cancelled = true;
+      for (const url of created) releaseFileURL(url);
+    };
+  }, [list]);
 
   return (
     <>
@@ -107,8 +116,8 @@ function ImagingList({ modality, compare }: { modality: "OCT" | "other"; compare
           <div className="gallery" style={{ marginTop: compare ? 16 : 0 }}>
             {list.map((i) => (
               <button key={i.id} className="gallery-item" onClick={() => setOpenId(i.id)}>
-                {i.thumb ? (
-                  <img src={i.thumb} alt={`${i.modality} ${formatDate(i.date)}`} />
+                {thumbs[i.id] ? (
+                  <img src={thumbs[i.id]} alt={`${i.modality} ${formatDate(i.date)}`} />
                 ) : (
                   <div className="img-ph" style={{ display: "grid", placeItems: "center", color: "var(--text-3)" }}>
                     {i.modality === "OCT" ? "OCT" : "IMG"}
@@ -154,6 +163,11 @@ function OCTCompare({ records }: { records: ImagingRecord[] }) {
         setThumbB(urlB ?? b.thumb);
       } else setThumbB(undefined);
     })();
+    // These pin whole scans in memory; switching between comparisons must not accumulate them.
+    return () => {
+      releaseFileURL(urlA);
+      releaseFileURL(urlB);
+    };
   }, [aId, bId, a, b]);
 
   if (records.length < 2) return null;
@@ -236,7 +250,7 @@ function ImagingDetail({ record, onClose }: { record: ImagingRecord; onClose: ()
       revoked = out;
     })();
     return () => {
-      for (const u of revoked) URL.revokeObjectURL(u);
+      for (const u of revoked) releaseFileURL(u);
     };
   }, [record]);
 
@@ -325,7 +339,11 @@ function DocumentsList() {
                     style={{ minHeight: "var(--target)", padding: "2px 6px" }}
                     onClick={async () => {
                       const f = await getStoredFile(d.file_id);
-                      if (f) window.open(storedFileURL(f), "_blank");
+                      if (!f) return;
+                      const url = storedFileURL(f);
+                      window.open(url, "_blank");
+                      // The new tab keeps its own reference once it has loaded.
+                      setTimeout(() => releaseFileURL(url), 60_000);
                     }}
                   >
                     📄 {d.title}
@@ -418,12 +436,13 @@ function AddRecordModal({
     } else {
       if (files.length === 0 && !img.findings.trim()) return setSaving(false);
       const fileIds: string[] = [];
-      let thumb: string | undefined;
+      let thumbFileId: string | undefined;
       for (const f of files) {
         const sf = await fileToStoredFile(f);
         await saveStoredFile(sf);
         fileIds.push(sf.id);
-        if (!thumb) thumb = await makeThumb(f);
+        // Thumbnailing happens in a worker; a multi-megapixel scan must not freeze the page.
+        if (!thumbFileId) thumbFileId = await storeThumbnailFor(sf);
       }
       const rec: ImagingRecord = newRecord({
         modality: img.modality,
@@ -437,7 +456,7 @@ function AddRecordModal({
         patient_notes: img.patient_notes || undefined,
         source_type: img.source_type,
         confirmed: img.confirmed,
-        thumb,
+        thumb_file_id: thumbFileId,
       });
       await store.imaging.put(rec);
       }

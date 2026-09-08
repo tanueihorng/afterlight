@@ -23,7 +23,7 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Verify (types, lint, invariants, tests, build)
+      - name: Verify (types, lint, invariants, tests, build, bundle budget)
         run: npm run verify
 
       - name: Upload build

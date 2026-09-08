@@ -78,7 +78,7 @@ export function parseQuery(raw: string): ParsedQuery {
 }
 
 /** One indexed record, flattened to searchable text. */
-interface IndexRow extends Omit<SearchHit, "score"> {
+export interface IndexRow extends Omit<SearchHit, "score"> {
   haystack: string;
 }
 
@@ -367,10 +367,21 @@ export function buildIndex(s: AllData): IndexRow[] {
   return rows;
 }
 
+/** Search rows are expensive to build and change only when the record changes. */
+const indexCache = new WeakMap<AllData, IndexRow[]>();
+
+export function searchIndexOf(s: AllData): IndexRow[] {
+  const hit = indexCache.get(s);
+  if (hit) return hit;
+  const built = buildIndex(s);
+  indexCache.set(s, built);
+  return built;
+}
+
 export function searchRecords(s: AllData, raw: string, limit = 40): SearchHit[] {
   const q = parseQuery(raw);
   if (!q.terms.length && !q.eye && !q.monthPrefix && !q.year) return [];
-  const rows = buildIndex(s);
+  const rows = searchIndexOf(s);
   const hits: SearchHit[] = [];
 
   for (const row of rows) {
