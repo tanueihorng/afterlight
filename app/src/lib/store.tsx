@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { EMPTY_DATA, dbDelete, dbPatch, dbPut, loadMigrated, type AllData } from "./db";
+import { indexesOf, type RecordIndexes } from "./indexes";
 import type { AppMeta, EyeBaseline, StoredFile, SymptomEntry, TimelineEvent } from "./models";
 import { isoToDateOnly, nowISO, todayLocal } from "./util";
 
@@ -26,6 +27,8 @@ type EntityProps = {
 export interface StoreShape extends EntityProps {
   ready: boolean;
   meta?: AppMeta;
+  /** The entity lists as one stable object; replaced only when something is written. */
+  data: AllData;
   /** Descriptions of any schema migrations applied when this session loaded. */
   migrationNotes: string[];
   putFile: (v: StoredFile) => Promise<void>;
@@ -90,6 +93,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       ready,
       meta,
+      data,
       migrationNotes,
       symptoms: ops("symptoms"),
       dailyLogs: ops("dailyLogs"),
@@ -348,30 +352,25 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
 }
 
 export function useTimeline(): TimelineEvent[] {
-  const s = useStore();
-  const allData: AllData = useMemo(() => toAllData(s), [s]);
-  return useMemo(() => buildTimeline(allData), [allData]);
+  const data = useStore().data;
+  return useMemo(() => indexesOf(data).timeline, [data]);
 }
 
-/** Extract the plain entity lists from the store (for pure functions like brief generation). */
+/** The derived indexes for the current record. Cheap: cached on the data object's identity. */
+export function useIndexes(): RecordIndexes {
+  const data = useStore().data;
+  return useMemo(() => indexesOf(data), [data]);
+}
+
+/**
+ * The entity lists, for the pure functions (brief, search, ask) that work over the whole record.
+ *
+ * The store keeps one stable `data` object and replaces it only when something is written, so this
+ * is a field read rather than a fresh allocation on every render — which is what makes the
+ * derivation caches below effective.
+ */
 export function toAllData(s: StoreShape): AllData {
-  return {
-    symptoms: s.symptoms.list,
-    dailyLogs: s.dailyLogs.list,
-    floaters: s.floaters.list,
-    drawings: s.drawings.list,
-    appointments: s.appointments.list,
-    questions: s.questions.list,
-    diagnoses: s.diagnoses.list,
-    procedures: s.procedures.list,
-    medications: s.medications.list,
-    prescriptions: s.prescriptions.list,
-    measurements: s.measurements.list,
-    imaging: s.imaging.list,
-    documents: s.documents.list,
-    baselines: s.baselines.list,
-    briefs: s.briefs.list,
-  };
+  return s.data;
 }
 
 export function baselineFor(s: AllData, eye: "right" | "left"): EyeBaseline | undefined {

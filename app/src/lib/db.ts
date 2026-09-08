@@ -261,9 +261,34 @@ export function storedFileToBlob(f: StoredFile): Blob {
   return new Blob([f.bytes], { type: f.mime || "application/octet-stream" });
 }
 
-/** An object URL for a stored file. Callers must revoke it. */
+/**
+ * An object URL for a stored file. Every one of these pins the file's bytes in memory until it is
+ * revoked, and these files are scans — megabytes each. Callers must pass the URL to
+ * `releaseFileURL` when done; in development, leaking them is reported rather than ignored.
+ */
+const liveURLs = new Set<string>();
+const LEAK_WARNING_THRESHOLD = 24;
+
 export function storedFileURL(f: StoredFile): string {
-  return URL.createObjectURL(storedFileToBlob(f));
+  const url = URL.createObjectURL(storedFileToBlob(f));
+  liveURLs.add(url);
+  if (liveURLs.size > LEAK_WARNING_THRESHOLD) {
+    console.warn(
+      `${liveURLs.size} object URLs are still open. Something is creating them without calling releaseFileURL.`,
+    );
+  }
+  return url;
+}
+
+export function releaseFileURL(url: string | undefined): void {
+  if (!url || !liveURLs.has(url)) return;
+  URL.revokeObjectURL(url);
+  liveURLs.delete(url);
+}
+
+/** Test/diagnostic hook: how many object URLs are currently outstanding. */
+export function liveFileURLCount(): number {
+  return liveURLs.size;
 }
 
 export { EMPTY_DATA };

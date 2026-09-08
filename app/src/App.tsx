@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useHashRoute, type Route } from "./lib/router";
 import { useStore } from "./lib/store";
 import Today from "./pages/Today";
-import WhatISee from "./pages/WhatISee";
 import TimelinePage from "./pages/TimelinePage";
-import MyEyes from "./pages/MyEyes";
-import Imaging from "./pages/Imaging";
-import Appointments from "./pages/Appointments";
-import Visualize from "./pages/Visualize";
-import Settings from "./pages/Settings";
+
+// Split out of the initial download: the drawing canvas, the file-heavy imaging views, the brief
+// and the 3D explorer are all things you open deliberately, not on the way to recording a day.
+const WhatISee = lazy(() => import("./pages/WhatISee"));
+const MyEyes = lazy(() => import("./pages/MyEyes"));
+const Imaging = lazy(() => import("./pages/Imaging"));
+const Appointments = lazy(() => import("./pages/Appointments"));
+const Visualize = lazy(() => import("./pages/Visualize"));
+const Settings = lazy(() => import("./pages/Settings"));
 import Onboarding from "./components/Onboarding";
 import CommandPalette from "./components/CommandPalette";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -123,6 +126,7 @@ export default function App() {
             {formatLongDate(todayLocal())}
           </div>
           <ErrorBoundary key={route} where={NAV.find((n) => n.route === route)?.label ?? route}>
+            <Suspense fallback={<p className="muted" role="status">Opening…</p>}>
             {route === "today" && <Today />}
             {route === "what-i-see" && <WhatISee />}
             {route === "timeline" && <TimelinePage />}
@@ -131,6 +135,7 @@ export default function App() {
             {route === "appointments" && <Appointments />}
             {route === "visualize" && <Visualize />}
             {route === "settings" && <Settings />}
+            </Suspense>
           </ErrorBoundary>
         </main>
       </div>

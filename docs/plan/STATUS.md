@@ -10,7 +10,7 @@ marked blocked.
 |---|---|---|---|---|---|
 | 00 | Foundations & guardrails | done | phase-00-foundations | 2026-09-08 | 96 tests; `verify` = types + lint + guard + tests + build; CI green |
 | 01 | Data integrity & portability | done | phase-01-data-integrity | 2026-09-08 | archive v2 + migrations + encryption + merge; files now stored as bytes |
-| 02 | Performance & scale | not started | — | — | |
+| 02 | Performance & scale | done | phase-02-performance | 2026-09-08 | indexes, windowed timeline, code splitting, worker thumbnails, PWA (offline unverified) |
 | 03 | Accessibility for low vision | done | phase-03-low-vision-access | 2026-09-08 | 4 themes, scalable type, axe + keyboard tests, drawings described in words |
 | 04 | Daily loop & mobile | not started | — | — | |
 | 05 | Clinical breadth & self-tests | not started | — | — | |
@@ -25,6 +25,26 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 02 done.** `lib/indexes.ts` builds the timeline, per-day grouping,
+  per-eye and per-type symptom maps and first-seen dates once per data change, cached on the
+  identity of the store's `data` object; search caches its own row index the same way. The store
+  now exposes one stable `data` object instead of rebuilding `toAllData` on every render. Timeline
+  renders 60 days at a time with an explicit "show earlier" control. Pages other than Today and
+  Timeline are lazy-loaded: initial JS is 70 KB gzip against a 120 KB budget, enforced by
+  `npm run bundle` in the gate, which also fails if a heavy page creeps back into the entry chunk.
+  Thumbnails now generate in a worker (OffscreenCanvas, WebP with a JPEG fallback) and are stored
+  as their own compressed file records rather than data URLs on the imaging record.
+  Benchmarked against a ten-year record — 20,000 symptoms, 500 drawings, 200 scans: index build
+  12ms, cached read 0.02ms, search 22ms cold and 4ms warm, brief 5ms, ask 9ms. Budgets in the test
+  are far looser than these, so a reintroduced quadratic scan trips them.
+  Two real leaks fixed: the OCT comparison created object URLs and never revoked them, and opening
+  a document leaked one per click. `storedFileURL`/`releaseFileURL` now track outstanding URLs and
+  warn past a threshold.
+  **Unverified: the offline shell.** A service worker and manifest ship and are covered by tests
+  for their content, but this environment's embedded browser blocks service-worker registration
+  (the script itself fetches fine), so actual offline behaviour has not been confirmed. It needs a
+  check in a normal browser: load, go offline, reload, record an entry. Everything else in the
+  phase was verified in the production build — all eight routes render with no errors.
 - **2026-09-08** — **Phase 03 done.** Type scale tokens with a user setting (100/125/150/200%),
   four themes including two high-contrast ones, and a contrast test that computes WCAG ratios from
   the real tokens and fails the build — it found three genuine failures in the original palette:

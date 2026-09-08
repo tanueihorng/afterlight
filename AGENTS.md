@@ -72,7 +72,8 @@ npm run dev          # vite dev server
 npm run lint         # eslint — accessibility rules are errors, not warnings
 npm run test         # vitest
 npm run guard        # invariant checks (network calls, banned clinical copy, deps)
-npm run verify       # the gate: types + lint + guard + tests + build
+npm run bundle       # initial-download budget (120 KB JS gzip, 20 KB CSS)
+npm run verify       # the gate: types + lint + guard + tests + build + bundle
 npm run build        # production build
 npm run format       # prettier
 npm run build:standalone   # (from Phase 06) single-file offline explorer
@@ -102,7 +103,13 @@ Blob support in IndexedDB is uneven and untestable. Use `saveStoredFile` (which 
 failures), and `storedFileToBlob` / `storedFileURL` to display them.
 
 **Derived, not duplicated.** The timeline, indexes, briefs and search results are computed from
-stored entities. Do not persist a second copy of the truth.
+stored entities. Do not persist a second copy of the truth. Read them through `lib/indexes.ts`,
+which caches on the identity of the store's `data` object — do not scan the entity arrays directly
+in a component.
+
+**Weight.** Pages other than Today and Timeline are lazy-loaded and must stay that way; the bundle
+check enforces it. Object URLs for stored files are created with `storedFileURL` and must be
+released with `releaseFileURL`, because each one pins a whole scan in memory.
 
 **Copy.** Plain language, British-leaning spelling as used in the existing strings, no exclamation
 marks, no marketing voice, no false comfort. Write as if the reader is anxious and tired, because
