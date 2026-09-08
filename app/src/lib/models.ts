@@ -556,6 +556,22 @@ export interface BriefSections {
   allDrawings?: boolean;
 }
 
+export type BriefBucket = "new" | "worse" | "unchanged" | "improved";
+
+/** One line of the per-eye summary with its provenance intact. */
+export interface BriefItem {
+  bucket: BriefBucket;
+  text: string;
+  /**
+   * The same item in a handful of words — "Floaters 4/10, 4 Sep" — for places with a hard size
+   * limit, such as a QR card. Never a truncation of `text`: a sentence cut mid-clause changes
+   * what it says. Absent on briefs saved before this existed.
+   */
+  short?: string;
+  date: string; // YYYY-MM-DD
+  source_type: SourceType;
+}
+
 export interface BriefPayload {
   generated_at: string;
   range_start: string;
@@ -564,8 +580,14 @@ export interface BriefPayload {
     "right" | "left",
     { new: string[]; unchanged: string[]; improved: string[]; worse: string[] }
   >;
+  /**
+   * The same per-eye content, carrying provenance and date. Added in the clinician-handoff phase
+   * so print and PDF can separate patient-reported from clinician-documented at a glance; briefs
+   * saved before it only have the plain string arrays above, which stay the fallback.
+   */
+  perEyeItems?: Record<"right" | "left", BriefItem[]>;
   drawings: { id: string; date_time: string; eye: Eye; thumbnail?: string; description?: string }[];
-  clinicalEvents: { date: string; kind: string; title: string }[];
+  clinicalEvents: { date: string; kind: string; title: string; source_type?: SourceType }[];
   treatment: string[];
   questions: string[];
   /** Optional sections, each empty unless asked for. */
@@ -602,6 +624,13 @@ export interface AppMeta {
   demo_seeded: boolean;
   /** Schema the stored records conform to; absent means version 1. */
   schema_version?: number;
+  /**
+   * What the patient wants printed at the top of every page of a brief — a name, a hospital
+   * number, or nothing at all. Their choice, stored only here, and never filled in for them.
+   */
+  brief_header?: string;
+  /** Paper the brief is generated for. A4 outside the United States, Letter inside it. */
+  brief_page_size?: "A4" | "Letter";
   /** When the record was last exported, so the app can say how much is unbacked-up. */
   last_export_at?: string;
   /** Records changed since that export, counted at write time. */

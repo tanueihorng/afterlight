@@ -11,13 +11,15 @@ import {
 } from "../lib/db";
 import type { DocumentRecord, Eye, ImagingModality, ImagingRecord, SourceType } from "../lib/models";
 import { EYE_SHORT } from "../lib/models";
-import { ConfirmButton, DemoBadge, EmptyState, EyeBadge, Field, Modal, PageHeader, ProvenanceBadge, SourceSelect } from "../components/ui";
+import { ConfirmButton, DemoBadge, EmptyState, EyeBadge, Field, Modal, NeedsCheckingBadge, PageHeader, ProvenanceBadge, SourceSelect } from "../components/ui";
 import { formatDate, todayLocal } from "../lib/util";
 import { storeThumbnailFor, thumbnailSrc } from "../lib/thumbs";
+import { IngestFiles } from "../components/IngestFiles";
 
 export default function Imaging() {
   const [tab, setTab] = useState<"oct" | "other" | "documents">("oct");
   const [addOpen, setAddOpen] = useState(false);
+  const [ingestOpen, setIngestOpen] = useState(false);
   return (
     <>
       <PageHeader
@@ -39,8 +41,11 @@ export default function Imaging() {
       </div>
 
       <div className="btn-row" style={{ marginBottom: 16 }}>
-        <button className="btn primary" onClick={() => setAddOpen(true)}>
-          ＋ {tab === "documents" ? "Add document" : "Add imaging"}
+        <button className="btn primary" onClick={() => setIngestOpen(true)}>
+          ＋ Add files
+        </button>
+        <button className="btn" onClick={() => setAddOpen(true)}>
+          {tab === "documents" ? "Add one document, with details" : "Add one scan, with details"}
         </button>
         {tab === "oct" && <span className="muted">Compare OCTs over time below.</span>}
       </div>
@@ -50,6 +55,7 @@ export default function Imaging() {
       {tab === "documents" && <DocumentsList />}
 
       {addOpen && <AddRecordModal isDocument={tab === "documents"} defaultModality={tab === "oct" ? "OCT" : "fundus"} onClose={() => setAddOpen(false)} />}
+      {ingestOpen && <IngestFiles onClose={() => setIngestOpen(false)} />}
     </>
   );
 }
@@ -126,6 +132,7 @@ function ImagingList({ modality, compare }: { modality: "OCT" | "other"; compare
                 <div className="gallery-meta">
                   <span>{formatDate(i.date)}</span>
                   <EyeBadge eye={i.eye} />
+                  <NeedsCheckingBadge source={i.source_type} confirmed={i.confirmed} />
                 </div>
               </button>
             ))}
@@ -259,6 +266,7 @@ function ImagingDetail({ record, onClose }: { record: ImagingRecord; onClose: ()
       <div className="btn-row" style={{ marginBottom: 14 }}>
         <EyeBadge eye={record.eye} />
         <ProvenanceBadge source={record.source_type} />
+        <NeedsCheckingBadge source={record.source_type} confirmed={record.confirmed} />
         <DemoBadge demo={record.demo} />
       </div>
       <dl className="kv">
@@ -353,7 +361,11 @@ function DocumentsList() {
                 <td>{formatDate(d.date)}</td>
                 <td><EyeBadge eye={d.eye} /></td>
                 <td style={{ maxWidth: 280 }}>{d.summary ?? "—"}</td>
-                <td><ProvenanceBadge source={d.source_type} /> <DemoBadge demo={d.demo} /></td>
+                <td>
+                  <ProvenanceBadge source={d.source_type} />{" "}
+                  <NeedsCheckingBadge source={d.source_type} confirmed={d.confirmed} />{" "}
+                  <DemoBadge demo={d.demo} />
+                </td>
                 <td>
                   <ConfirmButton label="Delete" onConfirm={async () => {
                     await dbDelete("files", d.file_id);

@@ -17,7 +17,7 @@ marked blocked.
 | 06 | Visualization I — render engine | done, procedural only | phase-06-render-engine | 2026-09-08 | engine + standalone build shipped; **Blender bake track unrun — Blender not installed** |
 | 07 | Visualization II — disease atlas | done, pending clinical review | phase-07-disease-atlas | 2026-09-08 | 50 conditions, severity, compare, patient-view simulator; **all atlas copy needs sign-off** |
 | 08 | Records intelligence | done | phase-08-records-intelligence | 2026-09-08 | query layer, ask grammar, search v2, descriptive trends, accessible charts |
-| 09 | Clinician handoff & sharing | not started | — | — | |
+| 09 | Clinician handoff & sharing | done, pending clinical review | phase-09-clinician-handoff | 2026-09-09 | deterministic PDF, print, encrypted range shares, QR, ingestion; **`docs/clinician-note.md` and the printed wording need sign-off**; OCR engine not bundled |
 | 10 | Release & clinical review | not started | — | — | |
 
 ## Log
@@ -25,6 +25,57 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-09** — **Phase 09 done, pending clinical review.** The brief now survives contact with
+  a clinic. `lib/pdf.ts` is a small deterministic PDF writer written here rather than installed:
+  the artefact that leaves the device has to be byte-stable, work with the network off, and never
+  carry a dependency that could fetch a font. No clock, no locale, no randomness — the same brief
+  produces byte-identical output, which is what makes "has this changed?" answerable by comparing
+  two files, and the guard fails the build on `new Date`, `Math.random` or locale formatting
+  anywhere in it. Fonts are the PDF base-14, so nothing is embedded and nothing is fetched; that is
+  a deliberate trade against PDF/A, recorded in `docs/clinician-note.md`.
+  The brief is reordered for a sixty-second read: what changed in each eye and what the patient
+  wants to ask are above the fold, everything else is context below. Inside an eye panel the
+  patient's own reports and anything copied from a clinic document are separately headed and never
+  share a list of bullets — blending them is the specific failure this document exists to prevent.
+  A real `print.css` prints the page you are looking at rather than a second copy built for the
+  printer: chrome hidden, black on white whatever the theme, sections kept whole across page
+  breaks, truncation expanded, and provenance badges rendered as bracketed words because colour
+  chips vanish on a mono printer.
+  `lib/share.ts` produces a range-scoped, encrypted extract. The default carries the person's own
+  entries and their questions and nothing else — never imaging, documents, diagnoses or original
+  files unless asked for, enforced by a new guard rule — and the counts of what is included *and
+  what is left out* are computed and shown before a file exists. A bundle is an ordinary archive
+  plus a descriptor, so it imports through the code that is already tested. `lib/qr.ts` is a
+  byte-mode QR encoder (versions 1–20, levels L and M) written for the same reason as the PDF
+  writer; its output was verified against Apple's own decoder, including a byte-exact round trip,
+  and four decoder-verified symbols are pinned as golden fixtures.
+  Present mode pages one section at a time by keyboard and swipe, in the audited high-contrast
+  light palette, holding a wake lock and restoring the person's own theme on exit.
+  Ingestion reads what a clinic actually exports: filenames, PDF headers, and DICOM study date,
+  modality, laterality, institution and encapsulated JPEG. **An ambiguous date (`04-09-2026`) comes
+  back as both readings and is never resolved by guessing a locale**, and a file that cannot be
+  read is stored intact with a plain sentence saying so. Everything derived is
+  `document_extracted` / `confirmed: false`, and **unconfirmed extractions are now excluded from
+  the appointment brief** — the UI promised that before the code did it, which is exactly the kind
+  of sentence this app must not write.
+  Four real defects found by looking at the output rather than at the tests: the patient's drawings
+  printed as **solid black squares** (a white fill drawn before `renderDrawing`'s `clearRect`, and
+  JPEG has no alpha); the QR card trimmed off the *new* symptom because it dropped lines by
+  position rather than importance; the handoff card cut its own "not a clinical record" line off to
+  fit; and `.backdrop-dismiss` painted above every modal in the app, swallowing clicks meant for
+  the dialog's own controls — that one has been there since the modal was written.
+  **Deviations:** text recognition is not bundled. Fetching Tesseract at runtime breaks
+  non-negotiable #1 and bundling it costs about ten megabytes, so the pipeline, the confirm-before-
+  it-counts rule and the tests all exist behind a registered-recogniser seam, and the app says it
+  is not installed — which is true. PDF *page thumbnails* and page-range selection are also not
+  here; they need a PDF renderer, and page count plus metadata is what can be read honestly without
+  one. Both recorded in `docs/ocr.md`.
+  **`docs/clinician-note.md` is unreviewed.** It is written for a doctor to read at a desk, so it
+  needs the same sign-off as clinical copy; AGENTS.md §5 now says so explicitly.
+  **Not yet done: the physical print check and the clinician-reader test.** Both need a human — a
+  real printer on A4 and Letter, and someone unfamiliar with the app reading the brief against a
+  clock. They are the remaining acceptance criteria.
+  531 unit tests, 37 E2E (9 skipped: the known WebKit offline reload and the mobile engine cases).
 - **2026-09-08** — **Phase 08 done.** `lib/query.ts` is now the one primitive the derived engines
   share — `select(data, "symptoms").eye("left").between(a, b).order("asc")` — reading from the
   Phase 02 indexes rather than re-walking arrays, with each entity's own date field known in one

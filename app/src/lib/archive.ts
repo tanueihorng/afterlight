@@ -37,6 +37,20 @@ export interface ArchiveFile {
   b64: string;
 }
 
+/**
+ * What a shared extract says about itself. Present only on a bundle built for someone else, so
+ * both ends can see that this is a slice of a record rather than the record.
+ */
+export interface ShareDescriptor {
+  range_start: string;
+  range_end: string;
+  /** Stores deliberately left out, named so the recipient is not guessing. */
+  omitted: string[];
+  /** True when original scans and documents were not included. */
+  files_omitted: boolean;
+  note: string;
+}
+
 export interface Archive {
   format: typeof ARCHIVE_FORMAT;
   version: number;
@@ -48,6 +62,8 @@ export interface Archive {
   data: Record<string, unknown>;
   files: ArchiveFile[];
   meta?: AppMeta | null;
+  /** Set when this file is a range-scoped extract rather than a whole export. */
+  share?: ShareDescriptor;
 }
 
 export interface EncryptedArchive {
@@ -188,17 +204,18 @@ async function deriveKey(passphrase: string, salt: ArrayBuffer): Promise<CryptoK
   );
 }
 
-export async function encryptArchive(
-  archive: Archive,
-  passphrase: string,
-): Promise<EncryptedArchive> {
+/**
+ * Seal any JSON value into the archive envelope. Shared extracts use the same envelope as a whole
+ * export deliberately: one encryption path, one set of parameters, one thing to get right.
+ */
+export async function seal(value: unknown, passphrase: string, exportedAt: string): Promise<EncryptedArchive> {
   const salt = crypto.getRandomValues(new Uint8Array(16));
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await deriveKey(passphrase, salt.buffer);
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    new TextEncoder().encode(JSON.stringify(archive)),
+    new TextEncoder().encode(JSON.stringify(value)),
   );
   return {
     format: ARCHIVE_FORMAT,
@@ -210,9 +227,16 @@ export async function encryptArchive(
       salt: bytesToBase64(salt.buffer),
       iv: bytesToBase64(iv.buffer),
     },
-    exported_at: archive.exported_at,
+    exported_at: exportedAt,
     payload: bytesToBase64(ciphertext),
   };
+}
+
+export async function encryptArchive(
+  archive: Archive,
+  passphrase: string,
+): Promise<EncryptedArchive> {
+  return seal(archive, passphrase, archive.exported_at);
 }
 
 export class WrongPassphrase extends Error {
@@ -259,6 +283,8 @@ export interface ArchiveSummary {
   earliest?: string;
   latest?: string;
   checksumOk?: boolean;
+  /** Present when the file is a range-scoped extract someone shared, not a whole export. */
+  share?: ShareDescriptor;
 }
 
 const DATE_FIELDS = ["date", "date_time", "first_documented", "first_seen", "start_date", "created_at"];
@@ -352,6 +378,7 @@ export async function inspectArchive(parsed: unknown): Promise<ArchiveSummary> {
     earliest: dates[0],
     latest: dates[dates.length - 1],
     checksumOk,
+    share: a.share,
   };
 }
 

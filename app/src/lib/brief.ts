@@ -2,7 +2,7 @@
 // This is an organisational summary of stored records — never a medical interpretation.
 
 import type { AllData } from "./db";
-import type { BriefPayload, BriefSections, Eye } from "./models";
+import type { BriefBucket, BriefItem, BriefPayload, BriefSections, Eye, SourceType } from "./models";
 import { allSeries, describe as describeSeries } from "./trends";
 import { isoToDateOnly } from "./util";
 
@@ -55,6 +55,19 @@ function describeSymptom(x: AllData["symptoms"][number]): string {
   return `${capitalize(x.symptom_type)}${sev}${desc}${cmp} — recorded ${date}`.trim();
 }
 
+/** A few words rather than a sentence: type, severity if recorded, and the date. */
+function shortSymptom(x: AllData["symptoms"][number]): string {
+  const sev = x.severity != null && x.severity > 0 ? ` ${x.severity}/10` : "";
+  return `${capitalize(x.symptom_type)}${sev}, ${shortDate(x.date_time)}`;
+}
+
+function shortDate(iso: string): string {
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso.slice(0, 10);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
 function humanDate(iso: string): string {
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const d = new Date(iso);
@@ -75,6 +88,17 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/**
+ * Details read out of a file and not yet checked by the person do not appear in a brief.
+ *
+ * A date or a laterality guessed from a filename is a suggestion until someone confirms it, and a
+ * brief is the one place where an unchecked guess would be read as a fact by a clinician. The
+ * record still holds it, and the Imaging page still shows it — it just does not travel.
+ */
+function unreviewedExtraction(row: { source_type?: SourceType; confirmed?: boolean }): boolean {
+  return row.source_type === "document_extracted" && row.confirmed === false;
+}
+
 export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
   const start = opts.range_start;
   const end = `${opts.range_end}T23:59:59.999Z`;
@@ -91,6 +115,7 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
       right: { new: [], unchanged: [], improved: [], worse: [] },
       left: { new: [], unchanged: [], improved: [], worse: [] },
     },
+    perEyeItems: { right: [], left: [] },
     drawings: [],
     clinicalEvents: [],
     treatment: [],
@@ -101,24 +126,49 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
     const rows = s.symptoms
       .filter((x) => inRange(x.date_time) && (x.eye === eye || x.eye === "both"))
       .sort((a, b) => (a.date_time < b.date_time ? 1 : -1));
+    const items: BriefItem[] = [];
     for (const x of rows) {
       const text = describeSymptom(x);
-      if (x.status === "new" || x.baseline_comparison === "new") {
-        payload.perEye[eye].new.push(text);
-      } else if (x.status === "better" || x.status === "resolved") {
-        payload.perEye[eye].improved.push(text);
-      } else if (x.status === "worse") {
-        payload.perEye[eye].worse.push(text);
-      } else {
-        payload.perEye[eye].unchanged.push(text);
-      }
+      const bucket: BriefBucket =
+        x.status === "new" || x.baseline_comparison === "new"
+          ? "new"
+          : x.status === "better" || x.status === "resolved"
+            ? "improved"
+            : x.status === "worse"
+              ? "worse"
+              : "unchanged";
+      payload.perEye[eye][bucket].push(text);
+      items.push({
+        bucket,
+        text,
+        short: shortSymptom(x),
+        date: isoToDateOnly(x.date_time),
+        source_type: x.source_type,
+      });
     }
     // dedupe
     for (const k of ["new", "unchanged", "improved", "worse"] as const) {
       payload.perEye[eye][k] = Array.from(new Set(payload.perEye[eye][k]));
     }
+    const seen = new Set<string>();
+    payload.perEyeItems![eye] = items.filter((i) => {
+      const key = `${i.bucket}\u0000${i.text}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
     if (payload.perEye[eye].new.length === 0 && payload.perEye[eye].improved.length === 0 && payload.perEye[eye].worse.length === 0 && payload.perEye[eye].unchanged.length === 0) {
-      payload.perEye[eye].unchanged.push(`No symptoms recorded for the ${eye} eye in this period.`);
+      const nothing = `No symptoms recorded for the ${eye} eye in this period.`;
+      payload.perEye[eye].unchanged.push(nothing);
+      // A quiet period is a fact about the record, not a finding about the eye — it carries the
+      // same "nothing was written down" meaning wherever it is shown.
+      payload.perEyeItems![eye].push({
+        bucket: "unchanged",
+        text: nothing,
+        short: "Nothing recorded",
+        date: opts.range_end,
+        source_type: "patient_reported",
+      });
     }
   }
 
@@ -133,11 +183,12 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
       description: d.description,
     }));
 
-  for (const i of s.imaging.filter((i) => inRange(i.date))) {
+  for (const i of s.imaging.filter((i) => inRange(i.date) && !unreviewedExtraction(i))) {
     payload.clinicalEvents.push({
       date: i.date,
       kind: i.modality.toUpperCase(),
       title: [i.clinic, i.findings].filter(Boolean).join(" · ") || "Imaging",
+      source_type: i.source_type,
     });
   }
   for (const a of s.appointments.filter((a) => inRange(a.date_time))) {
@@ -145,16 +196,25 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
       date: isoToDateOnly(a.date_time),
       kind: "Appointment",
       title: [a.reason, a.clinic, a.clinician].filter(Boolean).join(" · ") || "Clinic visit",
+      source_type: "clinician_reported",
     });
   }
   for (const p of s.procedures.filter((p) => inRange(p.date))) {
-    payload.clinicalEvents.push({ date: p.date, kind: "Procedure", title: p.procedure_type });
+    payload.clinicalEvents.push({
+      date: p.date,
+      kind: "Procedure",
+      title: p.procedure_type,
+      source_type: "clinician_reported",
+    });
   }
-  for (const d of s.diagnoses.filter((d) => inRange(d.first_documented))) {
+  for (const d of s.diagnoses.filter(
+    (d) => inRange(d.first_documented) && !unreviewedExtraction(d),
+  )) {
     payload.clinicalEvents.push({
       date: d.first_documented,
       kind: "Diagnosis",
       title: `${d.name} (${d.eye})`,
+      source_type: d.source_type,
     });
   }
   payload.clinicalEvents.sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -164,11 +224,11 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
     const startedInRange = inRange(m.start_date);
     if (active && startedInRange) {
       payload.treatment.push(
-        `${m.name}${m.dose ? ` ${m.dose}` : ""}${m.frequency ? `, ${m.frequency}` : ""} — started ${m.start_date} (${m.kind === "prescription" ? `prescribed by ${m.prescribed_by || "clinician"}` : "self-care"})`
+        `${m.name}${m.dose ? ` ${m.dose}` : ""}${m.frequency ? `, ${m.frequency}` : ""} — started ${humanDate(m.start_date)} (${m.kind === "prescription" ? `prescribed by ${m.prescribed_by || "clinician"}` : "self-care"})`
       );
     } else if (active) {
       payload.treatment.push(
-        `${m.name}${m.dose ? ` ${m.dose}` : ""}${m.frequency ? `, ${m.frequency}` : ""} — ongoing (since ${m.start_date})`
+        `${m.name}${m.dose ? ` ${m.dose}` : ""}${m.frequency ? `, ${m.frequency}` : ""} — ongoing (since ${humanDate(m.start_date)})`
       );
     }
 
@@ -220,6 +280,7 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
       title: `${t.kind.replace(/_/g, " ")} — ${t.eye === "right" ? "right eye" : "left eye"}${
         t.result.notation ? `, ${t.result.notation}` : ""
       }`,
+      source_type: t.source_type,
     });
   }
 
@@ -239,7 +300,7 @@ export function changesSince(s: AllData, sinceISODate: string, untilISODate: str
   const newSymptoms = s.symptoms.filter((x) => inRange(x.date_time) && (x.status === "new" || x.baseline_comparison === "new"));
   const updates = s.symptoms.filter((x) => inRange(x.date_time) && x.status !== "new");
   const drawings = s.drawings.filter((d) => inRange(d.date_time));
-  const imaging = s.imaging.filter((i) => inRange(i.date));
+  const imaging = s.imaging.filter((i) => inRange(i.date) && !unreviewedExtraction(i));
   return {
     newSymptoms: newSymptoms.length,
     updates: updates.length,

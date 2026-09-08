@@ -101,6 +101,8 @@ const RECORD_EXEMPT = new Set([
   "AppMeta", "StoredFile", "BriefSection", "BriefPayload", "DrawingMark",
   "TimelineEvent", "GeneratedBrief", "DoctorQuestion", "Appointment",
   "Prescription", "Medication", "Procedure", "EyeBaseline",
+  // A line of an already-per-eye brief panel; the eye is the panel it sits in.
+  "BriefItem",
 ]);
 
 for (const match of models.matchAll(/export interface (\w+) \{([\s\S]*?)\n\}/g)) {
@@ -247,6 +249,84 @@ const conditionsText = readFileSync(conditionsPath, "utf8");
 for (const [, blurb] of conditionsText.matchAll(/blurb:\s*"([^"]+)"/g)) {
   if (/\byou have\b(?! had)|\byou are diagnosed\b/i.test(blurb)) {
     fail(conditionsPath, 0, "no-interpretation", `profile blurb reads as a diagnosis: "${blurb}"`);
+  }
+}
+
+/* ---------- 9. A shared extract is scoped narrowly by default ---------- */
+
+const sharePath = join(srcDir, "lib/share.ts");
+if (existsSync(sharePath)) {
+  const shareText = readFileSync(sharePath, "utf8");
+  const defaults = shareText.match(/export function defaultScope[\s\S]*?\n}/)?.[0] ?? "";
+  // Handing over four years of scans because the default was convenient is a privacy failure the
+  // app would have caused, not one the person chose.
+  for (const store of ["imaging", "documents", "diagnoses", "procedures", "medications", "prescriptions"]) {
+    if (new RegExp(`\\b${store}:\\s*true`).test(defaults)) {
+      fail(sharePath, 0, "share-scope", `defaultScope includes ${store} — the default must be the narrowest useful scope`);
+    }
+  }
+  if (!/includeFiles:\s*false/.test(defaults)) {
+    fail(sharePath, 0, "share-scope", "defaultScope must leave original scans and documents out");
+  }
+  if (!/QR_BOUNDARY[\s\S]{0,200}not encrypted/i.test(shareText)) {
+    fail(sharePath, 0, "share-scope", "the QR handoff must say plainly that it is not encrypted");
+  }
+}
+
+/* ---------- 9b. Nothing read out of a file is confirmed by the app ---------- */
+
+const ingestFiles = files.filter(
+  (f) => /lib\/ingest\.ts$|components\/IngestFiles/.test(f) && !f.includes(".test."),
+);
+for (const file of ingestFiles) {
+  const text = readFileSync(file, "utf8");
+  const lines = text.split("\n");
+  lines.forEach((line, i) => {
+    if (/^\s*(\/\/|\*)/.test(line)) return;
+    // Confirmation is a human action. An extracted value written as confirmed is a fact the app
+    // invented about someone's eye.
+    if (/confirmed:\s*true/.test(line)) {
+      fail(file, i + 1, "no-invention", `extraction marks a value confirmed: ${line.trim().slice(0, 80)}`);
+    }
+  });
+  if (/source_type:\s*"(patient_reported|clinician_reported|device_measurement)"/.test(text)) {
+    fail(file, 0, "provenance", "ingestion must write document_extracted, never a stronger provenance");
+  }
+}
+
+/* ---------- 9c. The PDF writer stays deterministic ---------- */
+
+const pdfPath = join(srcDir, "lib/pdf.ts");
+if (existsSync(pdfPath)) {
+  const pdfText = readFileSync(pdfPath, "utf8");
+  const NON_DETERMINISTIC = [
+    [/\bDate\.now\b/, "Date.now()"],
+    [/\bnew Date\b/, "new Date()"],
+    [/\bMath\.random\b/, "Math.random()"],
+    [/getRandomValues/, "getRandomValues()"],
+    [/toLocale(Date|Time|)String/, "locale formatting"],
+  ];
+  pdfText.split("\n").forEach((line, i) => {
+    if (/^\s*(\/\/|\*)/.test(line)) return;
+    for (const [re, label] of NON_DETERMINISTIC) {
+      if (re.test(line)) {
+        // Same record and range, same bytes — that is what makes "did the brief change?" answerable.
+        fail(pdfPath, i + 1, "deterministic-pdf", `${label} in the PDF writer: ${line.trim().slice(0, 80)}`);
+      }
+    }
+  });
+}
+
+/* ---------- 9d. Every printed page says what the document is ---------- */
+
+const briefPdfPath = join(srcDir, "lib/briefpdf.ts");
+if (existsSync(briefPdfPath)) {
+  const text = readFileSync(briefPdfPath, "utf8");
+  if (!/PATIENT_GENERATED_FOOTER[\s\S]{0,600}not a clinical record/i.test(text)) {
+    fail(briefPdfPath, 0, "generic-boundary", "the printed brief's footer must say it is not a clinical record");
+  }
+  if (!/footer:\s*PATIENT_GENERATED_FOOTER/.test(text)) {
+    fail(briefPdfPath, 0, "generic-boundary", "the generated document must carry that footer");
   }
 }
 

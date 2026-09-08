@@ -166,3 +166,50 @@ describe("eyeName", () => {
     expect(eyeName("right")).not.toBe(eyeName("left"));
   });
 });
+
+describe("unreviewed extractions", () => {
+  const range = { range_start: "2026-09-01", range_end: "2026-09-30" };
+
+  it("keeps a scan read out of a filename out of the brief until it is confirmed", () => {
+    // A date or an eye guessed from a filename is a suggestion. A brief is the one place where a
+    // guess would be read as a fact by someone who was not there when it was made.
+    const data = anAllData({
+      imaging: [
+        anImaging({
+          id: "unchecked",
+          date: "2026-09-05",
+          source_type: "document_extracted",
+          confirmed: false,
+        }),
+        anImaging({
+          id: "checked",
+          date: "2026-09-06",
+          source_type: "document_extracted",
+          confirmed: true,
+        }),
+      ],
+    });
+    const payload = generateBrief(data, range);
+    const kinds = payload.clinicalEvents.map((e) => `${e.date} ${e.kind}`);
+    expect(kinds.join(" ")).toContain("2026-09-06");
+    expect(kinds.join(" ")).not.toContain("2026-09-05");
+  });
+
+  it("still counts nothing it excluded, so the dashboard and the brief agree", () => {
+    const data = anAllData({
+      imaging: [
+        anImaging({ id: "u", date: "2026-09-05", source_type: "document_extracted", confirmed: false }),
+      ],
+    });
+    expect(changesSince(data, range.range_start, range.range_end).imaging).toBe(0);
+  });
+
+  it("leaves records the person entered themselves alone, confirmed or not", () => {
+    const data = anAllData({
+      imaging: [
+        anImaging({ id: "own", date: "2026-09-05", source_type: "device_measurement", confirmed: false }),
+      ],
+    });
+    expect(generateBrief(data, range).clinicalEvents).toHaveLength(1);
+  });
+});

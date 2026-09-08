@@ -55,9 +55,16 @@ app/
       ask.ts              deterministic Q&A over the record, always cited, no model
       render.ts           visual-field drawing renderer
       education.ts        generic procedure / condition explainers
+      pdf.ts              deterministic PDF writer — pure, no clock, no randomness
+      briefpdf.ts         brief → printable document model (ordering, provenance split)
+      briefexport.ts      the browser half: rasterising drawings, downloads, Web Share
+      qr.ts               byte-mode QR encoder, versions 1–20, levels L and M
+      share.ts            range-scoped, encrypted extracts of part of the record
+      ingest.ts           filenames, PDF headers, DICOM, and the OCR seam
     components/           UI primitives, retina diagram, command palette
     pages/                Today · WhatISee · Timeline · MyEyes · Imaging ·
                           Appointments · Visualize · Settings
+    print.css             the printed page; loaded after styles.css so it wins
 ```
 
 ---
@@ -124,6 +131,31 @@ number that looked right. Anything that varies between people or conditions is a
 baked asset. Every view carries `GENERIC_MODEL_BOUNDARY`; the more convincing the render, the more
 that matters. See `docs/engine.md` and `docs/asset-pipeline.md`.
 
+**What leaves the device.** Three paths, and only three: print, a generated PDF, and an encrypted
+extract. All of them are produced locally, and all of them carry `PATIENT_GENERATED_FOOTER` — the
+document says what it is on every page, because a page that gets separated from the rest must
+still say it is not a clinical record.
+
+`lib/pdf.ts` is pure and deterministic: no clock, no locale, no randomness, so the same brief
+always produces the same bytes and "has this changed?" is answerable by comparing two files. The
+guard fails the build on `new Date`, `Math.random` or locale formatting anywhere in it. Fonts are
+the PDF base-14, so nothing is embedded and nothing is fetched.
+
+**Sharing is scoped, and the scope is stated.** `defaultScope` carries the person's own entries
+and their questions — never imaging, documents, diagnoses or original files unless they are asked
+for, which the guard enforces. Counts of what is included *and what is left out* are computed and
+shown before a file exists. A share bundle is an ordinary archive plus a descriptor, so it imports
+through the code that is already tested. The QR card is plain text and says so.
+
+**Nothing read out of a file is a fact.** A date from a filename, a laterality from `_OD`, a line
+of recognised text: all `source_type: "document_extracted"`, `confirmed: false`, and **excluded
+from the appointment brief** until a person confirms them. `PERSON_CONFIRMED` is the only place
+`true` is written, and the guard fails the build on a bare `confirmed: true` in the ingestion path.
+An ambiguous date (`04-09-2026`) is returned as both readings and never resolved by guessing a
+locale. A file that cannot be read is stored intact with a plain sentence saying so — never
+dropped, never failed. Text recognition is not bundled; see `docs/ocr.md` for why and how to add
+one.
+
 **Weight.** Pages other than Today and Timeline are lazy-loaded and must stay that way; the bundle
 check enforces it. Object URLs for stored files are created with `storedFileURL` and must be
 released with `releaseFileURL`, because each one pins a whole scan in memory.
@@ -156,6 +188,9 @@ An agent must **not** self-approve any of these. Prepare the work, flag it clear
 - **Clinical wording** that is not already in the repo — condition descriptions, symptom
   explanations, procedure steps, anything a patient could read as advice. Put new strings in
   `docs/atlas-review.md` with sources and mark the PR as needing sign-off.
+- **Anything written for a clinician to read**, including `docs/clinician-note.md` and the wording
+  on the printed brief. A patient will hand that page to a doctor; it needs the same sign-off as
+  clinical copy.
 - **Safety and emergency copy.** Never reword the urgent-assessment guidance on your own.
 - **Anything that weakens a non-negotiable**, even temporarily, even behind a flag.
 - **Deleting or migrating user data** in a way that is not reversible from an export.
