@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore, useTimeline } from "../lib/store";
 import type { TimelineEvent } from "../lib/models";
-import { EYE_SHORT, SOURCE_LABELS } from "../lib/models";
+import { EYE_SHORT, SOURCE_LABELS, type SymptomEntry } from "../lib/models";
+import SameAsLastTime from "../components/SameAsLastTime";
 import { DemoBadge, EmptyState, EyeBadge, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
 import { formatDate, formatTime, isoToDateOnly, todayLocal, daysAgoISO } from "../lib/util";
 
@@ -42,6 +43,7 @@ export default function TimelinePage() {
   const [customStart, setCustomStart] = useState(daysAgoISO(30));
   const [customEnd, setCustomEnd] = useState(todayLocal());
   const [detail, setDetail] = useState<TimelineEvent | null>(null);
+  const [compare, setCompare] = useState<SymptomEntry | null>(null);
 
   const rangeStart = useMemo(() => {
     switch (range) {
@@ -217,12 +219,21 @@ export default function TimelinePage() {
         </div>
       )}
 
-      {detail && <EventDetail event={detail} onClose={() => setDetail(null)} />}
+      {detail && <EventDetail event={detail} onClose={() => setDetail(null)} onCompare={setCompare} />}
+      {compare && <SameAsLastTime entry={compare} onClose={() => setCompare(null)} />}
     </>
   );
 }
 
-function EventDetail({ event, onClose }: { event: TimelineEvent; onClose: () => void }) {
+function EventDetail({
+  event,
+  onClose,
+  onCompare,
+}: {
+  event: TimelineEvent;
+  onClose: () => void;
+  onCompare: (entry: SymptomEntry) => void;
+}) {
   const store = useStore();
   const body = (() => {
     switch (event.event_type) {
@@ -230,6 +241,18 @@ function EventDetail({ event, onClose }: { event: TimelineEvent; onClose: () => 
         const s = store.symptoms.list.find((x) => x.id === event.entity_id);
         if (!s) return <p className="muted">This entry no longer exists.</p>;
         return (
+          <>
+          <div className="btn-row" style={{ marginBottom: 10 }}>
+            <button
+              className="btn"
+              onClick={() => {
+                onClose();
+                onCompare(s);
+              }}
+            >
+              Is this the same as last time?
+            </button>
+          </div>
           <dl className="kv">
             <dt>Symptom</dt>
             <dd>{s.symptom_type}</dd>
@@ -248,6 +271,7 @@ function EventDetail({ event, onClose }: { event: TimelineEvent; onClose: () => 
               {formatDate(isoToDateOnly(s.date_time))} {formatTime(s.date_time)}
             </dd>
           </dl>
+          </>
         );
       }
       case "imaging": {

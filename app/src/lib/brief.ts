@@ -2,12 +2,15 @@
 // This is an organisational summary of stored records — never a medical interpretation.
 
 import type { AllData } from "./db";
-import type { BriefPayload, Eye } from "./models";
+import type { BriefPayload, BriefSections, Eye } from "./models";
+import { allSeries, describe as describeSeries } from "./trends";
 import { isoToDateOnly } from "./util";
 
 export interface BriefOptions {
   range_start: string; // YYYY-MM-DD inclusive
   range_end: string; // YYYY-MM-DD inclusive
+  /** Extra sections. The default brief stays one page; these are opt-in per brief. */
+  sections?: BriefSections;
 }
 
 export function defaultBriefRange(s: AllData, opts?: { beforeApptId?: string }): BriefOptions {
@@ -57,6 +60,10 @@ function humanDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function t2date(iso: string): string {
+  return isoToDateOnly(iso);
 }
 
 function ordinal(n: number): string {
@@ -177,6 +184,30 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
     }
     if (m.pattern === "taper" && active) {
       payload.treatment.push(`${m.name} — reducing dose, started ${humanDate(m.start_date)}`);
+    }
+  }
+
+  // Recorded numbers over the period, described and never judged. Opt-in: the default brief is
+  // one page, and a clinician with 90 seconds does not want a spreadsheet.
+  if (opts.sections?.trends) {
+    payload.trends = [];
+    for (const series of allSeries(s)) {
+      const inRange = series.points.filter((p) => p.date >= start && p.date <= opts.range_end);
+      if (inRange.length === 0) continue;
+      const described = describeSeries({ ...series, points: inRange });
+      payload.trends.push(described.summary, ...described.notes);
+    }
+  }
+
+  if (opts.sections?.selfTests) {
+    payload.selfTestNotes = [];
+    for (const test of s.selfTests) {
+      if (!inRange(test.date_time)) continue;
+      payload.selfTestNotes.push(
+        `${humanDate(t2date(test.date_time))} — ${test.kind.replace(/_/g, " ")}, ${
+          test.eye === "right" ? "right eye" : "left eye"
+        }${test.result.notation ? `: ${test.result.notation}` : ""}. Done by the patient at home.`,
+      );
     }
   }
 

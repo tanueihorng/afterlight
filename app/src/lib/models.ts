@@ -548,6 +548,14 @@ export interface BriefSection {
   items: string[];
 }
 
+/** Sections a brief can carry beyond the one-page default. */
+export interface BriefSections {
+  trends?: boolean;
+  selfTests?: boolean;
+  treatmentCycles?: boolean;
+  allDrawings?: boolean;
+}
+
 export interface BriefPayload {
   generated_at: string;
   range_start: string;
@@ -560,6 +568,9 @@ export interface BriefPayload {
   clinicalEvents: { date: string; kind: string; title: string }[];
   treatment: string[];
   questions: string[];
+  /** Optional sections, each empty unless asked for. */
+  trends?: string[];
+  selfTestNotes?: string[];
 }
 
 export interface AppMeta {

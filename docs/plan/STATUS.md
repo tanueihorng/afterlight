@@ -16,7 +16,7 @@ marked blocked.
 | 05 | Clinical breadth & self-tests | done, pending clinical review | phase-05-clinical-breadth | 2026-09-08 | 13 profiles, self-checks, unit-aware metrics; **all new clinical copy needs sign-off** |
 | 06 | Visualization I — render engine | done, procedural only | phase-06-render-engine | 2026-09-08 | engine + standalone build shipped; **Blender bake track unrun — Blender not installed** |
 | 07 | Visualization II — disease atlas | done, pending clinical review | phase-07-disease-atlas | 2026-09-08 | 50 conditions, severity, compare, patient-view simulator; **all atlas copy needs sign-off** |
-| 08 | Records intelligence | not started | — | — | |
+| 08 | Records intelligence | done | phase-08-records-intelligence | 2026-09-08 | query layer, ask grammar, search v2, descriptive trends, accessible charts |
 | 09 | Clinician handoff & sharing | not started | — | — | |
 | 10 | Release & clinical review | not started | — | — | |
 
@@ -25,6 +25,32 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 08 done.** `lib/query.ts` is now the one primitive the derived engines
+  share — `select(data, "symptoms").eye("left").between(a, b).order("asc")` — reading from the
+  Phase 02 indexes rather than re-walking arrays, with each entity's own date field known in one
+  place. Ask keeps its deterministic, always-cited design and gains an intent grammar over that
+  layer: counts over a named window ("this year", "the last 30 days", "since my last appointment"),
+  most-recent-of-anything, and measurement trends, on top of the existing hand-written intents.
+  Thirty-plus question shapes answered, and a property test asserts no answer states a number the
+  record does not support.
+  Search v2: field scoping (`eye:left type:floaters after:2026-06`), a **symmetric** clinical
+  synonym table, typo tolerance on long words only, and a `why` on every hit so ranking can be
+  explained rather than trusted. Two real gaps found while testing — synonyms worked only one way
+  (`oct`→`tomography`, not back, which is the direction a patient reading a letter actually needs),
+  and a fields-only query returned nothing at all.
+  `lib/trends.ts` extracts numeric series with acuity converted to logMAR so a mixed record reads as
+  one line, keeps non-numeric acuities (CF, HM, LP) as carried-but-not-plotted, and describes a
+  series in words that are pure arithmetic. A new guard rule fails the build if trend copy uses
+  verdict language, and a test asserts the same. Clinic and home values are marked distinctly and
+  never joined into one line.
+  `Chart.tsx` renders the picture and the same readings as a table — not a fallback, since for many
+  of these users the numbers are more legible than the graph — with different mark shapes for
+  clinic and home, and axis labels in the notation the value was recorded in rather than the
+  logMAR the axis uses.
+  Also: opt-in brief sections (recorded numbers, home checks) that keep the default to one page,
+  and "Is this the same as last time?" — every earlier instance of a symptom side by side, with the
+  answer recorded in the patient's own words rather than inferred.
+  462 tests.
 - **2026-09-08** — **Phase 07 done, pending clinical review.** Fifty conditions across all four
   regions — ocular surface, anterior segment, vitreoretina and optic nerve — each a parameter delta
   over the Phase 06 engine rather than its own picture, which is what makes severity a slider
