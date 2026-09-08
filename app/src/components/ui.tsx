@@ -14,6 +14,23 @@ export function EyeBadge({ eye }: { eye: Eye }) {
   );
 }
 
+/**
+ * A record whose details were read out of a file and have not been checked by the person.
+ *
+ * It says what is true — nobody has looked at this yet — rather than warning about it, and it is
+ * the visible counterpart of the rule that keeps unchecked extractions out of a brief.
+ */
+export function NeedsCheckingBadge({
+  source,
+  confirmed,
+}: {
+  source: SourceType;
+  confirmed?: boolean;
+}) {
+  if (source !== "document_extracted" || confirmed) return null;
+  return <span className="badge needs-checking">Not checked yet</span>;
+}
+
 export function DemoBadge({ demo }: { demo?: boolean }) {
   if (!demo) return null;
   return <span className="badge demo">Demo data</span>;

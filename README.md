@@ -64,7 +64,7 @@ Everything else is what that daily habit makes possible six months later.
 | **Timeline** | Your entries and your clinical events on one chronology — symptoms, drawings, scans, letters, surgery, medication — never blended, always labelled by source. |
 | **My Eyes** | Each eye as its own longitudinal patient: baseline ("what my vision is normally like"), diagnoses, procedures, floaters tracked as persistent objects, measurements, prescriptions. |
 | **Imaging & Documents** | Your OCTs, fundus photos, clinic letters and operative notes, in your possession. Compare two OCTs side by side. |
-| **Appointments** | The flagship: **Prepare for appointment** turns everything since your last visit into a one-page brief — new / unchanged / improved, per eye — that you can print, hand over, or show fullscreen in the room. |
+| **Appointments** | The flagship: **Prepare for appointment** turns everything since your last visit into a one-page brief — new / unchanged / improved, per eye — laid out for a sixty-second read. Save it as a real PDF, print it, show it fullscreen in the room, or hand over an encrypted extract covering only the dates you choose. |
 | **Visualize** | A 3D anatomy explorer plus schematic explainers for the procedures in *your* record — what a vitrectomy, a buckle, a gas tamponade actually did. Educational, and clearly labelled as generic. |
 | **Search & Ask** | `⌘K` searches every record. `?` answers questions from your own history — *"when did glare in my left eye first appear?"* — always with the source, never invented. |
 
@@ -186,6 +186,10 @@ afterlight/
         │   ├── brief.ts      # the "what changed?" engine behind the appointment brief
         │   ├── search.ts     # global search across every record type
         │   ├── ask.ts        # deterministic Q&A over your own history, with citations
+        │   ├── pdf.ts        # a small deterministic PDF writer — same brief, same bytes
+        │   ├── share.ts      # encrypted extracts of a chosen date range, never the whole record
+        │   ├── qr.ts         # QR encoder, so a summary can be scanned off your screen offline
+        │   ├── ingest.ts     # filenames, PDF headers and DICOM read as suggestions, never facts
         │   ├── render.ts     # visual-field drawing renderer
         │   └── education.ts  # generic procedure / condition explainers
         ├── components/       # UI primitives, retina diagram, command palette
@@ -199,6 +203,9 @@ Two design decisions worth calling out:
 - **"Ask my records" contains no model.** It is a deterministic query layer over your own data.
   It answers from stored records and cites them, and when it cannot, it says exactly that:
   *"I could not find that in your stored records."* An eye record is not a place to hallucinate.
+- **The PDF writer is ours, and it is deterministic.** The same brief always produces byte-identical
+  output, so "has this changed?" is answerable by comparing two files — and nothing in the document
+  path can reach for a font on someone else's server.
 
 ---
 

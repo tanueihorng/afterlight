@@ -1,0 +1,198 @@
+/* Print.
+ *
+ * The printed brief is the artefact that actually reaches a clinic — often through a mono laser
+ * printer and a document scanner. So this stylesheet assumes the worst case: no colour, no
+ * background printing, no ability to scroll or expand anything. Everything that carries meaning
+ * on screen through colour, truncation or overflow has to survive that.
+ *
+ * Loaded after styles.css so it wins without needing !important on every rule.
+ */
+
+@media print {
+  @page {
+    /* The browser adds its own header and footer; the document supplies its own margins so the
+       text block does not drift when a different browser prints it. */
+    margin: 14mm 14mm 16mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 10.5pt;
+    line-height: 1.4;
+  }
+
+  /* Themes exist for reading on a screen. On paper the only legible choice is black on white,
+     and a dark theme printed as-is either wastes a cartridge or comes out blank. */
+  * {
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: economy;
+    print-color-adjust: economy;
+  }
+
+  /* The app's own navigation, not the record. The shell itself stays — printing should produce
+     what is on screen, not a second copy of it built for the printer. */
+  .sidebar,
+  .tabbar,
+  .topbar-date,
+  .no-print,
+  .present-bar,
+  .skip-link,
+  .backdrop-dismiss,
+  button:not(.print-keep),
+  input[type="range"],
+  select {
+    display: none !important;
+  }
+
+  .shell {
+    display: block !important;
+    grid-template-columns: none !important;
+    min-height: 0 !important;
+  }
+
+  .main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  main,
+  .content,
+  .present,
+  .present-doc {
+    position: static !important;
+    overflow: visible !important;
+    max-width: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 10.5pt !important;
+  }
+
+  .print-doc {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    max-width: none;
+  }
+
+  .card,
+  .print-doc .card,
+  .eye-panel {
+    background: #fff !important;
+    border: 1px solid #999 !important;
+    border-radius: 0 !important;
+    padding: 8pt 10pt !important;
+    margin: 0 0 8pt !important;
+  }
+
+  /* A section split across a page break is the difference between a brief that gets read and one
+     that gets put down. Headings stay with what follows them; panels stay whole. */
+  .print-doc h1,
+  .print-doc h2,
+  .print-doc h3,
+  .card-title,
+  .eye-heading {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .eye-panel,
+  .print-section,
+  figure,
+  .tl-event,
+  li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-doc .grid-2 {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10pt !important;
+  }
+
+  /* Truncation and scroll containers are screen affordances. On paper they hide content with no
+     way to reveal it, so everything is expanded. */
+  .tl-summary,
+  .tl-title,
+  td,
+  th,
+  .muted,
+  .print-doc * {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    max-height: none !important;
+    -webkit-line-clamp: none !important;
+  }
+
+  [style*="overflow-x"],
+  .table-wrap,
+  .gallery {
+    overflow: visible !important;
+  }
+
+  /* Badges carry provenance. As colour chips they vanish on a mono printer, so they print as
+     bracketed text — the meaning is in the words, and the words are already there. */
+  .badge {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font-size: 8.5pt !important;
+    font-weight: 600;
+    letter-spacing: 0;
+  }
+
+  .badge::before {
+    content: "[";
+  }
+
+  .badge::after {
+    content: "] ";
+  }
+
+  .divider,
+  hr {
+    border: none !important;
+    border-top: 1px solid #999 !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: none;
+  }
+
+  /* A URL printed after every link would bury the content; the app has no outbound links in the
+     brief anyway. */
+  a[href]::after {
+    content: "";
+  }
+
+  img {
+    max-width: 100% !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .draw-disclaimer,
+  .print-footnote {
+    font-size: 8.5pt !important;
+    font-style: italic;
+  }
+
+  /* The one thing that must appear on paper even though it is chrome on screen. */
+  .print-footer {
+    display: block !important;
+    margin-top: 10pt;
+    padding-top: 6pt;
+    border-top: 1px solid #999;
+    font-size: 8.5pt;
+  }
+}

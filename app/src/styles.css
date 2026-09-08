@@ -462,7 +462,9 @@ summary {
   color: var(--text);
   font-size: var(--fs-base);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .btn:hover {
@@ -801,6 +803,11 @@ input[type="range"] {
 }
 
 .modal {
+  /* Positioned, so it paints above the fixed backdrop-dismiss button. Without this the dismiss
+     layer sits on top of the dialog and swallows clicks meant for its own controls — the dialog
+     looks fine and simply does not respond. */
+  position: relative;
+  z-index: 1;
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -897,8 +904,7 @@ input[type="range"] {
   border-radius: var(--radius);
   border: 1px solid var(--border);
   background:
-    radial-gradient(ellipse at center, rgba(233, 185, 111, 0.05), transparent 70%),
-    var(--bg);
+    radial-gradient(ellipse at center, rgba(233, 185, 111, 0.05), transparent 70%), var(--bg);
   touch-action: none;
 }
 
@@ -1102,36 +1108,10 @@ input[type="range"] {
 
 /* ---------- print (appointment brief) ---------- */
 
+/* The real print rules live in print.css, loaded after this file. Only the on-screen half of the
+   print/no-print pair belongs here. */
 .print-only {
   display: none;
-}
-
-@media print {
-  body {
-    background: #fff;
-    color: #111;
-  }
-  .shell,
-  .no-print {
-    display: none !important;
-  }
-  .print-only {
-    display: block;
-  }
-  .print-doc {
-    color: #111;
-    font-family: Georgia, serif;
-  }
-  .print-doc h1,
-  .print-doc h2 {
-    color: #111;
-  }
-  .print-doc .card,
-  .print-doc .tl-event {
-    background: #fff;
-    border-color: #ccc;
-    color: #111;
-  }
 }
 
 /* ---------- command palette (search / ask my records) ---------- */
@@ -1916,5 +1896,184 @@ input[type="range"] {
 }
 
 .atlas-row:hover {
+  color: var(--accent-strong);
+}
+
+/* ---------- clinician handoff: brief, share, present ---------- */
+
+.brief-identifier {
+  text-align: right;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+
+.brief-how-to-read {
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+  margin: 0 0 14px;
+}
+
+/* The label that says whose claim the list underneath is. It has to read as a heading, not as
+   decoration, because the whole point of the panel is that the two lists mean different things. */
+.brief-source-heading {
+  margin: 10px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* One line of a brief panel. A class rather than an inline style, so present mode can scale it —
+   an inline font-size wins against every stylesheet, including the one for the large view. */
+.brief-line {
+  font-size: var(--fs-base);
+  color: var(--text-2);
+  margin-bottom: 3px;
+}
+
+.brief-bucket {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.print-footer {
+  display: none;
+}
+
+.share-scope {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin: 14px 0 0;
+}
+
+.share-scope legend {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+  padding: 0 6px;
+}
+
+.qr-card-text {
+  white-space: pre-wrap;
+  font-size: var(--fs-xs);
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.present-heading {
+  font-family: var(--font-display);
+  font-size: calc(var(--fs-xl) * 1.15);
+  margin: 0 0 4px;
+}
+
+.present-list {
+  font-size: var(--fs-lg);
+  line-height: 1.6;
+  padding-left: 24px;
+  margin: 12px 0;
+}
+
+.present-list li {
+  margin-bottom: 10px;
+}
+
+.present-hint {
+  margin-top: 32px;
+  font-size: var(--fs-sm);
+}
+
+/* A drawing shown large enough to point at across a desk. */
+.present-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  border: none;
+  padding: 4vh 4vw;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  cursor: zoom-out;
+}
+
+.present-zoom img {
+  max-width: 100%;
+  max-height: 92vh;
+  border-radius: var(--radius);
+}
+
+/* ---------- bulk file ingestion ---------- */
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.dropzone.over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.ingest-row {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.ingest-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+/* Where a suggested value came from, and how much to trust it. Never styled as a warning: these
+   are ordinary statements about provenance, not problems. */
+.ingest-notes {
+  margin: 4px 0 10px;
+  padding-left: 20px;
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+
+/* Present mode reuses the brief's own components so there is one source of truth for the words.
+   What changes is the scale, and the fact that the section heading already names the eye — the
+   panel repeating it underneath is noise on a screen held across a desk. */
+.present-doc .eye-heading {
+  display: none;
+}
+
+.present-doc .eye-panel,
+.present-doc .brief-line,
+.present-doc .brief-bucket {
+  font-size: var(--fs-lg);
+}
+
+.present-doc .brief-line {
+  margin-bottom: 10px;
+  line-height: 1.55;
+}
+
+.present-doc .eye-panel {
+  padding: 18px 22px;
+}
+
+/* Neither an error nor an alarm — a statement that nobody has looked at this yet. */
+.badge.needs-checking {
+  background: var(--accent-soft);
+  border-color: var(--accent);
   color: var(--accent-strong);
 }

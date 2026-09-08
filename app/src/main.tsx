@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { StoreProvider } from "./lib/store";
 import "./styles.css";
+// Loaded after the app stylesheet so print rules win without fighting specificity.
+import "./print.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
