@@ -15,7 +15,7 @@ marked blocked.
 | 04 | Daily loop & mobile | done | phase-04-daily-loop-mobile | 2026-09-08 | bottom nav, sheets, two-target Today, Playwright on desktop + iPhone; offline now verified |
 | 05 | Clinical breadth & self-tests | done, pending clinical review | phase-05-clinical-breadth | 2026-09-08 | 13 profiles, self-checks, unit-aware metrics; **all new clinical copy needs sign-off** |
 | 06 | Visualization I — render engine | done, procedural only | phase-06-render-engine | 2026-09-08 | engine + standalone build shipped; **Blender bake track unrun — Blender not installed** |
-| 07 | Visualization II — disease atlas | not started | — | — | |
+| 07 | Visualization II — disease atlas | done, pending clinical review | phase-07-disease-atlas | 2026-09-08 | 50 conditions, severity, compare, patient-view simulator; **all atlas copy needs sign-off** |
 | 08 | Records intelligence | not started | — | — | |
 | 09 | Clinician handoff & sharing | not started | — | — | |
 | 10 | Release & clinical review | not started | — | — | |
@@ -25,6 +25,35 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-08** — **Phase 07 done, pending clinical review.** Fifty conditions across all four
+  regions — ocular surface, anterior segment, vitreoretina and optic nerve — each a parameter delta
+  over the Phase 06 engine rather than its own picture, which is what makes severity a slider
+  instead of a set of images. Composable lesion layers (dot-blot and flame haemorrhages, exudates,
+  cotton-wool spots, drusen, atrophy, subretinal bleed, neovascular fronds, laser scars, PRP, bone
+  spicules, detachment, tear, macular hole, membrane, haze) so combinations like proliferative
+  retinopathy with oedema after laser render correctly together.
+  The patient-view simulator is the flagship: central scotoma, metamorphopsia as a real distortion
+  field rather than blur, arcuate and peripheral loss, curtain, floaters, glare, haloes, contrast
+  and colour loss, diplopia, photophobia. Two properties are enforced by tests — **field loss fades
+  rather than ending at an edge, and is never painted black** (the tunnel-with-black-walls picture
+  is the most misleading image in this subject), and **retina inverts to field**, so a superior
+  detachment shows as a shadow rising from below. Getting that backwards would teach a patient the
+  opposite of what to report.
+  Compare mode with locked views, deep links (`#/visualize/atlas/<id>`), documented diagnoses
+  linked to their entries, and "is this like what you see?" which drafts a description into the
+  drawing page and writes nothing until the person saves.
+  Three real bugs found by looking at the output: the curtain washed from the wrong edge and was
+  barely visible; detachment rendered as a hard-edged pie slice rather than a billowing dome with a
+  soft boundary; and **deep links only worked on first mount** — `useHashRoute` stored just the base
+  route, so `#/visualize/atlas/pdr` never re-rendered anything. The router now tracks the whole hash.
+  Two new guard rules: the atlas may never rank conditions against someone's symptoms, and the
+  simulator may never paint field loss black.
+  **All fifty entries are unreviewed and listed in full in `docs/atlas-review.md`**, with the
+  specific questions a clinician should answer — chiefly whether any "what people notice" line is
+  wrong, since that is what a patient will match themselves against.
+  **Deviation from the plan:** procedure animations were to be authored in Blender. Blender is not
+  installed here, so procedures remain the Phase 05 schematic explainers, now scrubbable with a
+  step slider. Recorded in the review doc.
 - **2026-09-08** — **Phase 06 done, procedural only.** A framework-agnostic Three.js engine under
   `app/src/engine/`, built from real ocular dimensions: the sclera's corneal aperture, the corneal
   cap and the limbus meet where the arithmetic puts them. The first attempt rendered a featureless

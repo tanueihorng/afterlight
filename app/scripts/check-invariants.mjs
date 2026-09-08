@@ -3,7 +3,7 @@
 // Cheap, boring checks that catch the failures an agent is most likely to introduce.
 // Anything that needs judgement is deliberately NOT here — see "What requires a human".
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -73,11 +73,20 @@ const BANNED_COPY = [
 
 for (const file of files) {
   if (file.endsWith(".css")) continue;
+  // Tests quote the very phrases they assert are absent; scanning them flags the guard's own
+  // safety net as a violation.
+  if (/\.test\.tsx?$/.test(file)) continue;
   const text = readFileSync(file, "utf8");
-  text.split("\n").forEach((line, i) => {
+  const copyLines = text.split("\n");
+  copyLines.forEach((line, i) => {
     if (/^\s*(\/\/|\*)/.test(line)) return; // comments are not user-facing
+    // A sentence that denies making a claim is not making one: "never suggests what you might
+    // have" is the opposite of what this rule exists to catch. Prose wraps, so judge the
+    // surrounding sentence rather than a fragment of it.
+    const sentence = [copyLines[i - 1] ?? "", line, copyLines[i + 1] ?? ""].join(" ");
+    const denies = /\b(never|not|cannot|does not|doesn't|no)\b/i.test(sentence);
     for (const [re, label] of BANNED_COPY) {
-      if (re.test(line)) {
+      if (re.test(line) && !denies) {
         fail(file, i + 1, "no-interpretation", `${label}: ${line.trim().slice(0, 100)}`);
       }
     }
@@ -135,7 +144,7 @@ if (!/not a reconstruction of your own|not your (eye|anatomy)|generic and educat
 /* ---------- 6. Self-tests are never presented as clinical measurements ---------- */
 
 const selfTestFiles = files.filter(
-  (f) => /selftest|SelfTests|components\/tests\//i.test(f) && !f.endsWith(".test.ts"),
+  (f) => /selftest|SelfTests|components\/tests\//i.test(f) && !/\.test\.tsx?$/.test(f),
 );
 
 if (selfTestFiles.length > 0) {
@@ -179,6 +188,40 @@ for (const bad of ["openai", "anthropic", "generateText", "llm", "completion("])
   if (askText.toLowerCase().includes(bad)) {
     fail(askPath, 0, "no-invention", `ask.ts must stay deterministic — found "${bad}"`);
   }
+}
+
+/* ---------- 7b. The atlas is a reference, never a suggestion engine ---------- */
+
+const atlasFiles = files.filter((f) => /engine\/conditions\/|components\/Atlas/.test(f) && !f.includes(".test."));
+for (const file of atlasFiles) {
+  const text = readFileSync(file, "utf8");
+  text.split("\n").forEach((line, i) => {
+    if (/^\s*(\/\/|\*)/.test(line)) return;
+    // Ranking conditions against someone's own symptoms would turn a reference into a diagnosis.
+    if (/(likely|possible|probable|suspected)\s+(condition|diagnos|cause)/i.test(line)) {
+      fail(file, i + 1, "no-interpretation", `suggests a diagnosis: ${line.trim().slice(0, 80)}`);
+    }
+    if (/(match|rank|score).*(symptom|yourSymptoms)/i.test(line) && !/never|not /i.test(line)) {
+      fail(file, i + 1, "no-interpretation", `ranks conditions against symptoms: ${line.trim().slice(0, 80)}`);
+    }
+  });
+}
+
+/* ---------- 7c. Vision simulations keep their soft edges and their boundary ---------- */
+
+const simPath = join(srcDir, "engine/simulate/vision.ts");
+if (existsSync(simPath)) {
+  const simText = readFileSync(simPath, "utf8");
+  if (!/not a measurement of anyone's vision/i.test(simText)) {
+    fail(simPath, 0, "simulation-boundary", "the simulation boundary wording is missing");
+  }
+  simText.split("\n").forEach((line, i) => {
+    if (/^\s*(\/\/|\*)/.test(line)) return;
+    // The hard black tunnel is the most misleading picture in this whole subject.
+    if (/(fillStyle|strokeStyle|addColorStop)[^\n]*(#000\b|rgba?\(\s*0\s*,\s*0\s*,\s*0)/.test(line)) {
+      fail(simPath, i + 1, "simulation-boundary", `field loss painted black: ${line.trim().slice(0, 80)}`);
+    }
+  });
 }
 
 /* ---------- 8. Condition profiles never become diagnoses ---------- */
