@@ -260,10 +260,26 @@ export const PROCEDURE_TYPES = [
   "other",
 ];
 
+export type TreatmentPattern = "ongoing" | "course" | "taper" | "injection_series";
+
+export const TREATMENT_PATTERN_LABELS: Record<TreatmentPattern, string> = {
+  ongoing: "Ongoing",
+  course: "A course with an end date",
+  taper: "Reducing dose (taper)",
+  injection_series: "A series of injections",
+};
+
 export interface Medication {
   id: string;
   name: string;
   kind: "prescription" | "self_care";
+  /** How this treatment runs, so the brief can describe a cycle rather than a start date. */
+  pattern?: TreatmentPattern;
+  /** For an injection series: which one this is, and the interval in weeks. */
+  cycle_number?: number;
+  interval_weeks?: number;
+  /** Most recent dose or injection, when that is the thing that matters. */
+  last_given?: string;
   eye: Eye;
   dose?: string;
   frequency?: string;
@@ -289,13 +305,71 @@ export interface Prescription {
   updated_at: string;
 }
 
-export type MeasurementKind = "visual_acuity" | "iop" | "cct" | "other";
+export type MeasurementKind =
+  | "visual_acuity"
+  | "iop"
+  | "cct"
+  | "vf_md"
+  | "vf_psd"
+  | "vf_vfi"
+  | "oct_cst"
+  | "axial_length"
+  | "hba1c"
+  | "blood_pressure"
+  | "other";
 
 export const MEASUREMENT_LABELS: Record<MeasurementKind, string> = {
   visual_acuity: "Visual acuity",
   iop: "Intraocular pressure",
   cct: "Corneal thickness",
+  vf_md: "Visual field — mean deviation",
+  vf_psd: "Visual field — pattern standard deviation",
+  vf_vfi: "Visual field index",
+  oct_cst: "OCT central subfield thickness",
+  axial_length: "Axial length",
+  hba1c: "HbA1c",
+  blood_pressure: "Blood pressure",
   other: "Other",
+};
+
+/** The unit a value is recorded in. Values are never silently converted between units. */
+export const MEASUREMENT_UNITS: Record<MeasurementKind, string[]> = {
+  visual_acuity: ["Snellen (6m)", "Snellen (20ft)", "logMAR", "decimal"],
+  iop: ["mmHg"],
+  cct: ["µm"],
+  vf_md: ["dB"],
+  vf_psd: ["dB"],
+  vf_vfi: ["%"],
+  oct_cst: ["µm"],
+  axial_length: ["mm"],
+  hba1c: ["mmol/mol", "%"],
+  blood_pressure: ["mmHg"],
+  other: [],
+};
+
+/**
+ * How a measurement was taken. Two IOP readings by different methods are not the same number, so
+ * the method travels with the value rather than being lost.
+ */
+export type MeasurementMethod =
+  | "goldmann"
+  | "non_contact"
+  | "icare"
+  | "tonopen"
+  | "chart_clinic"
+  | "home_screen_test"
+  | "device_report"
+  | "unspecified";
+
+export const METHOD_LABELS: Record<MeasurementMethod, string> = {
+  goldmann: "Goldmann applanation",
+  non_contact: "Non-contact (air puff)",
+  icare: "iCare rebound",
+  tonopen: "Tono-Pen",
+  chart_clinic: "Clinic chart",
+  home_screen_test: "Home screen test — not a clinical measurement",
+  device_report: "From a device report",
+  unspecified: "Method not recorded",
 };
 
 export interface Measurement {
@@ -305,6 +379,76 @@ export interface Measurement {
   kind: MeasurementKind;
   value: string;
   unit?: string;
+  /** How it was taken; absent means it was not recorded. */
+  method?: MeasurementMethod;
+  /** Correction worn, where it changes what the number means. */
+  correction?: "none" | "glasses" | "contacts" | "pinhole";
+  note?: string;
+  source_type: SourceType;
+  demo?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/* ---------------------------------------------------------------- self-tests */
+
+export type SelfTestKind = "amsler" | "home_acuity" | "contrast" | "colour";
+
+export const SELF_TEST_LABELS: Record<SelfTestKind, string> = {
+  amsler: "Amsler grid",
+  home_acuity: "Home vision check",
+  contrast: "Contrast check",
+  colour: "Colour check",
+};
+
+/**
+ * The conditions a self-test was done under. A result without them is not comparable with a
+ * result taken any other way, and the app says so rather than plotting them together.
+ */
+export interface TestConditions {
+  /** Screen brightness as the person judged it, since no browser can read the real value. */
+  brightness?: "low" | "medium" | "high";
+  ambient?: "dark" | "dim" | "normal" | "bright";
+  /** Viewing distance in centimetres, measured or estimated by the person. */
+  distance_cm?: number;
+  correction: "none" | "glasses" | "contacts";
+  /** Screen calibration factor from the card-on-screen step, px per mm. */
+  px_per_mm?: number;
+  time_of_day?: string;
+}
+
+export function conditionsComplete(c: TestConditions | undefined): boolean {
+  if (!c) return false;
+  return (
+    !!c.brightness && !!c.ambient && !!c.correction && typeof c.distance_cm === "number"
+  );
+}
+
+export interface SelfTestResult {
+  id: string;
+  kind: SelfTestKind;
+  date_time: string;
+  eye: "right" | "left";
+  /**
+   * What the test produced, in its own terms. Deliberately not a score out of anything: these are
+   * comparisons with the person's own previous attempts, never a measurement of vision.
+   */
+  result: {
+    /** home_acuity: the smallest line read, in the test's own step units. */
+    smallest_step?: number;
+    /** home_acuity: the equivalent notation, always carrying the home-test qualifier. */
+    notation?: string;
+    /** contrast: the faintest step seen. */
+    contrast_step?: number;
+    /** colour: how many plates were read as expected, out of how many. */
+    colour_seen?: number;
+    colour_total?: number;
+    /** amsler: whether anything was marked at all. */
+    marks?: number;
+  };
+  /** Amsler drawings reuse the drawing engine rather than a second one. */
+  drawing_id?: string;
+  conditions: TestConditions;
   note?: string;
   source_type: SourceType;
   demo?: boolean;
@@ -426,6 +570,8 @@ export interface AppMeta {
   /** Multiplier on the whole type scale: 1, 1.25, 1.5 or 2. */
   type_scale?: number;
   reduced_motion?: boolean;
+  /** Condition profiles chosen by the person. These shape prompts only — never a diagnosis. */
+  condition_profiles?: string[];
   glare_comfort?: boolean;
   dim_imagery?: boolean;
   demo_seeded: boolean;
@@ -452,6 +598,7 @@ export interface TimelineEvent {
     | "imaging"
     | "document"
     | "measurement"
+    | "self_test"
     | "note"
     | "floater";
   entity_id: string;

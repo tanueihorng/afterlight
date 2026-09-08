@@ -9,6 +9,7 @@ import Imaging from "./Imaging";
 import Appointments from "./Appointments";
 import Settings from "./Settings";
 import Visualize from "./Visualize";
+import SelfTests from "./SelfTests";
 import {
   aBaseline,
   aDiagnosis,
@@ -49,6 +50,7 @@ const pages: [string, () => JSX.Element][] = [
   ["Appointments", Appointments],
   ["Settings", Settings],
   ["Visualize", Visualize],
+  ["Checks", SelfTests],
 ];
 
 describe("every page renders against a populated record", () => {

@@ -59,6 +59,11 @@ function humanDate(iso: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function ordinal(n: number): string {
+  const suffix = n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th";
+  return `${n}${suffix}`;
+}
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -159,6 +164,32 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
         `${m.name}${m.dose ? ` ${m.dose}` : ""}${m.frequency ? `, ${m.frequency}` : ""} — ongoing (since ${m.start_date})`
       );
     }
+
+    // An injection series is a cycle, and "3rd injection, 6-week interval, most recent 12 Aug" is
+    // the sentence a clinic actually needs — a start date alone does not carry it.
+    if (m.pattern === "injection_series" && active) {
+      const parts = [
+        m.cycle_number ? `${ordinal(m.cycle_number)} injection` : "injection series",
+        m.interval_weeks ? `${m.interval_weeks}-week interval` : undefined,
+        m.last_given ? `most recent ${humanDate(m.last_given)}` : undefined,
+      ].filter(Boolean);
+      payload.treatment.push(`${m.name} — ${parts.join(", ")}`);
+    }
+    if (m.pattern === "taper" && active) {
+      payload.treatment.push(`${m.name} — reducing dose, started ${humanDate(m.start_date)}`);
+    }
+  }
+
+  // Checks the patient did themselves, always badged as such and never mixed with clinic results.
+  for (const t of s.selfTests) {
+    if (!inRange(t.date_time)) continue;
+    payload.clinicalEvents.push({
+      date: isoToDateOnly(t.date_time),
+      kind: "Check done by patient",
+      title: `${t.kind.replace(/_/g, " ")} — ${t.eye === "right" ? "right eye" : "left eye"}${
+        t.result.notation ? `, ${t.result.notation}` : ""
+      }`,
+    });
   }
 
   payload.questions = s.questions

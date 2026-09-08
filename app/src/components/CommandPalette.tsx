@@ -13,6 +13,7 @@ const ROUTE_LABELS: Record<Route, string> = {
   "what-i-see": "What I See",
   timeline: "Timeline",
   "my-eyes": "My Eyes",
+  "self-tests": "Checks",
   imaging: "Imaging & Documents",
   appointments: "Appointments",
   visualize: "Visualize",

@@ -24,6 +24,7 @@ import {
 import { toAllData } from "../lib/store";
 import { Field, Modal } from "../components/ui";
 import DisplaySettings from "../components/DisplaySettings";
+import ConditionProfiles from "../components/ConditionProfiles";
 import { formatDate } from "../lib/util";
 import { ConfirmButton, PageHeader, SafetyNotice } from "../components/ui";
 
@@ -119,6 +120,8 @@ export default function Settings() {
       />
 
       <DisplaySettings />
+
+      <ConditionProfiles />
 
       <section className="card">
         <div className="card-title">Demo data</div>

@@ -23,13 +23,14 @@ import type {
   Measurement,
   Prescription,
   Procedure,
+  SelfTestResult,
   StoredFile,
   SymptomEntry,
   VisualFieldDrawing,
 } from "./models";
 
 export const DB_NAME = "afterlight";
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const STORES = [
   "symptoms",
@@ -43,6 +44,7 @@ export const STORES = [
   "medications",
   "prescriptions",
   "measurements",
+  "selfTests",
   "imaging",
   "documents",
   "files",
@@ -150,6 +152,7 @@ export interface AllData {
   medications: Medication[];
   prescriptions: Prescription[];
   measurements: Measurement[];
+  selfTests: SelfTestResult[];
   imaging: ImagingRecord[];
   documents: DocumentRecord[];
   baselines: EyeBaseline[];
@@ -168,6 +171,7 @@ const EMPTY_DATA: AllData = {
   medications: [],
   prescriptions: [],
   measurements: [],
+  selfTests: [],
   imaging: [],
   documents: [],
   baselines: [],
@@ -188,6 +192,7 @@ export async function loadAllData(): Promise<AllData & { meta?: AppMeta }> {
       medications: await dbGetAll<Medication>("medications"),
       prescriptions: await dbGetAll<Prescription>("prescriptions"),
       measurements: await dbGetAll<Measurement>("measurements"),
+      selfTests: await dbGetAll<SelfTestResult>("selfTests"),
       imaging: await dbGetAll<ImagingRecord>("imaging"),
       documents: await dbGetAll<DocumentRecord>("documents"),
       baselines: await dbGetAll<EyeBaseline>("baselines"),

@@ -15,6 +15,7 @@ import BackupNudge from "../components/BackupNudge";
 import { addDays, formatDate, formatLongDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
 import { continuity, continuitySentence } from "../lib/streak";
 import { quickEntries } from "../lib/suggestions";
+import { promptedSymptoms, suggestedSelfTests } from "../lib/conditions";
 import { toAllData } from "../lib/store";
 
 interface Row {
@@ -80,6 +81,16 @@ export default function Today() {
     () => quickEntries(toAllData(store), date),
     [store, date],
   );
+  // Profiles reorder the symptom list; they never shorten it.
+  const profileIds = useMemo(
+    () => store.meta?.condition_profiles ?? [],
+    [store.meta?.condition_profiles],
+  );
+  const orderedSymptoms = useMemo(() => {
+    const prompted = promptedSymptoms(profileIds);
+    return [...prompted, ...SYMPTOM_TYPES.filter((t) => !prompted.includes(t))];
+  }, [profileIds]);
+  const profileTests = useMemo(() => suggestedSelfTests(profileIds), [profileIds]);
 
   const baseline = (eye: "right" | "left") =>
     store.baselines.list.find((b) => b.id === eye)?.text;
@@ -228,7 +239,7 @@ export default function Today() {
                 aria-label="Symptom type"
                 style={{ flex: 1 }}
               >
-                {SYMPTOM_TYPES.map((t) => (
+                {orderedSymptoms.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
@@ -402,6 +413,19 @@ export default function Today() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {profileTests.length > 0 && (
+            <div className="card" style={{ marginTop: 16 }}>
+              <h2 className="card-title">Checks you can do yourself</h2>
+              <p className="muted" style={{ marginTop: 0 }}>
+                Repeatable checks that give you something concrete to compare between appointments.
+                They are not measurements of your vision.
+              </p>
+              <button className="btn subtle" onClick={() => nav("self-tests")}>
+                ◎ Open checks
+              </button>
             </div>
           )}
 

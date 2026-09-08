@@ -9,7 +9,7 @@ import type { AllData } from "./db";
 import type { AppMeta, FloaterObject, StoredFile } from "./models";
 
 /** Bump this whenever a migration is added. */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export interface Snapshot {
   data: AllData;
@@ -71,6 +71,17 @@ export const MIGRATIONS: Migration[] = [
         // A Blob cannot be converted synchronously; mark it for the async pass below.
         return f;
       }),
+    }),
+  },
+  {
+    from: 3,
+    to: 4,
+    describe: "Make room for self-checks and condition profiles.",
+    migrate: (s) => ({
+      ...s,
+      // Nothing to rewrite: the new store starts empty and profiles default to none, which means
+      // the generic prompt set — exactly what everyone had before.
+      data: { ...s.data, selfTests: s.data.selfTests ?? [] },
     }),
   },
 ];

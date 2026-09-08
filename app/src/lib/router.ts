@@ -5,6 +5,7 @@ export const ROUTES = [
   "what-i-see",
   "timeline",
   "my-eyes",
+  "self-tests",
   "imaging",
   "appointments",
   "visualize",
