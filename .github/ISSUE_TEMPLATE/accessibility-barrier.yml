@@ -1,0 +1,67 @@
+name: Accessibility barrier
+description: Something in Afterlight is unusable, or nearly unusable, for you.
+title: "[Barrier] "
+labels: ["accessibility", "priority"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the highest-priority kind of report this project takes.
+
+        Afterlight is for people with eye disease. If someone cannot use it, that is not an edge
+        case — it is the app failing at the thing it exists for.
+
+        You do not need to know what caused it or how to fix it. "I cannot read the timeline on my
+        phone" is a complete and useful report.
+
+  - type: textarea
+    id: barrier
+    attributes:
+      label: What could you not do?
+      description: In your own words. As short as you like.
+      placeholder: I could not tell which button was selected. The whole screen looks the same shade to me.
+    validations:
+      required: true
+
+  - type: textarea
+    id: where
+    attributes:
+      label: Where in the app?
+      placeholder: The Today screen, on the part where you pick which eye.
+    validations:
+      required: true
+
+  - type: input
+    id: settings
+    attributes:
+      label: Your display settings, if you know them
+      description: Theme and text size, from Settings → Display. Skip this if you are not sure.
+      placeholder: High contrast light, largest text
+    validations:
+      required: false
+
+  - type: textarea
+    id: how
+    attributes:
+      label: How are you using it?
+      description: >-
+        Anything that helps, and nothing you would rather not say. Screen reader, magnification,
+        keyboard only, phone or computer, browser. Your condition is never required — only mention
+        it if it is relevant to the barrier and you want to.
+      placeholder: iPhone, Safari, VoiceOver, text at the largest size.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: blocked
+    attributes:
+      label: Does this stop you using Afterlight?
+      options:
+        - label: Yes — I cannot record my day because of this.
+          required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        Please do not attach screenshots that contain your own records. A description is enough, and
+        your record is yours.

@@ -43,6 +43,11 @@ EyeExplorer.html          self-contained 3D explorer (Three.js inlined, works of
 docs/plan/                the build plan — one self-contained brief per phase
 docs/plan/STATUS.md       phase ledger; update it when you start and finish a phase
 docs/                     product context, accessibility, contributing, review records
+docs/clinical-review.md   the review register; its status line blocks a release
+docs/boundaries.md        what the app refuses to do, and why
+docs/guide.md             the user guide · keeping-it-safe.md · translating.md
+site/                     the landing page — static, no third-party requests at all
+CHANGELOG.md              generated from app/src/lib/changelog.ts; do not edit by hand
 app/
   scripts/                build helpers (explorer sync, invariant guard)
   src/
@@ -61,6 +66,8 @@ app/
       qr.ts               byte-mode QR encoder, versions 1–20, levels L and M
       share.ts            range-scoped, encrypted extracts of part of the record
       ingest.ts           filenames, PDF headers, DICOM, and the OCR seam
+      i18n.ts             translation lookup; locales/en.ts is the source catalogue
+      changelog.ts        VERSION and the patient-facing changelog (one source of truth)
     components/           UI primitives, retina diagram, command palette
     pages/                Today · WhatISee · Timeline · MyEyes · Imaging ·
                           Appointments · Visualize · Settings
@@ -179,6 +186,22 @@ largest type scale, plus a keyboard-only journey. See `docs/accessibility.md`.
 **Demo data.** Every demo record sets `demo: true` and must remain removable in one action.
 Keep the demo story clinically coherent — it is how new users judge the app.
 
+**Nothing is fetched, and it is checked twice.** `npm run guard` reads the source; `npm run
+nonetwork` reads the *built* files and `site/`, and fails on anything a browser would load from a
+third party — a `src`, a `<link href>`, a `url()`, an `@import`, a worker, a fetch. A URL in a
+string is listed but allowed, because a link someone chooses to follow is not a request.
+
+**Words a person reads go through `t()`.** New user-facing strings belong in
+`lib/locales/en.ts`, not inline. The exceptions are the boundary statements and the ask layer's
+not-found sentence: those stay next to their own code, where the guard checks them by name, and a
+translator collects them with `npm run clinical-pack`. Do not move them into the catalogue — it
+disarms the checks and drags the PDF writer into the initial chunk. See `docs/translating.md`.
+
+**The version is one number in one place.** `lib/changelog.ts` carries `VERSION` and the
+patient-facing list; `CHANGELOG.md` is generated from it and `npm run changelog:check` fails the
+build if they drift. `package.json` must agree. Write entries the way you would tell a patient what
+changed, not the way you would write a commit message.
+
 ---
 
 ## 5. What requires a human
@@ -194,7 +217,12 @@ An agent must **not** self-approve any of these. Prepare the work, flag it clear
 - **Safety and emergency copy.** Never reword the urgent-assessment guidance on your own.
 - **Anything that weakens a non-negotiable**, even temporarily, even behind a flag.
 - **Deleting or migrating user data** in a way that is not reversible from an export.
-- **Publishing** — deploys, releases, npm, or anything that puts the app in front of patients.
+- **Publishing** — deploys, releases, npm, or anything that puts the app in front of patients. The
+  Pages workflow is `workflow_dispatch` only and `npm run release` neither pushes nor deploys.
+- **Marking the clinical review done.** Only a human may change the status line in
+  `docs/clinical-review.md`. An agent may prepare the pack (`npm run clinical-pack`), chase the
+  reviewer, apply the corrections and update every other part of that file. It may not accept the
+  review, and `npm run release` refuses to tag while the line says `NOT REVIEWED`.
 
 ---
 

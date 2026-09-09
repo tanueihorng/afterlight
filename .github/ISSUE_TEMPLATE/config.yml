@@ -1,0 +1,15 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Something is wrong with my eyes right now
+    url: https://www.google.com/search?q=emergency+eye+service+near+me
+    about: >-
+      Sudden floaters, sudden flashes, a curtain or shadow across your vision, or a sudden drop in
+      vision are reasons to contact an ophthalmologist or an emergency eye service now. Please do
+      that first. This issue tracker is for the software, and nobody here can advise you about your
+      eyes.
+  - name: How do I back up, or move to a new device?
+    url: https://github.com/tanueihorng/afterlight/blob/main/docs/keeping-it-safe.md
+    about: Losing a record is almost always a cleared browser. This page covers export, restore and migration.
+  - name: A security or data-integrity problem
+    url: https://github.com/tanueihorng/afterlight/security/advisories/new
+    about: Report privately. Please do not attach your own records or an exported file.

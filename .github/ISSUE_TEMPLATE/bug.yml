@@ -1,0 +1,68 @@
+name: Bug
+description: Something does not work the way it should.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before anything else: **if you have lost records, do not clear anything or reinstall.**
+        Read <https://github.com/tanueihorng/afterlight/blob/main/docs/keeping-it-safe.md> first —
+        records are stored per browser, and they are often still there in a browser you were not
+        expecting.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did you do to get there?
+      placeholder: |
+        1. Opened Today
+        2. Tapped "Something changed"
+        3. ...
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Device and browser
+      placeholder: iPhone 13, Safari, installed to the home screen
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Settings → About Afterlight.
+      placeholder: "0.10.0"
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: dataloss
+    attributes:
+      label: Did this lose or change any of your records?
+      options:
+        - label: Yes — something in my record is missing or wrong because of this.
+          required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        Please do not attach an export or screenshots containing your own records. Describe the
+        shape of the problem instead — that is almost always enough, and your record is yours.

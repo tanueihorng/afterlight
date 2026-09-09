@@ -18,13 +18,61 @@ marked blocked.
 | 07 | Visualization II — disease atlas | done, pending clinical review | phase-07-disease-atlas | 2026-09-08 | 50 conditions, severity, compare, patient-view simulator; **all atlas copy needs sign-off** |
 | 08 | Records intelligence | done | phase-08-records-intelligence | 2026-09-08 | query layer, ask grammar, search v2, descriptive trends, accessible charts |
 | 09 | Clinician handoff & sharing | done, pending clinical review | phase-09-clinician-handoff | 2026-09-09 | deterministic PDF, print, encrypted range shares, QR, ingestion; **`docs/clinician-note.md` and the printed wording need sign-off**; OCR engine not bundled |
-| 10 | Release & clinical review | not started | — | — | |
+| 10 | Release & clinical review | done, blocked on clinical review | phase-10-release | 2026-09-09 | landing page, guide, backup story, i18n layer, issue templates, versioning; **release script refuses to tag while `docs/clinical-review.md` says NOT REVIEWED** |
 
 ## Log
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-09** — **Phase 10 done; the release itself is blocked, deliberately.** Everything a
+  first-time visitor needs exists: a static landing page written for a patient rather than a
+  developer, `docs/guide.md`, `docs/boundaries.md` setting out what the app refuses to do, and
+  `docs/keeping-it-safe.md` — the backup story, which is now a first-run step of its own as well as
+  a section in Settings, because a cleared browser is how people actually lose four years of
+  entries.
+  **The privacy claim is now checked against what ships, not the source.** `npm run nonetwork`
+  reads `app/dist` and `site/` and fails on anything a browser would fetch from a third party — a
+  `src`, a `<link href>`, a `url()`, an `@import`, a worker, a socket. An anchor someone chooses to
+  follow is listed but allowed; a link tag is not. Verified end to end by loading the assembled site
+  in a real browser and counting requests: **zero external requests**, from the landing page through
+  to the daily loop.
+  **Versioning has one source.** `lib/changelog.ts` holds `VERSION` and the patient-facing list;
+  `CHANGELOG.md` is generated from it, `npm run changelog:check` fails the build on drift, and the
+  same list is shown in Settings → About. The version is **0.10.0, not 1.0.0**: a 1.0 on a tool
+  that touches eye care would claim the clinical wording had been reviewed, and it has not.
+  **The clinical review is now a constraint rather than a note.** `docs/clinical-review.md` carries
+  a status line only a human may change; `npm run release` refuses to tag while it says
+  `NOT REVIEWED`; and a new guard rule fails the build if the app and the landing page stop saying
+  so. `npm run clinical-pack` generates `docs/clinical-pack.md` from the source — 93 strings across
+  safety wording, boundary statements, condition profiles, all 50 atlas "what people notice" lines
+  and the home-check instructions, each with the question it needs answering. That is the document
+  to send. The first version of that extractor returned identifiers and half-sentences, which is
+  worse than useless in something a clinician is asked to read carefully; it now takes string
+  literals and JSX text only, and keeps what reads like a sentence.
+  **i18n exists and is honest about its coverage.** `lib/i18n.ts` plus `lib/locales/en.ts`: the app
+  shell, the whole daily loop, provenance and eye labels, and the safety and boundary copy in
+  Settings. The pages beyond that are not extracted, and `docs/translating.md` says so rather than
+  implying a finished job. Boundary statements deliberately stay beside their own code — moving them
+  into the catalogue would disarm the guard rules that check them by name, and would have dragged
+  the PDF writer into the initial chunk to render a nav bar.
+  Also: PNG icons at 192/512 and an `apple-touch-icon`, because an SVG-only manifest looks correct
+  in review and silently never offers installation on Android, and iOS would have used a screenshot
+  of the page. Issue templates for a bug, an **accessibility barrier** (prioritised) and a
+  **clinical accuracy concern** (labelled `needs-human-review`, never closed by an agent), plus a
+  contact link that sends anyone with a sudden change to a real doctor before the tracker.
+  `SECURITY.md` names the threats that actually exist here — data integrity first, since a record is
+  not recoverable from anywhere — and `CODE_OF_CONDUCT.md` is written for a project whose users are
+  patients, including a rule against giving medical advice in issues.
+  One real bug found on the way: `.modal` was unpositioned, so the fixed `.backdrop-dismiss` layer
+  painted above every dialog in the app and swallowed clicks meant for its own controls. That was
+  Phase 09's find, and this phase confirmed the fix holds across both projects.
+  **Not done, and needing a human:** the clinical review itself; the hosted deploy (the Pages
+  workflow is `workflow_dispatch` only and asks for a typed confirmation); the physical print check
+  on A4 and Letter; the clinician-reader test; and installing the PWA on a real iPhone and Android
+  handset. The first four were already outstanding; the last is new and is the only acceptance
+  criterion this phase could not verify in software.
+  542 unit tests, 49 E2E.
 - **2026-09-09** — **Phase 09 done, pending clinical review.** The brief now survives contact with
   a clinic. `lib/pdf.ts` is a small deterministic PDF writer written here rather than installed:
   the artefact that leaves the device has to be byte-stable, work with the network off, and never

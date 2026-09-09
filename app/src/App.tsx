@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { t, type MessageKey } from "./lib/i18n";
 import { useHashRoute, type Route } from "./lib/router";
 import { useStore } from "./lib/store";
 import Today from "./pages/Today";
@@ -23,16 +24,17 @@ import { applyPrefs, prefsFromMeta } from "./lib/prefs";
 /** The four destinations that fit the thumb zone; everything else lives behind "More". */
 const PRIMARY: Route[] = ["today", "what-i-see", "timeline", "appointments"];
 
-const NAV: { route: Route; label: string; icon: string; section?: string }[] = [
-  { route: "today", label: "Today", icon: "◐" },
-  { route: "what-i-see", label: "What I See", icon: "✧" },
-  { route: "timeline", label: "Timeline", icon: "⌁" },
-  { route: "my-eyes", label: "My Eyes", icon: "◉" },
-  { route: "self-tests", label: "Checks", icon: "◎" },
-  { route: "imaging", label: "Imaging & Documents", icon: "▣" },
-  { route: "appointments", label: "Appointments", icon: "✚" },
-  { route: "visualize", label: "Visualize", icon: "◍" },
-  { route: "settings", label: "Settings", icon: "⚙" },
+/** Labels are looked up per render, so switching language does not need a reload. */
+const NAV: { route: Route; key: MessageKey; icon: string }[] = [
+  { route: "today", key: "nav.today", icon: "◐" },
+  { route: "what-i-see", key: "nav.what_i_see", icon: "✧" },
+  { route: "timeline", key: "nav.timeline", icon: "⌁" },
+  { route: "my-eyes", key: "nav.my_eyes", icon: "◉" },
+  { route: "self-tests", key: "nav.self_tests", icon: "◎" },
+  { route: "imaging", key: "nav.imaging", icon: "▣" },
+  { route: "appointments", key: "nav.appointments", icon: "✚" },
+  { route: "visualize", key: "nav.visualize", icon: "◍" },
+  { route: "settings", key: "nav.settings", icon: "⚙" },
 ];
 
 export default function App() {
@@ -90,17 +92,17 @@ export default function App() {
     <>
       {!onboarded && <Onboarding />}
       <a className="skip-link" href="#main">
-        Skip to main content
+        {t("app.skip_to_content")}
       </a>
       <div className="shell" aria-hidden={!onboarded}>
         <aside className="sidebar" aria-label="Afterlight">
           <div className="brand">
-            <div className="brand-name">Afterlight</div>
-            <div className="brand-tag">A living record of the sight you fought to keep.</div>
+            <div className="brand-name">{t("app.name")}</div>
+            <div className="brand-tag">{t("app.tagline")}</div>
           </div>
           <button className="sidebar-search" onClick={() => setPalette("search")}>
             <span aria-hidden>⌕</span>
-            <span>Search my records</span>
+            <span>{t("app.search")}</span>
             <kbd>⌘K</kbd>
           </button>
           <nav aria-label="Main navigation">
@@ -114,7 +116,7 @@ export default function App() {
                 <span className="nav-icon" aria-hidden>
                   {item.icon}
                 </span>
-                <span className="nav-label">{item.label}</span>
+                <span className="nav-label">{t(item.key)}</span>
               </button>
             ))}
           </nav>
@@ -122,11 +124,9 @@ export default function App() {
             <span className="nav-icon" aria-hidden>
               ?
             </span>
-            <span className="nav-label">Ask my records</span>
+            <span className="nav-label">{t("app.ask")}</span>
           </button>
-          <div className="sidebar-footer">
-            Records are stored locally in this browser. Nothing is uploaded without your action.
-          </div>
+          <div className="sidebar-footer">{t("app.local_only")}</div>
         </aside>
         <nav className="tabbar" aria-label="Main">
           {NAV.filter((n) => PRIMARY.includes(n.route)).map((item) => (
@@ -139,7 +139,7 @@ export default function App() {
               <span className="tab-icon" aria-hidden>
                 {item.icon}
               </span>
-              <span className="tab-label">{item.label}</span>
+              <span className="tab-label">{t(item.key)}</span>
             </button>
           ))}
           <button
@@ -150,7 +150,7 @@ export default function App() {
             <span className="tab-icon" aria-hidden>
               ⋯
             </span>
-            <span className="tab-label">More</span>
+            <span className="tab-label">{t("app.more")}</span>
           </button>
         </nav>
 
@@ -158,17 +158,30 @@ export default function App() {
           <div className="topbar-date" style={{ marginBottom: 10 }}>
             {formatLongDate(todayLocal())}
           </div>
-          <ErrorBoundary key={route} where={NAV.find((n) => n.route === route)?.label ?? route}>
-            <Suspense fallback={<p className="muted" role="status">Opening…</p>}>
-            {route === "today" && <Today />}
-            {route === "what-i-see" && <WhatISee />}
-            {route === "timeline" && <TimelinePage />}
-            {route === "my-eyes" && <MyEyes />}
-            {route === "self-tests" && <SelfTests />}
-            {route === "imaging" && <Imaging />}
-            {route === "appointments" && <Appointments />}
-            {route === "visualize" && <Visualize />}
-            {route === "settings" && <Settings />}
+          <ErrorBoundary
+            key={route}
+            where={
+              NAV.find((n) => n.route === route)
+                ? t(NAV.find((n) => n.route === route)!.key)
+                : route
+            }
+          >
+            <Suspense
+              fallback={
+                <p className="muted" role="status">
+                  {t("app.opening")}
+                </p>
+              }
+            >
+              {route === "today" && <Today />}
+              {route === "what-i-see" && <WhatISee />}
+              {route === "timeline" && <TimelinePage />}
+              {route === "my-eyes" && <MyEyes />}
+              {route === "self-tests" && <SelfTests />}
+              {route === "imaging" && <Imaging />}
+              {route === "appointments" && <Appointments />}
+              {route === "visualize" && <Visualize />}
+              {route === "settings" && <Settings />}
             </Suspense>
           </ErrorBoundary>
         </main>
@@ -186,7 +199,7 @@ export default function App() {
                 }}
               >
                 <span aria-hidden>{item.icon}</span>
-                <span>{item.label}</span>
+                <span>{t(item.key)}</span>
               </button>
             ))}
             <button
@@ -197,7 +210,7 @@ export default function App() {
               }}
             >
               <span aria-hidden>⌕</span>
-              <span>Search my records</span>
+              <span>{t("app.search")}</span>
             </button>
             <button
               className="sheet-nav-item"

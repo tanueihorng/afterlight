@@ -30,9 +30,20 @@ Nothing is done until this passes clean. The individual parts:
 | Command | What it protects |
 |---|---|
 | `npm run lint` | Accessibility rules are **errors** here, not warnings |
-| `npm run guard` | The non-negotiables that can be checked mechanically |
+| `npm run guard` | The non-negotiables that can be checked mechanically, in the source |
+| `npm run changelog:check` | `CHANGELOG.md` still matches `lib/changelog.ts` |
 | `npm run test` | The engines where a bug is invisible but consequential |
 | `npm run build` | It still ships |
+| `npm run bundle` | Initial download stays inside budget and heavy pages stay lazy |
+| `npm run nonetwork` | The privacy claim, checked against the **built** files and `site/` |
+| `npm run e2e` | Real browsers, desktop and phone: the daily loop, offline, the handoff |
+
+Two more, not in the gate because they produce something rather than check something:
+
+| Command | What it does |
+|---|---|
+| `npm run clinical-pack` | Writes `docs/clinical-pack.md` — every clinical string, from source |
+| `npm run release` | Runs the gate, then **refuses** while the clinical review is outstanding |
 
 ## Testing conventions
 
@@ -43,20 +54,24 @@ Nothing is done until this passes clean. The individual parts:
 - Prefer a test that would have caught a real defect over one that describes the implementation.
   The brief, search and ask engines each have tests derived from bugs found while writing them.
 
-Two known gaps, deliberately visible rather than papered over:
+Known gaps, deliberately visible rather than papered over:
 
-- **Blob round-trips are untested.** `fake-indexeddb` does not carry a jsdom `Blob` through its
-  structured clone, so the bytes of every scan and document a patient uploads cannot be asserted in
-  this environment. There is a skipped test recording it; real coverage needs the browser suite in
-  Phase 04, or a move to `ArrayBuffer` storage that Phase 01 should decide on.
-- **No end-to-end tests yet.** Phase 04 adds Playwright.
+- **Offline reload is not covered on WebKit.** Playwright throws an internal error driving it, so
+  that one case is Chromium-only. It needs a manual check on a real iOS device before a release.
+- **Nothing verifies the app on a real handset.** Installing it to a home screen on iOS and Android,
+  and recording an entry with the network off afterwards, is a human step. So are the physical
+  print check on A4 and Letter, and reading the appointment brief against a clock.
+- **The 3D engine is only smoke-tested visually.** Its geometry has unit tests; whether it *looks*
+  like an eye is a judgement, and the defects found in it so far were all found by looking.
 
 ## What needs a human
 
 An agent — and a contributor working quickly — must not self-approve:
 
-- clinical wording that is not already in the repo;
+- clinical wording that is not already in the repo, and anything written for a clinician to read;
 - changes to safety or emergency copy;
+- **marking the clinical review done** — only a human may change the status line in
+  [`clinical-review.md`](clinical-review.md), and `npm run release` refuses to tag until it changes;
 - anything that weakens a non-negotiable, even behind a flag;
 - irreversible data changes;
 - publishing or deploying.
