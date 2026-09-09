@@ -43,7 +43,13 @@ const NETWORK_PATTERNS = [
 ];
 
 // Allowed: links a user may deliberately open, and the mm-accurate anatomy citations in comments.
-const URL_ALLOW = /(^\s*(\/\/|\*|<!--))|href=|xmlns|schema|w3\.org|shields\.io/;
+//
+// A `const SOMETHING_URL = "https://…"` declaration is also allowed. The rule exists to catch
+// runtime *requests*, and the fetch-shaped patterns above catch those directly; a constant holding
+// a destination for an anchor is not one. `npm run nonetwork` is the backstop: it reads the built
+// output and fails on any URL a browser would actually load.
+const URL_ALLOW =
+  /(^\s*(\/\/|\*|<!--))|href=|xmlns|schema|w3\.org|shields\.io|\b[A-Z0-9_]*(?:URL|LINK)\s*=/;
 
 for (const file of files) {
   const text = readFileSync(file, "utf8");
@@ -327,6 +333,42 @@ if (existsSync(briefPdfPath)) {
   }
   if (!/footer:\s*PATIENT_GENERATED_FOOTER/.test(text)) {
     fail(briefPdfPath, 0, "generic-boundary", "the generated document must carry that footer");
+  }
+}
+
+/* ---------- 10. Unreviewed clinical wording is admitted where people look ---------- */
+
+const reviewPath = join(repoDir, "docs/clinical-review.md");
+if (existsSync(reviewPath)) {
+  const reviewStatus = readFileSync(reviewPath, "utf8").match(/\*\*Status:\s*([A-Z ]+)\*\*/)?.[1]?.trim();
+  const admits = /has not (?:yet )?been reviewed by an ophthalmologist or optometrist/i;
+  // Prose wraps. A check that depends on where a line break happens to fall is a check that will
+  // pass or fail for the wrong reason.
+  const flat = (file) => readFileSync(file, "utf8").replace(/\s+/g, " ");
+
+  // Where someone actually looks before deciding whether to trust this: the app itself, and the
+  // page that invites them in. A caveat only a developer would find is not a caveat.
+  const mustAdmit = [join(srcDir, "pages/Settings.tsx"), join(repoDir, "site/index.html")];
+
+  if (reviewStatus !== "REVIEWED") {
+    for (const file of mustAdmit) {
+      if (!existsSync(file)) continue;
+      if (!admits.test(flat(file))) {
+        fail(
+          file,
+          0,
+          "clinical-review",
+          "docs/clinical-review.md says the clinical wording is unreviewed, and this does not say so",
+        );
+      }
+    }
+  } else {
+    for (const file of mustAdmit) {
+      if (!existsSync(file)) continue;
+      if (admits.test(flat(file))) {
+        warn(file, 0, "clinical-review", "the review is recorded — this notice is now out of date");
+      }
+    }
   }
 }
 

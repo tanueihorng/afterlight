@@ -2077,3 +2077,31 @@ input[type="range"] {
   border-color: var(--accent);
   color: var(--accent-strong);
 }
+
+/* Links.
+ *
+ * The app had almost no anchors until it started pointing at its own documentation, so they were
+ * falling through to the browser's default blue — which on this background is both off-palette and
+ * well under the contrast floor the rest of the app is held to. */
+a {
+  color: var(--accent-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+/* A list of links out of the app. Padding rather than line-height gives the row a full touch
+   target without stretching the gap between two wrapped lines of text. */
+.doc-links {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.doc-links li {
+  padding: 7px 0;
+  line-height: 1.5;
+}

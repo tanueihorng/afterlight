@@ -19,3 +19,7 @@ app/public/EyeExplorer.html
 app/test-results/
 app/playwright-report/
 app/blob-report/
+
+# Assembled for publishing; built from app/dist by scripts/build-site.mjs
+site/app/
+site/EyeExplorer*.html

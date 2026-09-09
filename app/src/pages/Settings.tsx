@@ -26,8 +26,11 @@ import { Field, Modal } from "../components/ui";
 import DisplaySettings from "../components/DisplaySettings";
 import ConditionProfiles from "../components/ConditionProfiles";
 import { formatDate } from "../lib/util";
-import { ConfirmButton, PageHeader, SafetyNotice } from "../components/ui";
+import { t } from "../lib/i18n";
+import { CHANGELOG, CURRENT_RELEASE, VERSION } from "../lib/changelog";
 
+const REPO_URL = "https://github.com/tanueihorng/afterlight";
+import { ConfirmButton, PageHeader, SafetyNotice } from "../components/ui";
 
 export default function Settings() {
   const store = useStore();
@@ -35,7 +38,9 @@ export default function Settings() {
   const fileRef = useRef<HTMLInputElement>(null);
   const checkRef = useRef<HTMLInputElement>(null);
 
-  const [pending, setPending] = useState<{ archive: Archive; summary: ArchiveSummary } | null>(null);
+  const [pending, setPending] = useState<{ archive: Archive; summary: ArchiveSummary } | null>(
+    null,
+  );
   const [sealed, setSealed] = useState<unknown | null>(null);
   const [passphrase, setPassphrase] = useState("");
   const [exportPassphrase, setExportPassphrase] = useState("");
@@ -108,7 +113,9 @@ export default function Settings() {
       );
       setTimeout(() => window.location.reload(), 1200);
     } catch (e) {
-      setStatus(`Import failed, and nothing was changed: ${e instanceof Error ? e.message : "unknown error"}`);
+      setStatus(
+        `Import failed, and nothing was changed: ${e instanceof Error ? e.message : "unknown error"}`,
+      );
     }
   };
 
@@ -127,8 +134,8 @@ export default function Settings() {
         <div className="card-title">Demo data</div>
         <p className="muted" style={{ marginTop: 0 }}>
           Demo data is synthetic and clearly labelled — useful for exploring Afterlight before
-          trusting it with your own record. It can be removed at any time without touching your
-          real entries.
+          trusting it with your own record. It can be removed at any time without touching your real
+          entries.
         </p>
         <div className="btn-row">
           {!store.meta?.demo_seeded ? (
@@ -153,7 +160,9 @@ export default function Settings() {
               className="btn danger"
             />
           )}
-          {store.meta?.demo_seeded && <span className="badge demo">Demo data is currently loaded</span>}
+          {store.meta?.demo_seeded && (
+            <span className="badge demo">Demo data is currently loaded</span>
+          )}
         </div>
       </section>
 
@@ -162,6 +171,19 @@ export default function Settings() {
         <p className="muted" style={{ marginTop: 0 }}>
           Your record lives in this browser, on this device. Clearing your browser data deletes it.
           An export is the only copy that survives that, so keep a recent one somewhere safe.
+        </p>
+        <p className="muted" style={{ marginTop: 0 }}>
+          This is the most common way people lose years of entries — not a bug, not a crash, just a
+          cleared browser or a replaced phone. Where to keep the file, and how to move to a new
+          device, is written out in{" "}
+          <a
+            href={`${REPO_URL}/blob/main/docs/keeping-it-safe.md`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            keeping it safe
+          </a>
+          .
         </p>
         <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)" }}>
           {backup.neverExported
@@ -242,7 +264,8 @@ export default function Settings() {
           <>
             <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)", marginTop: 0 }}>
               Afterlight is using {formatBytes(storage.usageBytes)}
-              {storage.quotaBytes ? ` of roughly ${formatBytes(storage.quotaBytes)} available` : ""}.
+              {storage.quotaBytes ? ` of roughly ${formatBytes(storage.quotaBytes)} available` : ""}
+              .
             </p>
             <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)" }}>
               {storage.persisted
@@ -288,20 +311,21 @@ export default function Settings() {
         />
       </section>
 
+      <AboutSection />
+
       <section className="card">
         <div className="card-title">Privacy & boundaries</div>
-        <ul style={{ color: "var(--text-2)", fontSize: "var(--fs-base)", margin: 0, paddingLeft: 20 }}>
-          <li>All records, images and documents stay on this device. Nothing is uploaded.</li>
-          <li>Afterlight is a personal record — it does not diagnose disease and does not replace an ophthalmologist.</li>
-          <li>Symptom logging is not a substitute for urgent assessment when something is sudden or severe.</li>
-          <li>Missing information is shown as “Not recorded”, never as a normal result.</li>
-          <li>Patient drawings are subjective representations; visualisations are educational.</li>
+        <ul
+          style={{ color: "var(--text-2)", fontSize: "var(--fs-base)", margin: 0, paddingLeft: 20 }}
+        >
+          <li>{t("boundary.stays_here")}</li>
+          <li>{t("boundary.not_a_diagnosis")}</li>
+          <li>{t("boundary.not_a_substitute")}</li>
+          <li>{t("boundary.missing_is_missing")}</li>
+          <li>{t("boundary.drawings_subjective")}</li>
         </ul>
         <div style={{ marginTop: 14 }}>
-          <SafetyNotice>
-            If you notice sudden floaters, flashes, a curtain or shadow over your vision, or a
-            sudden drop in vision, contact an ophthalmologist or emergency eye service promptly.
-          </SafetyNotice>
+          <SafetyNotice>{t("safety.settings_notice")}</SafetyNotice>
         </div>
       </section>
 
@@ -326,8 +350,12 @@ export default function Settings() {
             />
           </Field>
           <div className="modal-actions">
-            <button className="btn" onClick={() => setSealed(null)}>Cancel</button>
-            <button className="btn primary" onClick={unseal}>Open archive</button>
+            <button className="btn" onClick={() => setSealed(null)}>
+              Cancel
+            </button>
+            <button className="btn primary" onClick={unseal}>
+              Open archive
+            </button>
           </div>
         </Modal>
       )}
@@ -383,7 +411,10 @@ function ArchivePreview({ summary, current }: { summary: ArchiveSummary; current
         records.
       </p>
       <p className="muted">
-        Exported {summary.exported_at ? formatDate(summary.exported_at.slice(0, 10)) : "at an unrecorded time"}
+        Exported{" "}
+        {summary.exported_at
+          ? formatDate(summary.exported_at.slice(0, 10))
+          : "at an unrecorded time"}
         {summary.checksumOk === true && " · contents match its checksum"}
         {summary.checksumOk === false && " · contents do NOT match its checksum"}
         {summary.checksumOk === undefined && " · no checksum recorded (an older export)"}
@@ -410,4 +441,113 @@ function ArchivePreview({ summary, current }: { summary: ArchiveSummary; current
   );
 }
 
+/**
+ * Version, what changed, and where the boundaries are written down.
+ *
+ * The changelog is the same list the repository publishes, worded for the person using the app
+ * rather than for whoever wrote it. The unreviewed-clinical-wording notice is here rather than
+ * buried in a document, because someone deciding whether to trust this deserves to be told
+ * without having to go looking.
+ */
+function AboutSection() {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="card">
+      <div className="card-title">About Afterlight</div>
+      <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)", marginTop: 0 }}>
+        Version <span className="mono">{VERSION}</span>
+        {CURRENT_RELEASE ? ` — ${CURRENT_RELEASE.summary}` : ""}
+      </p>
 
+      <div className="safety" role="note" style={{ marginBottom: 14 }}>
+        <span className="safety-icon" aria-hidden>
+          ◇
+        </span>
+        <div>
+          The wording in this app that describes eye conditions, the home checks and the urgent-care
+          notices has not yet been reviewed by an ophthalmologist or optometrist. Until it has,
+          treat every explanation here as background reading rather than as advice about your eyes.
+        </div>
+      </div>
+
+      {/* Links, styled as links. Dressing them as buttons would say they do something here,
+          and each one opens a page elsewhere. */}
+      <ul className="doc-links">
+        <li>
+          <a href={`${REPO_URL}/blob/main/docs/guide.md`} target="_blank" rel="noreferrer">
+            User guide
+          </a>{" "}
+          <span className="muted">— the daily habit, drawing, appointments, and the rest</span>
+        </li>
+        <li>
+          <a
+            href={`${REPO_URL}/blob/main/docs/keeping-it-safe.md`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Keeping it safe
+          </a>{" "}
+          <span className="muted">— backup, restore, and moving to a new device</span>
+        </li>
+        <li>
+          <a href={`${REPO_URL}/blob/main/docs/boundaries.md`} target="_blank" rel="noreferrer">
+            What it will not do
+          </a>{" "}
+          <span className="muted">— and why not</span>
+        </li>
+        <li>
+          <a href={`${REPO_URL}/issues`} target="_blank" rel="noreferrer">
+            Report a problem
+          </a>{" "}
+          <span className="muted">
+            — an accessibility barrier or a wrong word both go to a person
+          </span>
+        </li>
+      </ul>
+
+      <button className="btn subtle" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {open ? "Hide what changed" : "What changed"}
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 14 }}>
+          {CHANGELOG.map((release) => (
+            <div key={release.version} style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, color: "var(--text)" }}>
+                {release.version}
+                {release.date ? ` · ${formatDate(release.date)}` : " · not released yet"}
+              </div>
+              <div className="muted" style={{ marginBottom: 4 }}>
+                {release.summary}
+              </div>
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: 20,
+                  color: "var(--text-2)",
+                  fontSize: "var(--fs-sm)",
+                }}
+              >
+                {release.changes.map((change, i) => (
+                  <li key={i} style={{ marginBottom: 3 }}>
+                    {change}
+                  </li>
+                ))}
+              </ul>
+              {release.notes?.map((note, i) => (
+                <p key={i} className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 6 }}>
+                  {note}
+                </p>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="muted" style={{ fontSize: "var(--fs-xs)", marginTop: 10 }}>
+        MIT licensed. Built with React and Three.js, both MIT licensed. No other runtime
+        dependencies, no fonts or code loaded from anywhere else.
+      </p>
+    </section>
+  );
+}

@@ -74,7 +74,9 @@ export default function Onboarding() {
       <div className="modal" style={{ maxWidth: 560 }}>
         {step === 0 && (
           <>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-xl)" }}>Afterlight</h2>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-xl)" }}>
+              Afterlight
+            </h2>
             <p style={{ color: "var(--text-2)" }}>
               Your vision changes every day. Your medical record usually doesn't.
             </p>
@@ -129,7 +131,11 @@ export default function Onboarding() {
                   </select>
                 </Field>
                 <Field label="Approximate date">
-                  <input type="date" value={surgeryDate} onChange={(e) => setSurgeryDate(e.target.value)} />
+                  <input
+                    type="date"
+                    value={surgeryDate}
+                    onChange={(e) => setSurgeryDate(e.target.value)}
+                  />
                 </Field>
                 <Field label="Procedure">
                   <input
@@ -164,8 +170,8 @@ export default function Onboarding() {
           <>
             <h2>Your baseline</h2>
             <p className="muted">
-              What does your vision <em>normally</em> look like? Daily logging will focus on
-              changes from this, so describe your usual — not today.
+              What does your vision <em>normally</em> look like? Daily logging will focus on changes
+              from this, so describe your usual — not today.
             </p>
             <Field label="Right eye (OD) — usual vision">
               <textarea
@@ -194,6 +200,39 @@ export default function Onboarding() {
 
         {step === 3 && (
           <>
+            <h2>One thing to know now</h2>
+            <p style={{ color: "var(--text-2)" }}>
+              Your record lives in this browser, on this device. That is what keeps it private —
+              there is no server and no account, and nobody else has a copy.
+            </p>
+            <p style={{ color: "var(--text-2)" }}>
+              It also means <strong>clearing your browser data deletes it</strong>, and nobody can
+              get it back for you. This is how people lose years of entries: not a crash, just a
+              cleared browser or a replaced phone.
+            </p>
+            <p className="muted">
+              The answer is one file. <strong>Settings → Export everything</strong> saves your whole
+              record — entries, drawings, scans and letters — as a single file you keep somewhere
+              safe. Do it after every appointment. Afterlight will remind you at most once a week,
+              and never make you feel bad about it.
+            </p>
+            <p className="muted">
+              On an iPhone, adding Afterlight to your home screen also makes the browser far less
+              likely to clear it.
+            </p>
+            <div className="modal-actions">
+              <button className="btn subtle" onClick={() => setStep(2)}>
+                Back
+              </button>
+              <button className="btn primary" onClick={() => setStep(4)}>
+                Continue
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 4 && (
+          <>
             <h2>Start today</h2>
             <p style={{ color: "var(--text-2)" }}>
               You're ready. On the Today page you can log your vision in seconds — or simply tap
@@ -204,7 +243,7 @@ export default function Onboarding() {
               deserve prompt professional assessment — it will never try to diagnose you.
             </p>
             <div className="modal-actions">
-              <button className="btn subtle" onClick={() => setStep(2)}>
+              <button className="btn subtle" onClick={() => setStep(3)}>
                 Back
               </button>
               <button className="btn primary" onClick={() => finish()}>

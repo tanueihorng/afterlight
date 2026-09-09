@@ -14,7 +14,19 @@ of what *you* see — so nothing depends on what you can remember in a ten-minut
 [![Offline](https://img.shields.io/badge/works-offline-2b6cb0)](#quick-start)
 [![License: MIT](https://img.shields.io/badge/license-MIT-6b5b95)](LICENSE)
 
+**[Guide](docs/guide.md)** · **[Keeping it safe](docs/keeping-it-safe.md)** ·
+**[What it will not do](docs/boundaries.md)** · **[Changelog](CHANGELOG.md)**
+
 </div>
+
+> [!IMPORTANT]
+> **The clinical wording has not been reviewed yet.** Everything in Afterlight that describes an eye
+> condition, explains a home check, or tells you when to seek urgent care was drafted without
+> clinical input and has not yet been reviewed by an ophthalmologist or optometrist. Treat those
+> explanations as background reading rather than as advice about your eyes. Your own record — what
+> you wrote, when you wrote it — is accurate regardless. See
+> [`docs/clinical-review.md`](docs/clinical-review.md); the release script refuses to tag a version
+> until this changes.
 
 ---
 
@@ -165,6 +177,13 @@ Build a static copy you can host anywhere (or open offline):
 
 ```bash
 npm run build        # → app/dist/
+npm run build:site   # → site/ — the landing page with the app inside it at /app/
+```
+
+The privacy claim is checked against the built files, not just the source:
+
+```bash
+npm run nonetwork    # fails on anything a browser would fetch from a third party
 ```
 
 ---
@@ -209,6 +228,15 @@ Two design decisions worth calling out:
 
 ---
 
+## Releasing
+
+`npm run release` runs the whole gate and then **refuses** while
+[`docs/clinical-review.md`](docs/clinical-review.md) says the clinical wording is unreviewed. It
+does not push and it does not deploy; publishing is a human decision, and the Pages workflow is
+`workflow_dispatch` only.
+
+The version stays below `1.0.0` until that review is recorded.
+
 ## Where this is going
 
 Afterlight is usable today and still early. The full build plan lives in
@@ -220,8 +248,14 @@ renderer, a whole-eye disease atlas with a "what this looks like from inside" si
 record intelligence, clinician handoff, and release with real clinical review.
 
 If you live with a retinal condition and something here is wrong, missing, or worded in a way
-that would frighten someone at 2am — open an issue. That feedback is worth more than a feature
-request.
+that would frighten someone at 2am — [open an issue](https://github.com/tanueihorng/afterlight/issues).
+Accessibility barriers and clinical accuracy concerns have their own forms, and both go to a
+person. That feedback is worth more than a feature request. Please do not attach your own records;
+describe the shape of the problem instead.
+
+Other languages are welcome and the layer for them exists — see
+[`docs/translating.md`](docs/translating.md). Only English ships today, and the page is honest about
+how much of the app is extracted so far.
 
 ---
 

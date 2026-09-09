@@ -10,6 +10,11 @@
     <title>Afterlight — your vision, over time</title>
       <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <!-- iOS ignores the manifest's icons for the home screen and uses this instead. Without it,
+         adding Afterlight to a home screen produces a screenshot of the page. -->
+    <link rel="apple-touch-icon" href="./icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Afterlight" />
     <meta name="theme-color" content="#0a0e16" />
   </head>
   <body>

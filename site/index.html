@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Afterlight — a record of the sight you fought to keep</title>
+    <meta
+      name="description"
+      content="A local-first personal eye record. Thirty seconds a day builds a continuous, eye-specific account of your own vision, stored only on your device."
+    />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#0a0e16" />
+    <!--
+      No fonts, scripts, stylesheets, images or trackers from anywhere else. Not as a policy — this
+      file has no external references at all, and `npm run nonetwork` fails the build if one appears.
+      The privacy claim below has to be true of the page that makes it.
+    -->
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0e16;
+        --bg-elev: #111725;
+        --text: #e8ecf4;
+        --text-2: #b4bdcd;
+        --text-3: #8590a3;
+        --accent: #e0b070;
+        --accent-strong: #f0c68e;
+        --border: #253048;
+        --ok: #6fbf8f;
+        --serif: Georgia, "Times New Roman", serif;
+        --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          color-scheme: light;
+          --bg: #fbfaf7;
+          --bg-elev: #fff;
+          --text: #16202f;
+          --text-2: #3c4757;
+          --text-3: #5d6a7c;
+          --accent: #9a6a1e;
+          --accent-strong: #7d5514;
+          --border: #d9d5cc;
+          --ok: #2c6f4a;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 17px;
+        line-height: 1.65;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      main,
+      header,
+      footer {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 22px;
+      }
+
+      a {
+        color: var(--accent-strong);
+      }
+
+      a:focus-visible,
+      button:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+      }
+
+      header {
+        padding-top: 14vh;
+        padding-bottom: 8vh;
+      }
+
+      h1 {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: clamp(2.1rem, 6vw, 3.1rem);
+        line-height: 1.15;
+        margin: 0 0 0.5em;
+        letter-spacing: -0.01em;
+      }
+
+      h2 {
+        font-family: var(--serif);
+        font-weight: 400;
+        font-size: clamp(1.4rem, 3.6vw, 1.85rem);
+        margin: 2.6em 0 0.6em;
+      }
+
+      h3 {
+        font-size: 1rem;
+        margin: 1.8em 0 0.3em;
+        color: var(--accent-strong);
+      }
+
+      .lede {
+        font-size: 1.16rem;
+        color: var(--text-2);
+      }
+
+      .cta {
+        display: inline-block;
+        margin: 1.6em 0 0.6em;
+        padding: 14px 26px;
+        min-height: 44px;
+        background: var(--accent);
+        color: #16202f;
+        border-radius: 10px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .cta-note {
+        color: var(--text-3);
+        font-size: 0.92rem;
+        margin-top: 0.4em;
+      }
+
+      .loop {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-elev);
+        padding: 18px 22px;
+        margin: 1.4em 0;
+      }
+
+      .loop p {
+        margin: 0.35em 0;
+        color: var(--text-2);
+      }
+
+      .loop strong {
+        color: var(--text);
+      }
+
+      .privacy {
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--ok);
+        border-radius: 12px;
+        background: var(--bg-elev);
+        padding: 18px 22px;
+        margin: 1.4em 0;
+      }
+
+      .flow {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.86rem;
+        line-height: 1.9;
+        color: var(--text-2);
+        white-space: pre;
+        overflow-x: auto;
+        margin: 0;
+      }
+
+      .notice {
+        border: 1px solid var(--accent);
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin: 1.6em 0;
+        color: var(--text-2);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+      }
+
+      ul {
+        padding-left: 1.2em;
+        color: var(--text-2);
+      }
+
+      li {
+        margin-bottom: 0.5em;
+      }
+
+      .refuses li strong {
+        color: var(--text);
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        margin-top: 5em;
+        padding-top: 2em;
+        padding-bottom: 4em;
+        color: var(--text-3);
+        font-size: 0.92rem;
+      }
+
+      footer a {
+        margin-right: 1.1em;
+        display: inline-block;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>A living record of the sight you fought to keep.</h1>
+      <p class="lede">
+        Your vision changes every day. Your medical record usually does not. Afterlight keeps a
+        continuous, day-by-day account of what <em>you</em> see — so nothing depends on what you can
+        remember in a ten-minute appointment.
+      </p>
+      <a class="cta" href="./app/">Open Afterlight</a>
+      <p class="cta-note">
+        Free. No account. Nothing to install, though you can add it to your home screen. Works with
+        no connection.
+      </p>
+    </header>
+
+    <main>
+      <h2>Why it exists</h2>
+      <p>
+        I had a retinal detachment. I had surgery at nineteen. My vision is still changing.
+      </p>
+      <p>
+        If you have been through that, you know the specific shape of the problem. The clinic sees
+        you for fifteen minutes, twice a year. Between those visits you are the only person watching
+        your eyes — and by the time you are back in the chair, the questions have collapsed into one
+        sentence you do not trust: <em>“I think it's been a bit worse?”</em>
+      </p>
+      <p>
+        You forget which eye. You forget whether the new floater arrived before or after the last
+        appointment. You cannot describe the shape of the shadow that was so clear at 2am. You are
+        asked whether anything has changed and you genuinely do not know, because your record holds
+        what the hospital did to you, not what you saw.
+      </p>
+      <p>That gap is where the fear lives. Not in the diagnosis — in the not-knowing.</p>
+
+      <h2>Thirty seconds a day</h2>
+      <div class="loop">
+        <p><strong>Open it.</strong> One question: anything different today?</p>
+        <p><strong>No</strong> — one tap, done. A quiet day is a real record, not an empty one.</p>
+        <p>
+          <strong>Yes</strong> — which eye, what, and how it compares with your usual. Draw it if
+          that is easier than saying it.
+        </p>
+      </div>
+      <p>
+        Everything else is what that habit makes possible six months later: a timeline you can
+        actually read, drawings you can lay over each other to see drift, your scans and letters in
+        one place, and — the part that earns the thirty seconds — a one-page brief for your next
+        appointment saying what changed in each eye and what you wanted to ask.
+      </p>
+
+      <h2>Where your record lives</h2>
+      <div class="privacy">
+        <pre class="flow">
+  You  →  Afterlight, in your browser
+              ↕
+       storage on this device
+
+  optionally, if you choose:
+       →  an export file you keep
+       →  a printed page or a PDF
+
+  no server · no account · no analytics · nothing uploaded</pre
+        >
+      </div>
+      <p>
+        There is no backend. Records, drawings, scans and documents sit in your own browser's
+        storage on your own device. Nothing is transmitted, because there is nowhere for it to be
+        transmitted to. Not a policy that could change later — an architecture with no destination.
+        A check runs on every commit that reads the built files and fails if anything would be
+        fetched from anywhere.
+      </p>
+      <p>
+        <strong>The trade is honest and it is yours to manage.</strong> Clearing your browser data
+        deletes your record, and nobody can restore it for you.
+        <a href="https://github.com/tanueihorng/afterlight/blob/main/docs/keeping-it-safe.md"
+          >Export regularly</a
+        >, and keep the file somewhere safe. It is your whole eye history; treat it like a medical
+        document, because it is one.
+      </p>
+
+      <h2>What it refuses to do</h2>
+      <ul class="refuses">
+        <li><strong>It will not tell you what you have.</strong> The condition reference is
+          something you navigate. It is never surfaced from your symptoms and never ranked against
+          your record.</li>
+        <li><strong>It will not score you.</strong> No risk scores, no probabilities, no red
+          dashboards, no “your vision is declining”.</li>
+        <li><strong>It will not judge a trend.</strong> It describes what you recorded — the dates,
+          the values, the difference between the first and the last. Never better or worse.</li>
+        <li><strong>It will not read your scans.</strong> It stores your OCT and shows it to you. It
+          does not tell you what is in it.</li>
+        <li><strong>It will not reassure you.</strong> A quiet week means you did not write anything
+          down. It never means your eyes are fine.</li>
+        <li><strong>It will not invent.</strong> Asking a question searches your own entries and
+          cites them. There is no language model in it. When it cannot find something it says so.</li>
+      </ul>
+      <p>
+        <a href="https://github.com/tanueihorng/afterlight/blob/main/docs/boundaries.md"
+          >The boundaries, in full</a
+        >.
+      </p>
+
+      <h2>Before you rely on it</h2>
+      <div class="notice">
+        <p style="margin-top: 0">
+          <strong>The clinical wording has not been reviewed yet.</strong> The writing in Afterlight
+          that describes eye conditions, explains the home checks, or tells you when to seek urgent
+          care was drafted without clinical input and has not yet been reviewed by an
+          ophthalmologist or optometrist. Treat every explanation as background reading rather than
+          as advice about your eyes.
+        </p>
+        <p>
+          Your own record is accurate regardless — what you wrote, when you wrote it, and what your
+          clinic gave you. That part is yours.
+        </p>
+        <p style="margin-bottom: 0">
+          <a href="https://github.com/tanueihorng/afterlight/blob/main/docs/clinical-review.md"
+            >What is outstanding</a
+          >.
+        </p>
+      </div>
+      <p>
+        <strong>If something is sudden or severe, get seen first.</strong> Sudden floaters, sudden
+        flashes, a curtain or shadow across your vision, or a sudden drop in vision are reasons to
+        contact an ophthalmologist or an emergency eye service now. Write it down afterwards.
+      </p>
+      <p>
+        Afterlight is a personal record-keeping tool. It does not diagnose, does not interpret
+        imaging, does not estimate risk, and does not replace an ophthalmologist.
+      </p>
+
+      <h2>Built for eyes that are having a hard day</h2>
+      <ul>
+        <li>Four themes, two of them high contrast, and text up to double size with the layout
+          reflowing rather than clipping.</li>
+        <li>Every drawing and chart described in words, for a screen reader or for a day when the
+          picture will not resolve.</li>
+        <li>Full keyboard use, large targets, and motion you can switch off.</li>
+      </ul>
+
+      <h2>If something here is wrong</h2>
+      <p>
+        If a screen is unusable, a word is wrong, or something would frighten someone at 2am, that
+        is worth telling me:
+        <a href="https://github.com/tanueihorng/afterlight/issues">open an issue</a>. Accessibility
+        barriers and clinical accuracy concerns have their own forms, and both go to a person. That
+        feedback is worth more than a feature request.
+      </p>
+      <p>
+        Please do not attach your own records to an issue. Describe the shape of the problem — it is
+        almost always enough, and your record is yours.
+      </p>
+    </main>
+
+    <footer>
+      <p>
+        <a href="./app/">Open the app</a>
+        <a href="https://github.com/tanueihorng/afterlight">Source code</a>
+        <a href="https://github.com/tanueihorng/afterlight/blob/main/docs/guide.md">Guide</a>
+        <a href="https://github.com/tanueihorng/afterlight/blob/main/docs/keeping-it-safe.md"
+          >Keeping it safe</a
+        >
+        <a href="https://github.com/tanueihorng/afterlight/blob/main/docs/boundaries.md"
+          >Boundaries</a
+        >
+      </p>
+      <p>MIT licensed · built by a patient, for patients</p>
+      <p>Your vision changes every day. Now your record does too.</p>
+    </footer>
+  </body>
+</html>

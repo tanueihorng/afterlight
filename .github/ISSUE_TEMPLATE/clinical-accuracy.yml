@@ -1,0 +1,74 @@
+name: Clinical accuracy concern
+description: Something the app says about eyes is wrong, misleading, or frightening.
+title: "[Clinical] "
+labels: ["clinical", "needs-human-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This goes to a person.** It is never closed automatically, and it is never resolved by an
+        agent. If it needs a clinician's judgement, it waits for one.
+
+        You do not have to be a clinician to open this. If a sentence made you panic at 2am, or read
+        as reassurance when it should not have, that is worth reporting and you are the right person
+        to report it.
+
+        For anything happening to your own eyes right now, please contact an ophthalmologist or an
+        emergency eye service rather than opening an issue.
+
+  - type: textarea
+    id: wording
+    attributes:
+      label: What does the app say?
+      description: Copy the wording exactly, if you can.
+      placeholder: '"Drifting dots, threads or cobwebs that move when the eye moves and settle a moment later."'
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where did you see it?
+      placeholder: Visualize → Atlas → Vitreous floaters
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is the problem with it?
+      options:
+        - It is factually wrong
+        - It is misleading, or leaves out something important
+        - It reads as reassurance when it should not
+        - It is frightening in a way that is not warranted
+        - It reads like advice about my own eyes
+        - It could make someone delay getting seen
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: What is wrong with it, and what should it say?
+      description: Your own words are fine. A suggested replacement is very welcome, but not required.
+    validations:
+      required: true
+
+  - type: input
+    id: background
+    attributes:
+      label: Are you a clinician?
+      description: >-
+        Only if you want to say. It affects how the correction is handled, not whether you are taken
+        seriously — a patient noticing that a sentence is frightening is exactly the kind of report
+        this project needs.
+      placeholder: Optometrist / ophthalmologist / patient / prefer not to say
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        Corrections are recorded in `docs/clinical-review.md` along with who raised them.

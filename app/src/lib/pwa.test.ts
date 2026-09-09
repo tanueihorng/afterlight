@@ -14,6 +14,22 @@ describe("offline shell", () => {
     for (const icon of manifest.icons) {
       expect(existsSync(join(pub, icon.src.replace("./", "")))).toBe(true);
     }
+
+    // Android needs raster icons at these sizes to offer installation at all; an SVG-only
+    // manifest looks fine in review and silently never prompts.
+    const raster = manifest.icons.filter((i: { type: string }) => i.type === "image/png");
+    expect(raster.map((i: { sizes: string }) => i.sizes)).toEqual(
+      expect.arrayContaining(["192x192", "512x512"]),
+    );
+  });
+
+  it("gives iOS a home-screen icon of its own", () => {
+    // iOS ignores the manifest's icons and uses apple-touch-icon. Without it, adding Afterlight
+    // to a home screen produces a screenshot of whatever page was open.
+    const html = readFileSync(join(process.cwd(), "index.html"), "utf8");
+    const href = html.match(/rel="apple-touch-icon"\s+href="\.\/([^"]+)"/)?.[1];
+    expect(href).toBeTruthy();
+    expect(existsSync(join(pub, href!))).toBe(true);
   });
 
   it("ships a service worker that caches the shell and nothing about the record", () => {

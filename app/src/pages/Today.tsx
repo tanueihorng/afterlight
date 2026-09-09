@@ -11,8 +11,16 @@ import {
   type SymptomEntry,
 } from "../lib/models";
 import { PageHeader, SafetyNotice } from "../components/ui";
+import { t } from "../lib/i18n";
 import BackupNudge from "../components/BackupNudge";
-import { addDays, formatDate, formatLongDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
+import {
+  addDays,
+  formatDate,
+  formatLongDate,
+  isoToDateOnly,
+  nowISO,
+  todayLocal,
+} from "../lib/util";
 import { continuity, continuitySentence } from "../lib/streak";
 import { quickEntries } from "../lib/suggestions";
 import { promptedSymptoms, suggestedSelfTests } from "../lib/conditions";
@@ -39,14 +47,14 @@ export default function Today() {
 
   const existingLog = useMemo(
     () => store.dailyLogs.list.find((l) => l.date === date),
-    [store.dailyLogs.list, date]
+    [store.dailyLogs.list, date],
   );
   const todaysSymptoms = useMemo(
     () =>
       store.symptoms.list
         .filter((s) => isoToDateOnly(s.date_time) === date && !s.demo)
         .sort((a, b) => (a.date_time < b.date_time ? 1 : -1)),
-    [store.symptoms.list, date]
+    [store.symptoms.list, date],
   );
 
   const [rows, setRows] = useState<Row[]>(() =>
@@ -58,7 +66,7 @@ export default function Today() {
       severity: s.severity ?? 0,
       description: s.description ?? "",
       existingId: s.id,
-    }))
+    })),
   );
   const [note, setNote] = useState(existingLog?.note ?? "");
   const [justSaved, setJustSaved] = useState(false);
@@ -77,10 +85,7 @@ export default function Today() {
     () => continuitySentence(continuity(store.dailyLogs.list, date), date),
     [store.dailyLogs.list, date],
   );
-  const suggestions = useMemo(
-    () => quickEntries(toAllData(store), date),
-    [store, date],
-  );
+  const suggestions = useMemo(() => quickEntries(toAllData(store), date), [store, date]);
   // Profiles reorder the symptom list; they never shorten it.
   const profileIds = useMemo(
     () => store.meta?.condition_profiles ?? [],
@@ -92,8 +97,7 @@ export default function Today() {
   }, [profileIds]);
   const profileTests = useMemo(() => suggestedSelfTests(profileIds), [profileIds]);
 
-  const baseline = (eye: "right" | "left") =>
-    store.baselines.list.find((b) => b.id === eye)?.text;
+  const baseline = (eye: "right" | "left") => store.baselines.list.find((b) => b.id === eye)?.text;
 
   const addRow = (eye: "right" | "left", symptomType?: string, comparison?: BaselineComparison) => {
     setRows((r) => [
@@ -118,7 +122,7 @@ export default function Today() {
     rows.some(
       (r) =>
         URGENT_SYMPTOMS.includes(r.symptom_type) &&
-        (r.comparison === "new" || r.comparison === "much_more")
+        (r.comparison === "new" || r.comparison === "much_more"),
     ) ?? false;
 
   const saveNoChange = async () => {
@@ -150,7 +154,11 @@ export default function Today() {
       const existingEntry = r.existingId
         ? store.symptoms.list.find((s) => s.id === r.existingId)
         : undefined;
-      if (r.symptom_type === "floaters" && r.comparison === "new" && !existingEntry?.floater_object_id) {
+      if (
+        r.symptom_type === "floaters" &&
+        r.comparison === "new" &&
+        !existingEntry?.floater_object_id
+      ) {
         const floater: FloaterObject = {
           id: crypto.randomUUID(),
           eye: r.eye,
@@ -172,8 +180,7 @@ export default function Today() {
         // Dated by when it started, which is not always when it was written down. Recording last
         // night's change this morning must not move its onset a day later, or the brief is wrong.
         date_time:
-          existingEntry?.date_time ??
-          (entryDate === date ? nowISO() : `${entryDate}T12:00:00`),
+          existingEntry?.date_time ?? (entryDate === date ? nowISO() : `${entryDate}T12:00:00`),
         eye: r.eye,
         symptom_type: r.symptom_type,
         status:
@@ -211,14 +218,18 @@ export default function Today() {
   const eyePanel = (eye: "right" | "left") => {
     const rowsForEye = rows.filter((r) => r.eye === eye);
     return (
-      <section className={`card eye-panel ${eye}`} aria-label={eye === "right" ? "Right eye" : "Left eye"}>
+      <section
+        className={`card eye-panel ${eye}`}
+        aria-label={eye === "right" ? "Right eye" : "Left eye"}
+      >
         <div className="eye-heading">
           <span className="eye-name">{eye === "right" ? "Right Eye" : "Left Eye"}</span>
           <span className="eye-clinical">{eye === "right" ? "OD" : "OS"}</span>
         </div>
         {baseline(eye) && (
           <p className="muted" style={{ marginTop: -4 }}>
-            <strong style={{ color: "var(--text-2)" }}>Your baseline:</strong> {baseline(eye)}
+            <strong style={{ color: "var(--text-2)" }}>{t("today.your_baseline")}</strong>{" "}
+            {baseline(eye)}
           </p>
         )}
         {rowsForEye.map((r) => (
@@ -236,7 +247,7 @@ export default function Today() {
               <select
                 value={r.symptom_type}
                 onChange={(e) => updateRow(r.key, { symptom_type: e.target.value })}
-                aria-label="Symptom type"
+                aria-label={t("today.symptom_type")}
                 style={{ flex: 1 }}
               >
                 {orderedSymptoms.map((t) => (
@@ -248,14 +259,14 @@ export default function Today() {
               <button
                 className="btn subtle"
                 onClick={() => removeRow(r.key)}
-                aria-label="Remove symptom"
+                aria-label={t("today.remove_symptom")}
                 title="Remove"
               >
                 ✕
               </button>
             </div>
             <fieldset className="comparison">
-              <legend>Compared with your usual</legend>
+              <legend>{t("today.compared_with_usual")}</legend>
               <div
                 className="radio-grid"
                 style={{ gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}
@@ -276,11 +287,11 @@ export default function Today() {
             </fieldset>
             {r.symptom_type === "floaters" && r.comparison === "new" && (
               <div style={{ marginTop: 10 }}>
-                <span className="field-label">Floater appearance</span>
+                <span className="field-label">{t("today.floater_appearance")}</span>
                 <select
                   value={r.floaterShape ?? "custom"}
                   onChange={(e) => updateRow(r.key, { floaterShape: e.target.value })}
-                  aria-label="Floater shape"
+                  aria-label={t("today.floater_shape")}
                 >
                   {FLOATER_SHAPES.map((s) => (
                     <option key={s} value={s}>
@@ -291,7 +302,7 @@ export default function Today() {
               </div>
             )}
             <div style={{ marginTop: 10 }}>
-              <span className="field-label">Severity (optional)</span>
+              <span className="field-label">{t("today.severity")}</span>
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input
                   type="range"
@@ -299,7 +310,7 @@ export default function Today() {
                   max={10}
                   value={r.severity}
                   onChange={(e) => updateRow(r.key, { severity: Number(e.target.value) })}
-                  aria-label="Severity out of ten"
+                  aria-label={t("today.severity_label")}
                 />
                 <span className="mono" style={{ minWidth: 42, textAlign: "right" }}>
                   {r.severity}/10
@@ -307,11 +318,11 @@ export default function Today() {
               </div>
             </div>
             <div style={{ marginTop: 10 }}>
-              <span className="field-label">Describe it in your words</span>
+              <span className="field-label">{t("today.describe")}</span>
               <input
                 type="text"
                 value={r.description}
-                placeholder="e.g. small dark dot, slightly right of centre…"
+                placeholder={t("today.describe_placeholder")}
                 onChange={(e) => updateRow(r.key, { description: e.target.value })}
               />
             </div>
@@ -319,10 +330,10 @@ export default function Today() {
         ))}
         <div className="btn-row">
           <button className="btn" onClick={() => addRow(eye)}>
-            ＋ Add symptom
+            ＋ {t("today.add_symptom")}
           </button>
           <button className="btn subtle" onClick={() => nav("what-i-see")}>
-            ✧ Draw what I see
+            ✧ {t("today.draw")}
           </button>
         </div>
       </section>
@@ -331,11 +342,7 @@ export default function Today() {
 
   return (
     <>
-      <PageHeader
-        kicker={formatLongDate(date)}
-        title="How is your vision today?"
-        sub="Record what changed compared with your usual baseline — or tap “No change today” on ordinary days. Nothing here is a diagnosis."
-      />
+      <PageHeader kicker={formatLongDate(date)} title={t("today.title")} sub={t("today.sub")} />
       <BackupNudge />
 
       {alreadyRecorded && !justSaved && mode === "asking" && (
@@ -344,20 +351,34 @@ export default function Today() {
             ✓
           </span>
           <div>
-            Today is recorded
-            {existingLog?.overall === "no_change" ? " as no change" : ""}. You can add to it or
-            change it at any time.
+            {existingLog?.overall === "no_change"
+              ? t("today.recorded_no_change")
+              : t("today.recorded")}{" "}
+            {t("today.recorded_editable")}
           </div>
         </div>
       )}
 
       {justSaved && (
-        <div className="safety" style={{ borderColor: "color-mix(in srgb, var(--ok) 55%, transparent)", marginBottom: 16 }} role="status">
-          <span className="safety-icon" style={{ color: "var(--ok)" }} aria-hidden>✓</span>
+        <div
+          className="safety"
+          style={{
+            borderColor: "color-mix(in srgb, var(--ok) 55%, transparent)",
+            marginBottom: 16,
+          }}
+          role="status"
+        >
+          <span className="safety-icon" style={{ color: "var(--ok)" }} aria-hidden>
+            ✓
+          </span>
           <div>
-            Today is recorded.{" "}
-            <button className="btn subtle" style={{ minHeight: "var(--target)", padding: "2px 8px" }} onClick={() => nav("timeline")}>
-              View timeline →
+            {t("today.recorded")}{" "}
+            <button
+              className="btn subtle"
+              style={{ minHeight: "var(--target)", padding: "2px 8px" }}
+              onClick={() => nav("timeline")}
+            >
+              {t("today.view_timeline")}
             </button>
           </div>
         </div>
@@ -365,11 +386,7 @@ export default function Today() {
 
       {urgent && (
         <div style={{ marginBottom: 16 }}>
-          <SafetyNotice>
-            Some sudden visual changes can require urgent eye assessment. Afterlight cannot
-            determine the cause. If this is a new or sudden change, consider contacting an
-            ophthalmologist or emergency eye service promptly.
-          </SafetyNotice>
+          <SafetyNotice>{t("safety.urgent")}</SafetyNotice>
         </div>
       )}
 
@@ -380,24 +397,23 @@ export default function Today() {
               <span className="decision-icon" aria-hidden>
                 ◐
               </span>
-              <span className="decision-label">Nothing different today</span>
-              <span className="decision-hint">One tap. A quiet day is still a record.</span>
+              <span className="decision-label">{t("today.nothing_different")}</span>
+              <span className="decision-hint">{t("today.nothing_different_hint")}</span>
             </button>
             <button className="decision-btn secondary" onClick={() => setMode("recording")}>
               <span className="decision-icon" aria-hidden>
                 ✎
               </span>
-              <span className="decision-label">Something changed</span>
-              <span className="decision-hint">Which eye, what, how it compares to your usual.</span>
+              <span className="decision-label">{t("today.something_changed")}</span>
+              <span className="decision-hint">{t("today.something_changed_hint")}</span>
             </button>
           </div>
 
           {suggestions.length > 0 && (
             <div className="card" style={{ marginTop: 16 }}>
-              <h2 className="card-title">Same as before?</h2>
+              <h2 className="card-title">{t("today.same_as_before")}</h2>
               <p className="muted" style={{ marginTop: 0 }}>
-                Things you have recorded before. Tapping one starts an entry you can adjust — it
-                saves nothing on its own.
+                {t("today.same_as_before_hint")}
               </p>
               <div className="btn-row" style={{ flexWrap: "wrap" }}>
                 {suggestions.map((q) => (
@@ -418,13 +434,12 @@ export default function Today() {
 
           {profileTests.length > 0 && (
             <div className="card" style={{ marginTop: 16 }}>
-              <h2 className="card-title">Checks you can do yourself</h2>
+              <h2 className="card-title">{t("today.checks_title")}</h2>
               <p className="muted" style={{ marginTop: 0 }}>
-                Repeatable checks that give you something concrete to compare between appointments.
-                They are not measurements of your vision.
+                {t("today.checks_hint")}
               </p>
               <button className="btn subtle" onClick={() => nav("self-tests")}>
-                ◎ Open checks
+                ◎ {t("today.open_checks")}
               </button>
             </div>
           )}
@@ -438,28 +453,28 @@ export default function Today() {
       ) : (
         <>
           <div className="card" style={{ marginBottom: 16 }}>
-            <h2 className="card-title">When did this start?</h2>
+            <h2 className="card-title">{t("today.when_title")}</h2>
             <div className="btn-row" style={{ flexWrap: "wrap", alignItems: "center" }}>
               <button
                 className={`btn ${when === "today" ? "primary" : "subtle"}`}
                 aria-pressed={when === "today"}
                 onClick={() => setWhen("today")}
               >
-                Today
+                {t("today.when_today")}
               </button>
               <button
                 className={`btn ${when === "yesterday" ? "primary" : "subtle"}`}
                 aria-pressed={when === "yesterday"}
                 onClick={() => setWhen("yesterday")}
               >
-                Yesterday
+                {t("today.when_yesterday")}
               </button>
               <button
                 className={`btn ${when === "custom" ? "primary" : "subtle"}`}
                 aria-pressed={when === "custom"}
                 onClick={() => setWhen("custom")}
               >
-                Another day
+                {t("today.when_other")}
               </button>
               {when === "custom" && (
                 <input
@@ -467,7 +482,7 @@ export default function Today() {
                   value={customDate}
                   max={date}
                   onChange={(e) => setCustomDate(e.target.value)}
-                  aria-label="The day this started"
+                  aria-label={t("today.when_other_label")}
                   style={{ width: 170 }}
                 />
               )}
@@ -479,32 +494,31 @@ export default function Today() {
             )}
           </div>
 
-      <div className="grid-2">
-        {eyePanel("right")}
-        {eyePanel("left")}
-      </div>
+          <div className="grid-2">
+            {eyePanel("right")}
+            {eyePanel("left")}
+          </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="card-title">Note for today (optional)</div>
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Anything else worth remembering about today…"
-          aria-label="Note for today"
-        />
-      </div>
+          <div className="card" style={{ marginTop: 16 }}>
+            <div className="card-title">Note for today (optional)</div>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Anything else worth remembering about today…"
+              aria-label="Note for today"
+            />
+          </div>
 
-      <div className="btn-row save-row">
-        <button className="btn subtle" onClick={() => setMode("asking")}>
-          Back
-        </button>
-        <button className="btn primary" onClick={save}>
-          {existingLog ? "Update today's record" : "Save today's record"}
-        </button>
-      </div>
+          <div className="btn-row save-row">
+            <button className="btn subtle" onClick={() => setMode("asking")}>
+              Back
+            </button>
+            <button className="btn primary" onClick={save}>
+              {existingLog ? "Update today's record" : "Save today's record"}
+            </button>
+          </div>
         </>
       )}
-
     </>
   );
 }

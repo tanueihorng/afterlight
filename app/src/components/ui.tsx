@@ -1,15 +1,19 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { EYE_SHORT, SOURCE_LABELS, type Eye, type SourceType } from "../lib/models";
+import { SOURCE_LABELS, type Eye, type SourceType } from "../lib/models";
+import { t } from "../lib/i18n";
 
 export function ProvenanceBadge({ source }: { source: SourceType }) {
-  return <span className={`badge source-${source}`}>{SOURCE_LABELS[source]}</span>;
+  return <span className={`badge source-${source}`}>{t(`source.${source}`)}</span>;
 }
 
 export function EyeBadge({ eye }: { eye: Eye }) {
   if (eye === "not_applicable") return null;
   return (
-    <span className={`badge eye-${eye}`} aria-label={`Eye: ${EYE_SHORT[eye]}`}>
-      {EYE_SHORT[eye]}
+    <span
+      className={`badge eye-${eye}`}
+      aria-label={t("eye.label", { eye: t(`eye.short.${eye}`) })}
+    >
+      {t(`eye.short.${eye}`)}
     </span>
   );
 }
@@ -28,12 +32,12 @@ export function NeedsCheckingBadge({
   confirmed?: boolean;
 }) {
   if (source !== "document_extracted" || confirmed) return null;
-  return <span className="badge needs-checking">Not checked yet</span>;
+  return <span className="badge needs-checking">{t("source.not_checked")}</span>;
 }
 
 export function DemoBadge({ demo }: { demo?: boolean }) {
   if (!demo) return null;
-  return <span className="badge demo">Demo data</span>;
+  return <span className="badge demo">{t("eye.demo")}</span>;
 }
 
 export function StatusBadge({ status }: { status: string }) {
@@ -157,13 +161,7 @@ export function Modal({
   );
 }
 
-export function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="field">
       <span className="field-label">{label}</span>
@@ -205,12 +203,16 @@ export function SourceSelect({
   onChange: (s: SourceType) => void;
 }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value as SourceType)} aria-label="Source of information">
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as SourceType)}
+      aria-label="Source of information"
+    >
       {(Object.keys(SOURCE_LABELS) as SourceType[])
         .filter((s) => s !== "ai_generated")
         .map((s) => (
           <option key={s} value={s}>
-            {SOURCE_LABELS[s]}
+            {t(`source.${s}`)}
           </option>
         ))}
     </select>
@@ -264,7 +266,15 @@ export function PageHeader({
   return (
     <header className="page-header">
       {kicker && <div className="topbar-date">{kicker}</div>}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
         <h1>{title}</h1>
         {actions && <div className="btn-row">{actions}</div>}
       </div>

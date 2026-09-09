@@ -1,0 +1,66 @@
+# Publish the landing page and the app to GitHub Pages.
+#
+# Deliberately `workflow_dispatch` only. Putting a health tool in front of patients is a decision,
+# not a consequence of merging to main — see AGENTS.md §5. A human triggers this, having read the
+# release checks.
+#
+# The privacy claim is verified here rather than assumed: the job fails if the built output
+# contains anything a browser would fetch from a third party.
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "publish" to confirm you intend to put this in front of patients'
+        required: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event.inputs.confirm == 'publish'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install
+        working-directory: app
+        run: npm ci
+
+      - name: Verify (types, lint, invariants, tests, build, budget, no third-party requests)
+        working-directory: app
+        run: npm run verify
+
+      - name: Assemble the site
+        working-directory: app
+        run: npm run build:site
+
+      - name: Check the assembled site for third-party requests
+        working-directory: app
+        run: npm run nonetwork
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

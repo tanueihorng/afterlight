@@ -1,7 +1,7 @@
 {
   "name": "afterlight",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.10.0",
   "type": "module",
   "description": "A local-first personal ophthalmology record and visual diary.",
   "scripts": {
@@ -15,12 +15,18 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "guard": "node scripts/check-invariants.mjs",
-    "verify": "tsc -b && npm run lint && npm run guard && npm run verify:assets && npm run test && npm run build && npm run bundle",
+    "verify": "tsc -b && npm run lint && npm run guard && npm run verify:assets && npm run changelog:check && npm run test && npm run build && npm run bundle && npm run nonetwork",
     "bundle": "node scripts/check-bundle.mjs",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "build:standalone": "node scripts/build-standalone.mjs",
-    "verify:assets": "node scripts/verify-assets.mjs"
+    "verify:assets": "node scripts/verify-assets.mjs",
+    "changelog": "node scripts/build-changelog.mjs",
+    "changelog:check": "node scripts/build-changelog.mjs --check",
+    "clinical-pack": "node scripts/clinical-pack.mjs",
+    "nonetwork": "node scripts/check-no-network.mjs",
+    "release": "node scripts/release.mjs",
+    "build:site": "npm run build && node scripts/build-site.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
