@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400" role="img" aria-label="Afterlight — a living record of the sight you fought to keep">
+  <!--
+    README banner, dark. Drawn rather than photographed: no external fonts, no raster assets,
+    nothing fetched. The row of marks along the bottom is the point of the app — one small
+    entry a day, most of them quiet, a few of them not.
+  -->
+  <defs>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#f2c078" stop-opacity="0.22" />
+      <stop offset="55%" stop-color="#f2c078" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#f2c078" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f2c078" stop-opacity="0.15" />
+      <stop offset="45%" stop-color="#f2c078" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#f2c078" stop-opacity="0.9" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="400" fill="#0a0e16" />
+  <circle cx="196" cy="176" r="210" fill="url(#glow)" />
+
+  <!-- The eye: the same motif as the app icon, at rest. -->
+  <g transform="translate(196 176)" fill="none" stroke="#f2c078">
+    <circle r="92" stroke-width="5" opacity="0.95" />
+    <path d="M-92 0q92 -74 184 0" stroke-width="4" opacity="0.5" />
+    <path d="M-92 0q92 74 184 0" stroke-width="4" opacity="0.5" />
+    <circle r="35" fill="#f2c078" stroke="none" opacity="0.92" />
+    <circle r="35" stroke="#0a0e16" stroke-width="2" opacity="0.25" />
+  </g>
+
+  <text x="368" y="150" font-family="Georgia, 'Times New Roman', Times, serif" font-size="86" fill="#e8ecf4" letter-spacing="-1">Afterlight</text>
+  <text x="372" y="204" font-family="Georgia, 'Times New Roman', Times, serif" font-size="27" font-style="italic" fill="#b4bdcd">A living record of the sight you fought to keep.</text>
+  <text x="372" y="252" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="17" fill="#8590a3" letter-spacing="0.02em">Local-first  ·  no account  ·  no server  ·  works offline</text>
+
+  <!-- Six months of days. Most are "nothing different"; four are not. -->
+  <g transform="translate(372 320)">
+    <line x1="0" y1="0" x2="760" y2="0" stroke="url(#fade)" stroke-width="1.5" />
+    <g fill="#8590a3">
+      <circle cx="0" cy="0" r="2.5" /><circle cx="24" cy="0" r="2.5" /><circle cx="48" cy="0" r="2.5" />
+      <circle cx="72" cy="0" r="2.5" /><circle cx="96" cy="0" r="2.5" /><circle cx="120" cy="0" r="2.5" />
+      <circle cx="168" cy="0" r="2.5" /><circle cx="192" cy="0" r="2.5" /><circle cx="216" cy="0" r="2.5" />
+      <circle cx="240" cy="0" r="2.5" /><circle cx="264" cy="0" r="2.5" /><circle cx="288" cy="0" r="2.5" />
+      <circle cx="312" cy="0" r="2.5" /><circle cx="336" cy="0" r="2.5" /><circle cx="384" cy="0" r="2.5" />
+      <circle cx="408" cy="0" r="2.5" /><circle cx="432" cy="0" r="2.5" /><circle cx="456" cy="0" r="2.5" />
+      <circle cx="480" cy="0" r="2.5" /><circle cx="504" cy="0" r="2.5" /><circle cx="528" cy="0" r="2.5" />
+      <circle cx="576" cy="0" r="2.5" /><circle cx="600" cy="0" r="2.5" /><circle cx="624" cy="0" r="2.5" />
+      <circle cx="648" cy="0" r="2.5" /><circle cx="672" cy="0" r="2.5" /><circle cx="696" cy="0" r="2.5" />
+      <circle cx="720" cy="0" r="2.5" /><circle cx="744" cy="0" r="2.5" />
+    </g>
+    <g fill="#f2c078">
+      <circle cx="144" cy="0" r="5" />
+      <circle cx="360" cy="0" r="5" />
+      <circle cx="552" cy="0" r="5" />
+      <circle cx="760" cy="0" r="6.5" />
+    </g>
+    <text x="0" y="34" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#5d6a7c">thirty seconds a day</text>
+    <text x="760" y="34" text-anchor="end" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="14" fill="#8590a3">the appointment</text>
+  </g>
+</svg>

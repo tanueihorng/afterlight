@@ -1,21 +1,30 @@
 <div align="center">
 
-# Afterlight
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/banner-light.svg">
+  <img alt="Afterlight — a living record of the sight you fought to keep" src="docs/assets/banner-light.svg" width="100%">
+</picture>
 
-**A living record of the sight you fought to keep.**
+<br>
 
-Your vision changes every day. Your medical record usually doesn't.
-Afterlight is a local-first personal eye record that keeps a continuous, day-by-day account
-of what *you* see — so nothing depends on what you can remember in a ten-minute appointment.
+Your vision changes every day. Your medical record usually doesn't.<br>
+Afterlight keeps a continuous, day-by-day account of what *you* see — so nothing depends on<br>
+what you can remember in a ten-minute appointment.
 
-[![Local-first](https://img.shields.io/badge/data-local--first-1f6f5c)](#privacy-by-architecture)
-[![No account](https://img.shields.io/badge/account-none%20required-1f6f5c)](#privacy-by-architecture)
-[![React + TypeScript](https://img.shields.io/badge/React%2018-TypeScript-2b6cb0)](#technical-notes)
-[![Offline](https://img.shields.io/badge/works-offline-2b6cb0)](#quick-start)
-[![License: MIT](https://img.shields.io/badge/license-MIT-6b5b95)](LICENSE)
+<br>
+
+[![Local-first](https://img.shields.io/badge/data-local--first-1f6f5c?style=flat-square)](#privacy-by-architecture)
+[![No account](https://img.shields.io/badge/account-none-1f6f5c?style=flat-square)](#privacy-by-architecture)
+[![Offline](https://img.shields.io/badge/works-offline-1f6f5c?style=flat-square)](#quick-start)
+[![React 18 + TypeScript](https://img.shields.io/badge/React_18-TypeScript-2b6cb0?style=flat-square)](#quick-start)
+[![Tests](https://img.shields.io/badge/tests-542_unit_·_49_e2e-2b6cb0?style=flat-square)](#the-gate)
+[![Version](https://img.shields.io/badge/version-0.10.0-b45309?style=flat-square)](CHANGELOG.md)
+[![MIT](https://img.shields.io/badge/license-MIT-6b5b95?style=flat-square)](LICENSE)
 
 **[Guide](docs/guide.md)** · **[Keeping it safe](docs/keeping-it-safe.md)** ·
-**[What it will not do](docs/boundaries.md)** · **[Changelog](CHANGELOG.md)**
+**[What it will not do](docs/boundaries.md)** · **[Changelog](CHANGELOG.md)** ·
+**[For clinicians](docs/clinician-note.md)**
 
 </div>
 
@@ -52,14 +61,63 @@ what changed, you can answer with a record instead of a guess.
 
 It does not diagnose. It does not reassure. It remembers — accurately, and on your side.
 
+> [!WARNING]
 > If you notice sudden floaters, sudden flashes, a curtain or shadow over your vision, or a sudden
 > drop in vision: contact an ophthalmologist or emergency eye service now. Log it afterwards.
 
 ---
 
-## What it actually does
+## What it looks like
 
-**The daily loop takes about thirty seconds.**
+<table>
+<tr>
+<td width="50%" valign="top">
+
+<b>One question a day</b>
+
+<img src="docs/assets/screen-today.png" alt="The Today screen: one question, two large answers — nothing different today, or something changed." width="100%">
+
+Two targets. "No change" is one tap and a real data point.
+
+</td>
+<td width="50%" valign="top">
+
+<b>The brief you hand over</b>
+
+<img src="docs/assets/screen-brief.png" alt="An appointment brief with a panel per eye, grouped into new, unchanged and less than usual, and the patient's questions underneath." width="100%">
+
+What changed in each eye, and what you wanted to ask. One page.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+<b>Draw what you can't describe</b>
+
+<img src="docs/assets/screen-drawings.png" alt="A history of visual-field drawings, each dated and labelled with the eye it belongs to." width="100%">
+
+Dated snapshots you can lay over each other months later.
+
+</td>
+<td width="50%" valign="top">
+
+<b>See what they're describing</b>
+
+<img src="docs/assets/screen-visualize.png" alt="A three-dimensional model of a human eye, rendered from real anatomical measurements." width="100%">
+
+A real anatomical model, and fifty conditions — clearly labelled as generic.
+
+</td>
+</tr>
+</table>
+
+> *Screenshots use the built-in demo record: a synthetic patient with a detachment, a vitrectomy,
+> OCTs and six months of entries. Settings → Load demo data, removable in one click.*
+
+---
+
+## The daily loop
 
 ```
 Open  →  "Anything different today?"  →  No  →  logged, done.
@@ -75,41 +133,55 @@ Everything else is what that daily habit makes possible six months later.
 | **What I See** | Draw the floater, the shadow, the distortion, on a visual-field canvas. Overlay any two dates to see the drift you can't hold in your head. |
 | **Timeline** | Your entries and your clinical events on one chronology — symptoms, drawings, scans, letters, surgery, medication — never blended, always labelled by source. |
 | **My Eyes** | Each eye as its own longitudinal patient: baseline ("what my vision is normally like"), diagnoses, procedures, floaters tracked as persistent objects, measurements, prescriptions. |
-| **Imaging & Documents** | Your OCTs, fundus photos, clinic letters and operative notes, in your possession. Compare two OCTs side by side. |
-| **Appointments** | The flagship: **Prepare for appointment** turns everything since your last visit into a one-page brief — new / unchanged / improved, per eye — laid out for a sixty-second read. Save it as a real PDF, print it, show it fullscreen in the room, or hand over an encrypted extract covering only the dates you choose. |
-| **Visualize** | A 3D anatomy explorer plus schematic explainers for the procedures in *your* record — what a vitrectomy, a buckle, a gas tamponade actually did. Educational, and clearly labelled as generic. |
+| **Imaging & Documents** | Your OCTs, fundus photos, clinic letters and operative notes, in your possession. Drop a stack in at once; compare two OCTs side by side. |
+| **Appointments** | The flagship: **Prepare for appointment** turns everything since your last visit into a one-page brief, laid out for a sixty-second read. Save it as a real PDF, print it, present it fullscreen, or hand over an encrypted extract covering only the dates you choose. |
+| **Checks** | An Amsler grid, a card-calibrated vision check and a contrast check — compared only with your own previous attempt, never with a clinic. |
+| **Visualize** | A 3D anatomy explorer, fifty conditions with a severity slider, and a "what this looks like from inside" simulator. Educational, and clearly labelled as generic. |
 | **Search & Ask** | `⌘K` searches every record. `?` answers questions from your own history — *"when did glare in my left eye first appear?"* — always with the source, never invented. |
 
----
+<details>
+<summary><b>What the appointment brief actually says</b></summary>
 
-## The appointment brief
+<br>
 
-This is the feature that earns the daily thirty seconds. It reads the period since your last
-appointment and writes the summary you would never manage to assemble from memory:
+It reads the period since your last appointment and writes the summary you would never manage to
+assemble from memory:
 
 ```
-RETINA FOLLOW-UP · 9 September 2026
-Period: 26 Aug 2026 → 9 Sep 2026
+AFTERLIGHT — APPOINTMENT BRIEF
+13 September 2026 · Retina follow-up
+Period: 30 Aug 2026 → 13 Sep 2026
 
-RIGHT EYE (OD)
-  UNCHANGED   Floaters — usual strand and dots, unchanged (recorded 6 Sep)
-  IMPROVED    Dryness — severity 7/10 → 3/10 since starting artificial tears
+RIGHT EYE (OD)            [patient reported]
+  UNCHANGED         Floaters — usual strand and dots (recorded 10 Sep)
+  LESS THAN USUAL   Dryness 3/10 — improved since starting artificial tears (2 Sep)
 
-LEFT EYE (OS)
-  NEW         One new small dark dot, slightly right of centre (first recorded 4 Sep)
-  UNCHANGED   Glare — evening glare unchanged (recorded 7 Sep)
+LEFT EYE (OS)             [patient reported]
+  NEW               One new small dark dot, slightly right of centre (8 Sep)
+  UNCHANGED         Glare 2/10 — evening glare unchanged (11 Sep)
+  LESS THAN USUAL   Dryness 3/10 (2 Sep)
 
-VISUAL FIELD HISTORY     [4 Sep]  [7 Sep]  [8 Sep]      ← your own drawings
+QUESTIONS FOR MY DOCTOR
+  • Has my OCT changed since the August scan?
+  • Is the new left-eye dark dot consistent with the PVD seen at my last exam?
 
-CLINICAL EVENTS          24 Aug — OCT, left eye
-                         26 Aug — Ophthalmology review
+WHAT THE PATIENT DREW     [8 Sep]  [11 Sep]  [12 Sep]
 
-QUESTIONS FOR MY DOCTOR  • Is this new floater concerning?
-                         • Has my OCT changed since August?
+FROM CLINIC RECORDS       26 Aug — OCT, left eye
+                          30 Aug — Ophthalmology review
+
+Patient-generated record. Not a clinical record, not a measurement, not a diagnosis.
 ```
 
-Print it, save it as PDF, or present it fullscreen from your phone. It is an *organisational*
-summary of what you recorded — deliberately not an interpretation of it.
+Inside each eye, what **you** reported and what you **copied from a clinic letter** are separately
+headed and never share a list — blending them is the specific failure this document exists to
+prevent.
+
+The PDF writer is ours and it is deterministic: the same brief always produces byte-identical
+output, so *"has this changed?"* is answerable by comparing two files. There is a one-page
+explanation written for the clinician holding it: [`docs/clinician-note.md`](docs/clinician-note.md).
+
+</details>
 
 ---
 
@@ -133,7 +205,14 @@ restrained sentence pointing you at a real doctor — not a probability.
 **Missing data is shown as missing.** "Not recorded" is never rendered as a normal result. A
 quiet log does not mean a healthy eye, and the app will not imply that it does.
 
+**Nothing read out of a file is a fact.** A date from a filename, a laterality from `_OD`: all
+stored as extracted and unconfirmed, and kept out of your appointment brief until you say so. An
+ambiguous date like `04-09-2026` comes back as *both* readings rather than a guess.
+
 **Patient-owned.** It is your record. Export it whole, take it elsewhere, delete it completely.
+
+Each of these is enforced by a check that fails the build, not by good intentions —
+see [`npm run guard`](app/scripts/check-invariants.mjs).
 
 ---
 
@@ -145,18 +224,25 @@ Not a policy — a design constraint.
 flowchart LR
     You([You]) --> App[Afterlight in your browser]
     App <--> DB[(IndexedDB<br/>on this device)]
-    App -.->|only if you choose| Export[JSON export file]
+    App -.->|only if you choose| Export[Encrypted export]
     App -.->|only if you choose| Print[Printed brief / PDF]
-    App x--x Cloud[No server. No account.<br/>No analytics. No upload.]
+    App x--x Cloud[No server · No account<br/>No analytics · No upload]
 ```
 
 There is no backend. Records, drawings, scans and documents live in IndexedDB in your browser,
 on your device. Nothing is transmitted, because there is nowhere for it to be transmitted to.
-Your data leaves only when *you* export it or print it.
+Your data leaves only when *you* export it, print it, or share a date range you chose.
 
-The trade-off is honest and yours to manage: clearing your browser data deletes your record.
-**Export regularly** — Settings → Export everything (JSON) — and keep the file somewhere safe.
-That file is your whole eye history; treat it like a medical document, because it is one.
+This is checked rather than claimed: `npm run nonetwork` reads the **built** files and fails on
+anything a browser would fetch from a third party — a script, a stylesheet, a font, an image, a
+worker, a socket. Verified end to end on the hosted build: **zero external requests**, landing page
+through to the daily loop.
+
+> [!CAUTION]
+> The trade-off is honest and yours to manage: **clearing your browser data deletes your record**,
+> and nobody can restore it for you. Export regularly — Settings → Export everything — and keep the
+> file somewhere safe. [How to keep it safe](docs/keeping-it-safe.md) covers backup, restore and
+> moving to a new device.
 
 ---
 
@@ -169,93 +255,136 @@ npm install
 npm run dev          # → http://localhost:5173
 ```
 
-Then in **Settings → Load demo data** you can explore a full synthetic history — a detachment,
-a vitrectomy, OCTs, drawings, a real appointment brief — all clearly badged as demo and removable
-in one click, without touching anything of your own.
-
-Build a static copy you can host anywhere (or open offline):
+Then **Settings → Load demo data** gives you a full synthetic history — a detachment, a vitrectomy,
+OCTs, drawings, a real appointment brief — all badged as demo and removable in one click, without
+touching anything of your own.
 
 ```bash
 npm run build        # → app/dist/
 npm run build:site   # → site/ — the landing page with the app inside it at /app/
-```
-
-The privacy claim is checked against the built files, not just the source:
-
-```bash
 npm run nonetwork    # fails on anything a browser would fetch from a third party
 ```
 
+### The gate
+
+```bash
+npm run verify       # types · lint · invariants · changelog · 542 tests · build · budget · network
+npm run e2e          # 49 end-to-end, desktop and phone, including offline
+```
+
+Nothing is done until both pass clean.
+
 ---
 
-## Technical notes
+<details>
+<summary><b>Technical notes</b></summary>
 
-React 18 · TypeScript · Vite · IndexedDB · Canvas 2D · zero runtime dependencies beyond React.
+
+React 18 · TypeScript · Vite · IndexedDB · Canvas 2D · WebGL.
+Two runtime dependencies: React and Three.js. Initial download is 81 KB gzipped.
 
 ```
 afterlight/
+├── site/                     # the landing page — static, zero third-party requests
 ├── EyeExplorer.html          # self-contained 3D eye explorer (Three.js embedded, works offline)
-├── docs/eye-explorer.md      # its own documentation
-└── app/
-    └── src/
-        ├── lib/
-        │   ├── models.ts     # every record type, each carrying eye + source provenance
-        │   ├── db.ts         # IndexedDB persistence, export/import
-        │   ├── store.tsx     # single store; the timeline is derived, never stored twice
-        │   ├── brief.ts      # the "what changed?" engine behind the appointment brief
-        │   ├── search.ts     # global search across every record type
-        │   ├── ask.ts        # deterministic Q&A over your own history, with citations
-        │   ├── pdf.ts        # a small deterministic PDF writer — same brief, same bytes
-        │   ├── share.ts      # encrypted extracts of a chosen date range, never the whole record
-        │   ├── qr.ts         # QR encoder, so a summary can be scanned off your screen offline
-        │   ├── ingest.ts     # filenames, PDF headers and DICOM read as suggestions, never facts
-        │   ├── render.ts     # visual-field drawing renderer
-        │   └── education.ts  # generic procedure / condition explainers
-        ├── components/       # UI primitives, retina diagram, command palette
-        └── pages/            # Today · What I See · Timeline · My Eyes · Imaging · Appointments · Visualize · Settings
+└── app/src/
+    ├── lib/
+    │   ├── models.ts         # every record type, each carrying eye + source provenance
+    │   ├── db.ts             # IndexedDB persistence, export/import, migrations
+    │   ├── store.tsx         # single store; the timeline is derived, never stored twice
+    │   ├── query.ts          # the one primitive the derived engines share
+    │   ├── brief.ts          # the "what changed?" engine behind the appointment brief
+    │   ├── trends.ts         # describes numbers; never judges them
+    │   ├── search.ts         # global search, clinical synonyms, field scoping
+    │   ├── ask.ts            # deterministic Q&A over your own history, with citations
+    │   ├── pdf.ts            # a small deterministic PDF writer — same brief, same bytes
+    │   ├── qr.ts             # QR encoder, so a summary can be scanned off your screen offline
+    │   ├── share.ts          # encrypted extracts of a chosen date range, never the whole record
+    │   ├── ingest.ts         # filenames, PDF headers and DICOM read as suggestions, never facts
+    │   ├── i18n.ts           # translation lookup; locales/en.ts is the source catalogue
+    │   └── render.ts         # visual-field drawing renderer
+    ├── engine/               # the eye: real millimetre anatomy, 50 conditions, vision simulator
+    ├── components/           # UI primitives, charts, command palette
+    └── pages/                # Today · What I See · Timeline · My Eyes · Checks ·
+                              # Imaging · Appointments · Visualize · Settings
 ```
 
-Two design decisions worth calling out:
+Design decisions worth calling out:
 
 - **The timeline is derived, not stored.** Every entity is written once; chronology is computed
   from it. There is no second copy of the truth to drift out of sync.
 - **"Ask my records" contains no model.** It is a deterministic query layer over your own data.
   It answers from stored records and cites them, and when it cannot, it says exactly that:
   *"I could not find that in your stored records."* An eye record is not a place to hallucinate.
-- **The PDF writer is ours, and it is deterministic.** The same brief always produces byte-identical
-  output, so "has this changed?" is answerable by comparing two files — and nothing in the document
-  path can reach for a font on someone else's server.
+- **The PDF and QR writers are ours.** Both are small, both are deterministic, and neither can
+  reach for a font or a library on someone else's server. The QR encoder's output was verified
+  against an independent decoder, including a byte-exact round trip.
+- **A condition is a parameter delta**, not its own artwork — which is what makes severity a slider
+  rather than a set of images.
+- **The vision simulator never paints field loss black.** It fades. The black-tunnel picture is the
+  most misleading image in this subject, and a test enforces its absence.
 
----
+</details>
 
-## Releasing
+<details>
+<summary><b>Releasing, and what still needs a human</b></summary>
+
 
 `npm run release` runs the whole gate and then **refuses** while
 [`docs/clinical-review.md`](docs/clinical-review.md) says the clinical wording is unreviewed. It
 does not push and it does not deploy; publishing is a human decision, and the Pages workflow is
-`workflow_dispatch` only.
+`workflow_dispatch` with a typed confirmation. The version stays below `1.0.0` until that review is
+recorded.
 
-The version stays below `1.0.0` until that review is recorded.
+`npm run clinical-pack` generates [`docs/clinical-pack.md`](docs/clinical-pack.md) from the source —
+93 strings across the safety wording, every boundary statement, the thirteen condition profiles, all
+fifty atlas entries and the home-check instructions, each with the question it needs answering. That
+is the document to send a reviewer.
 
-## Where this is going
+Outstanding, and none of it can be done by software:
 
-Afterlight is usable today and still early. The full build plan lives in
-**[`docs/plan/`](docs/plan/README.md)** — eleven phases, each a self-contained brief that can be
-executed independently: testing foundations, data integrity and portable encrypted archives,
-performance at ten years of entries, accessibility built for people who actually have eye disease,
-a mobile daily loop, clinical breadth beyond the retina with home self-tests, a photoreal eye
-renderer, a whole-eye disease atlas with a "what this looks like from inside" simulator, deeper
-record intelligence, clinician handoff, and release with real clinical review.
+- [ ] the clinical review itself;
+- [ ] the hosted deploy;
+- [ ] the printed brief checked on a real printer, A4 and Letter;
+- [ ] a clinician who has never seen the app reading a brief against a clock;
+- [ ] the PWA installed on a real iPhone and a real Android handset.
 
-If you live with a retinal condition and something here is wrong, missing, or worded in a way
-that would frighten someone at 2am — [open an issue](https://github.com/tanueihorng/afterlight/issues).
-Accessibility barriers and clinical accuracy concerns have their own forms, and both go to a
-person. That feedback is worth more than a feature request. Please do not attach your own records;
-describe the shape of the problem instead.
+</details>
+
+<details>
+<summary><b>How it was built</b></summary>
+
+
+Eleven self-contained phases, each with its own brief in [`docs/plan/`](docs/plan/README.md) and its
+own entry in the [ledger](docs/plan/STATUS.md): testing foundations, data integrity and portable
+encrypted archives, performance at ten years of entries, accessibility built for people who actually
+have eye disease, a mobile daily loop, clinical breadth beyond the retina with home self-tests, a
+photoreal eye renderer, a whole-eye disease atlas with a "what this looks like from inside"
+simulator, deeper record intelligence, clinician handoff, and release.
+
+The working agreement for anyone — human or agent — touching this is [`AGENTS.md`](AGENTS.md):
+seven non-negotiables, what requires a human, and the definition of done.
+
+</details>
+
+---
+
+## Contributing
+
+If you live with a retinal condition and something here is wrong, missing, or worded in a way that
+would frighten someone at 2am — [open an issue](https://github.com/tanueihorng/afterlight/issues).
+**Accessibility barriers and clinical accuracy concerns have their own forms, and both go to a
+person.** That feedback is worth more than a feature request.
+
+Please do not attach your own records; describe the shape of the problem instead.
 
 Other languages are welcome and the layer for them exists — see
-[`docs/translating.md`](docs/translating.md). Only English ships today, and the page is honest about
-how much of the app is extracted so far.
+[`docs/translating.md`](docs/translating.md). Only English ships today, and that page is honest
+about how much of the app is extracted so far.
+
+[Contributing guide](docs/contributing.md) ·
+[Code of conduct](CODE_OF_CONDUCT.md) ·
+[Security](SECURITY.md)
 
 ---
 
@@ -264,6 +393,8 @@ how much of the app is extracted so far.
 Afterlight is a personal record-keeping tool. It does not diagnose, does not interpret imaging,
 does not estimate risk, and does not replace an ophthalmologist. A quiet log is not evidence that
 your eyes are fine. If something is sudden or severe, seek urgent assessment — then write it down.
+
+[The boundaries, in full](docs/boundaries.md).
 
 ---
 

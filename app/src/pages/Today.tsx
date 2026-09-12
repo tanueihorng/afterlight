@@ -16,7 +16,6 @@ import BackupNudge from "../components/BackupNudge";
 import {
   addDays,
   formatDate,
-  formatLongDate,
   isoToDateOnly,
   nowISO,
   todayLocal,
@@ -342,7 +341,9 @@ export default function Today() {
 
   return (
     <>
-      <PageHeader kicker={formatLongDate(date)} title={t("today.title")} sub={t("today.sub")} />
+      {/* No kicker: the shell already prints today's date above every page, and having it
+          twice on the one screen people open daily was just noise. */}
+      <PageHeader title={t("today.title")} sub={t("today.sub")} />
       <BackupNudge />
 
       {alreadyRecorded && !justSaved && mode === "asking" && (
