@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useHashRoute } from "../lib/router";
 import { useStore } from "../lib/store";
 import {
@@ -74,11 +74,15 @@ export default function Today() {
   // the answer requires.
   const [mode, setMode] = useState<"asking" | "recording">(() =>
     // arriving from a timeline "Add event" jumps straight to recording — the two-target
-    // question is for the daily habit, not for someone backdating history
-    window.location.hash.includes("add=changed") || todaysSymptoms.length > 0
+    // question is for the daily habit, not for someone backdating history. The flag rides in
+    // sessionStorage: query strings in the hash fall foul of the router's fallback.
+    sessionStorage.getItem("today-add") === "1" || todaysSymptoms.length > 0
       ? "recording"
       : "asking",
   );
+  useEffect(() => {
+    sessionStorage.removeItem("today-add");
+  }, []);
   const [when, setWhen] = useState<WhenOption>("today");
   const [customDate, setCustomDate] = useState(addDays(date, -1));
 

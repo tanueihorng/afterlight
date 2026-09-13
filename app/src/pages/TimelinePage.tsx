@@ -6,6 +6,7 @@ import SameAsLastTime from "../components/SameAsLastTime";
 import { DemoBadge, EmptyState, EyeBadge, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
 import { formatDate, formatTime, isoToDateOnly, todayLocal, daysAgoISO } from "../lib/util";
 import { inLens, weightOf, type StoryLens } from "../lib/timeline-story";
+import { DiagnosisModal, MedicationModal, ProcedureModal } from "./MyEyes";
 
 const CATEGORIES = [
   { id: "daily_log", label: "Daily logs" },
@@ -47,6 +48,7 @@ export default function TimelinePage() {
   const [compare, setCompare] = useState<SymptomEntry | null>(null);
   const [view, setView] = useState<"story" | "detailed">("story");
   const [adding, setAdding] = useState(false);
+  const [inlineAdd, setInlineAdd] = useState<null | "diagnosis" | "procedure" | "medication">(null);
   const [lens, setLens] = useState<StoryLens>("clinical");
 
   const rangeStart = useMemo(() => {
@@ -337,22 +339,29 @@ export default function TimelinePage() {
           <div style={{ display: "grid", gap: 8 }}>
             {(
               [
-                ["Daily log or symptom", "#/today?add=changed", "The form opens directly — set the date to when it happened"],
-                ["Drawing of what you see", "#/what-i-see", "Sketch floaters, glare, blind spots"],
-                ["Diagnosis", "#/my-eyes?add=diagnosis", "Opens the diagnosis form — dated when first documented"],
-                ["Procedure or surgery", "#/my-eyes?add=procedure", "Opens the procedure form — dated to the day it happened"],
-                ["Medication", "#/my-eyes?add=medication", "Opens the medication form — start and stop dates"],
-                ["Imaging or scan", "#/my-eyes", "OCT, photos, scans — a milestone on the spine"],
+                ["Daily log or symptom", "today", "The form opens directly — set the date to when it happened"],
+                ["Drawing of what you see", "drawing", "Sketch floaters, glare, blind spots"],
+                ["Diagnosis", "diagnosis", "Opens right here — dated when first documented"],
+                ["Procedure or surgery", "procedure", "Opens right here — dated to the day it happened"],
+                ["Medication", "medication", "Opens right here — start and stop dates"],
+                ["Imaging or scan", "#/my-eyes", "OCT, photos, scans — added in My Eyes"],
                 ["Appointment", "#/appointments", "Past or upcoming, with the clinic"],
               ] as const
-            ).map(([label, hash, sub]) => (
+            ).map(([label, target, sub]) => (
               <button
                 key={label}
                 className="btn subtle"
                 style={{ justifyContent: "flex-start", textAlign: "left", minHeight: "var(--target)" }}
                 onClick={() => {
                   setAdding(false);
-                  location.hash = hash;
+                  if (target === "diagnosis" || target === "procedure" || target === "medication") {
+                    setInlineAdd(target);
+                  } else if (target === "today") {
+                    sessionStorage.setItem("today-add", "1");
+                    location.hash = "#/today";
+                  } else {
+                    location.hash = target;
+                  }
                 }}
               >
                 <span>
@@ -365,6 +374,9 @@ export default function TimelinePage() {
           </div>
         </Modal>
       )}
+      {inlineAdd === "diagnosis" && <DiagnosisModal onClose={() => setInlineAdd(null)} />}
+      {inlineAdd === "procedure" && <ProcedureModal onClose={() => setInlineAdd(null)} />}
+      {inlineAdd === "medication" && <MedicationModal onClose={() => setInlineAdd(null)} />}
       {detail && <EventDetail event={detail} onClose={() => setDetail(null)} onCompare={setCompare} />}
       {compare && <SameAsLastTime entry={compare} onClose={() => setCompare(null)} />}
     </>

@@ -315,7 +315,7 @@ function BaselineModal({ eye, onClose }: { eye: EyeSide; onClose: () => void }) 
   );
 }
 
-function DiagnosisModal({ onClose }: { onClose: () => void }) {
+export function DiagnosisModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const [d, setD] = useState({ name: "", eye: "right" as Eye, first_documented: todayLocal(), status: "active", clinician: "", clinic: "", notes: "", confirmed: true, source_type: "clinician_reported" });
   return (
@@ -386,7 +386,7 @@ function DiagnosisModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ProcedureModal({ onClose }: { onClose: () => void }) {
+export function ProcedureModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const [p, setP] = useState({ procedure_type: "", date: todayLocal(), eye: "right" as Eye, surgeon: "", facility: "", indication: "", outcome: "" });
   return (
@@ -435,7 +435,7 @@ function ProcedureModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function MedicationModal({ onClose }: { onClose: () => void }) {
+export function MedicationModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const [m, setM] = useState({ name: "", kind: "prescription", eye: "right" as Eye, dose: "", frequency: "", start_date: todayLocal(), end_date: "", prescribed_by: "", reason: "" });
   return (
