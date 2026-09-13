@@ -25,7 +25,7 @@ import {
   ProvenanceBadge,
 } from "../components/ui";
 import { ShareBrief } from "../components/ShareBrief";
-import { addDays, formatDate, formatLongDate, nowISO, todayLocal } from "../lib/util";
+import { addDays, formatDate, formatLongDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
 
 export default function Appointments() {
   const store = useStore();
@@ -76,7 +76,7 @@ export default function Appointments() {
         >
           <div className="card-title">Next appointment</div>
           <div style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-lg)" }}>
-            {formatLongDate(next.date_time.slice(0, 10))} · {next.reason || "Appointment"}
+            {formatLongDate(isoToDateOnly(next.date_time))} · {next.reason || "Appointment"}
           </div>
           <div className="muted" style={{ marginBottom: 12 }}>
             {[next.clinic, next.clinician, next.specialty].filter(Boolean).join(" · ")}
@@ -152,7 +152,7 @@ function ApptRow({ a, onEdit }: { a: Appointment; onEdit: () => void }) {
       </span>
       <span style={{ minWidth: 0 }}>
         <span className="tl-title">
-          {formatDate(a.date_time.slice(0, 10))} · {a.reason || "Appointment"}
+          {formatDate(isoToDateOnly(a.date_time))} · {a.reason || "Appointment"}
         </span>
         <br />
         <span className="tl-summary">
@@ -179,7 +179,7 @@ function ApptRow({ a, onEdit }: { a: Appointment; onEdit: () => void }) {
 function AppointmentModal({ appt, onClose }: { appt: Appointment | null; onClose: () => void }) {
   const store = useStore();
   const [f, setF] = useState({
-    date: appt ? appt.date_time.slice(0, 10) : todayLocal(),
+    date: appt ? isoToDateOnly(appt.date_time) : todayLocal(),
     time: appt ? appt.date_time.slice(11, 16) : "10:00",
     clinic: appt?.clinic ?? "",
     clinician: appt?.clinician ?? "",
@@ -439,7 +439,7 @@ function BriefView({ appointmentId, onBack }: { appointmentId: string; onBack: (
   );
 
   const title = appt
-    ? `${formatLongDate(appt.date_time.slice(0, 10))} · ${appt.reason || "Appointment"}`
+    ? `${formatLongDate(isoToDateOnly(appt.date_time))} · ${appt.reason || "Appointment"}`
     : "Appointment brief";
 
   const header = store.meta?.brief_header ?? "";
@@ -469,7 +469,7 @@ function BriefView({ appointmentId, onBack }: { appointmentId: string; onBack: (
       <PageHeader
         kicker="Prepare for appointment"
         title={
-          appt ? `Brief for ${formatLongDate(appt.date_time.slice(0, 10))}` : "Appointment brief"
+          appt ? `Brief for ${formatLongDate(isoToDateOnly(appt.date_time))}` : "Appointment brief"
         }
         sub="An organisational summary of your records for the chosen period — what was recorded, drawn, scanned and asked. It is not a medical interpretation."
         actions={
@@ -870,7 +870,7 @@ function PresentSection({
                   className="btn subtle"
                   style={{ padding: 4 }}
                   onClick={() => onZoom(d.thumbnail!)}
-                  aria-label={`Show the drawing from ${formatDate(d.date_time.slice(0, 10))} large`}
+                  aria-label={`Show the drawing from ${formatDate(isoToDateOnly(d.date_time))} large`}
                 >
                   <img
                     src={d.thumbnail}
@@ -878,7 +878,7 @@ function PresentSection({
                     style={{ width: 200, borderRadius: 8 }}
                   />
                 </button>
-                <figcaption className="muted">{formatDate(d.date_time.slice(0, 10))}</figcaption>
+                <figcaption className="muted">{formatDate(isoToDateOnly(d.date_time))}</figcaption>
               </figure>
             ) : null,
           )}
@@ -1038,7 +1038,7 @@ function BriefDocument({
         <div className="muted">{title}</div>
         <div className="muted">
           Period: {formatDate(payload.range_start)} → {formatDate(payload.range_end)} · generated{" "}
-          {formatDate(payload.generated_at.slice(0, 10))}
+          {formatDate(isoToDateOnly(payload.generated_at))}
         </div>
       </div>
 
@@ -1081,12 +1081,12 @@ function BriefDocument({
                   {d.thumbnail && (
                     <img
                       src={d.thumbnail}
-                      alt={`${formatDate(d.date_time.slice(0, 10))}. ${d.description ?? "Patient drawing of the field of view."}`}
+                      alt={`${formatDate(isoToDateOnly(d.date_time))}. ${d.description ?? "Patient drawing of the field of view."}`}
                       style={{ width: 130, borderRadius: 8, border: "1px solid var(--border)" }}
                     />
                   )}
                   <figcaption className="muted" style={{ fontSize: "var(--fs-xs)" }}>
-                    {formatDate(d.date_time.slice(0, 10))} ·{" "}
+                    {formatDate(isoToDateOnly(d.date_time))} ·{" "}
                     {d.eye === "right" ? "OD" : d.eye === "left" ? "OS" : "OU"}
                   </figcaption>
                 </figure>

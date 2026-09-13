@@ -1132,6 +1132,10 @@ input[type="range"] {
   display: flex;
   flex-direction: column;
   max-height: 78vh;
+  /* Positioned, like .modal, so it paints above the fixed backdrop-dismiss button — without
+     this the dismiss layer swallows every click and the palette only works by keyboard. */
+  position: relative;
+  z-index: 1;
 }
 
 .palette-tabs {

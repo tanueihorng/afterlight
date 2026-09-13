@@ -8,14 +8,29 @@ export function nowISO(): string {
 
 /** YYYY-MM-DD in local time. */
 export function todayLocal(): string {
-  const d = new Date();
+  return localDayOf(new Date());
+}
+
+/** The local day a Date falls on, as YYYY-MM-DD. */
+function localDayOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
   ).padStart(2, "0")}`;
 }
 
+/**
+ * The day a timestamp falls on, on this person's calendar.
+ *
+ * Stored timestamps are UTC ("…Z"); slicing them read the UTC day, so for anyone away from
+ * Greenwich an entry written between midnight and the UTC offset landed on the previous day —
+ * the timeline dated it one day early, and the day-matching that powers edits and windows
+ * missed it entirely. Full timestamps convert to local; date-only strings pass through.
+ */
 export function isoToDateOnly(iso: string): string {
-  return iso.slice(0, 10);
+  if (iso.length <= 10) return iso;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso.slice(0, 10);
+  return localDayOf(d);
 }
 
 /** Parse YYYY-MM-DD as a local Date (avoids UTC off-by-one). */

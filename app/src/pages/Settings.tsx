@@ -25,7 +25,7 @@ import { toAllData } from "../lib/store";
 import { Field, Modal } from "../components/ui";
 import DisplaySettings from "../components/DisplaySettings";
 import ConditionProfiles from "../components/ConditionProfiles";
-import { formatDate } from "../lib/util";
+import { formatDate, isoToDateOnly } from "../lib/util";
 import { t } from "../lib/i18n";
 import { CHANGELOG, CURRENT_RELEASE, VERSION } from "../lib/changelog";
 
@@ -188,7 +188,7 @@ export default function Settings() {
         <p style={{ color: "var(--text-2)", fontSize: "var(--fs-base)" }}>
           {backup.neverExported
             ? `This record has never been exported. It holds ${backup.totalRecords} records.`
-            : `Last exported ${formatDate(backup.lastExportAt!.slice(0, 10))}${
+            : `Last exported ${formatDate(isoToDateOnly(backup.lastExportAt!))}${
                 backup.daysSinceExport !== undefined ? ` — ${backup.daysSinceExport} days ago` : ""
               }. ${backup.unsavedChanges} record${backup.unsavedChanges === 1 ? "" : "s"} changed since then.`}
         </p>
@@ -413,7 +413,7 @@ function ArchivePreview({ summary, current }: { summary: ArchiveSummary; current
       <p className="muted">
         Exported{" "}
         {summary.exported_at
-          ? formatDate(summary.exported_at.slice(0, 10))
+          ? formatDate(isoToDateOnly(summary.exported_at))
           : "at an unrecorded time"}
         {summary.checksumOk === true && " · contents match its checksum"}
         {summary.checksumOk === false && " · contents do NOT match its checksum"}

@@ -151,7 +151,7 @@ function EyeProfile({
         </dd>
         <dt>Next appointment</dt>
         <dd>
-          {nextAppt ? `${formatDate(nextAppt.date_time.slice(0, 10))}${nextAppt.reason ? ` · ${nextAppt.reason}` : ""}` : "Not recorded"}
+          {nextAppt ? `${formatDate(isoToDateOnly(nextAppt.date_time))}${nextAppt.reason ? ` · ${nextAppt.reason}` : ""}` : "Not recorded"}
         </dd>
       </dl>
 

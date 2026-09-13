@@ -16,7 +16,7 @@ import {
 } from "./db";
 import { SCHEMA_VERSION, materialiseFiles, migrate, type Snapshot } from "./migrations";
 import type { AppMeta, StoredFile } from "./models";
-import { nowISO } from "./util";
+import { isoToDateOnly, nowISO } from "./util";
 
 export const ARCHIVE_FORMAT = "afterlight-archive";
 export const ARCHIVE_VERSION = 2;
@@ -158,7 +158,7 @@ export async function buildArchive(): Promise<Archive> {
 }
 
 export function archiveFilename(now = nowISO(), encrypted = false): string {
-  return `afterlight-export-${now.slice(0, 10)}${encrypted ? ".encrypted" : ""}.json`;
+  return `afterlight-export-${isoToDateOnly(now)}${encrypted ? ".encrypted" : ""}.json`;
 }
 
 function download(text: string, filename: string) {
@@ -296,7 +296,7 @@ function datesIn(rows: unknown[]): string[] {
     for (const field of DATE_FIELDS) {
       const v = (row as Record<string, unknown>)[field];
       if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) {
-        out.push(v.slice(0, 10));
+        out.push(isoToDateOnly(v));
         break;
       }
     }

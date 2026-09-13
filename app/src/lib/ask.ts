@@ -52,7 +52,7 @@ const notFound = (interpretation: string): AskAnswer => ({
 const eyeWord = (e: Eye) => EYE_SHORT[e];
 
 function symptomCitation(s: SymptomEntry): Citation {
-  return { label: `Daily symptom log — ${formatDate(s.date_time.slice(0, 10))}`, route: "timeline" };
+  return { label: `Daily symptom log — ${formatDate(isoToDateOnly(s.date_time))}`, route: "timeline" };
 }
 
 /** Symptom terms mentioned in the question, matched against what is actually stored. */
@@ -86,14 +86,14 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
       const lines = [
         `Your first recorded ${first.symptom_type} entry${
           first.eye !== "not_applicable" ? ` for the ${eyeWord(first.eye).toLowerCase()}` : ""
-        } was on ${formatDate(first.date_time.slice(0, 10))}.`,
+        } was on ${formatDate(isoToDateOnly(first.date_time))}.`,
       ];
       if (first.description) lines.push(`Recorded description: "${first.description}"`);
       if (first.severity !== undefined) lines.push(`Severity recorded at the time: ${first.severity}/10.`);
       lines.push(
         `${candidates.length} entr${candidates.length === 1 ? "y" : "ies"} of this symptom ${
           candidates.length === 1 ? "is" : "are"
-        } stored, most recently on ${formatDate(candidates[candidates.length - 1].date_time.slice(0, 10))}.`,
+        } stored, most recently on ${formatDate(isoToDateOnly(candidates[candidates.length - 1].date_time))}.`,
       );
       return {
         lines,
@@ -116,10 +116,10 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
         lines: [
           `The first floater recorded${parsed.year ? ` in ${parsed.year}` : ""} was ${
             f.nickname ? `"${f.nickname}"` : `a ${f.shape} floater`
-          } in the ${eyeWord(f.eye).toLowerCase()}, first seen on ${formatDate(f.first_seen.slice(0, 10))}.`,
+          } in the ${eyeWord(f.eye).toLowerCase()}, first seen on ${formatDate(isoToDateOnly(f.first_seen))}.`,
           `It is currently marked ${f.status}.`,
         ],
-        citations: [{ label: `Floater record — first seen ${formatDate(f.first_seen.slice(0, 10))}`, route: "my-eyes" }],
+        citations: [{ label: `Floater record — first seen ${formatDate(isoToDateOnly(f.first_seen))}`, route: "my-eyes" }],
         found: true,
         interpretation: "First recorded floater",
       };
@@ -177,15 +177,15 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
   // ---- 3. Symptoms between the last two appointments -----------------------
   if (/symptom/.test(q) && /(between|since)/.test(q) && /(appointment|review|visit)/.test(q)) {
     const past = data.appointments
-      .filter((a) => a.date_time.slice(0, 10) <= new Date().toISOString().slice(0, 10))
+      .filter((a) => isoToDateOnly(a.date_time) <= todayLocal())
       .sort((a, b) => b.date_time.localeCompare(a.date_time));
     if (past.length < 2) return notFound("Symptoms between the last two appointments");
     const [latest, previous] = past;
-    const start = previous.date_time.slice(0, 10);
-    const end = latest.date_time.slice(0, 10);
+    const start = isoToDateOnly(previous.date_time);
+    const end = isoToDateOnly(latest.date_time);
     const entries = data.symptoms
       .filter((s) => {
-        const d = s.date_time.slice(0, 10);
+        const d = isoToDateOnly(s.date_time);
         return d >= start && d <= end;
       })
       .filter((s) => (eye ? s.eye === eye || s.eye === "both" : true))
@@ -242,10 +242,10 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     for (const a of data.appointments) {
       if (hit(a.notes)) {
         matches.push({
-          label: `${a.reason || "Appointment"} notes — ${formatDate(a.date_time.slice(0, 10))}`,
+          label: `${a.reason || "Appointment"} notes — ${formatDate(isoToDateOnly(a.date_time))}`,
           text: a.notes!,
           route: "appointments",
-          date: a.date_time.slice(0, 10),
+          date: isoToDateOnly(a.date_time),
         });
       }
     }
@@ -320,17 +320,17 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
   // ---- 6. Questions carried into an appointment ---------------------------
   if (/question/.test(q)) {
     const past = data.appointments
-      .filter((a) => a.date_time.slice(0, 10) <= new Date().toISOString().slice(0, 10))
+      .filter((a) => isoToDateOnly(a.date_time) <= todayLocal())
       .sort((a, b) => b.date_time.localeCompare(a.date_time));
     const target = past[0];
     const qs = data.questions.filter((x) =>
-      target ? x.created_at.slice(0, 10) <= target.date_time.slice(0, 10) : true,
+      target ? isoToDateOnly(x.created_at) <= isoToDateOnly(target.date_time) : true,
     );
     if (!qs.length) return notFound("Questions for your doctor");
     return {
       lines: [
         target
-          ? `Questions on your list before your ${target.reason || "appointment"} on ${formatDate(target.date_time.slice(0, 10))}:`
+          ? `Questions on your list before your ${target.reason || "appointment"} on ${formatDate(isoToDateOnly(target.date_time))}:`
           : "Questions on your list:",
         ...qs.map((x) => `• ${x.text}${x.status === "answered" && x.answer ? ` — recorded answer: "${x.answer}"` : ` (${x.status})`}`),
       ],
@@ -343,11 +343,11 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
   // ---- 7. "Summarize what changed since my last review" --------------------
   if (/(summar|what changed|changes)/.test(q)) {
     const past = data.appointments
-      .filter((a) => a.date_time.slice(0, 10) <= new Date().toISOString().slice(0, 10))
+      .filter((a) => isoToDateOnly(a.date_time) <= todayLocal())
       .sort((a, b) => b.date_time.localeCompare(a.date_time));
-    const start = past[0]?.date_time.slice(0, 10);
+    const start = past[0] ? isoToDateOnly(past[0].date_time) : undefined;
     if (!start) return notFound("Changes since your last review");
-    const end = new Date().toISOString().slice(0, 10);
+    const end = todayLocal();
     const payload = generateBrief(data, { range_start: start, range_end: end });
     const section = (eyeKey: "right" | "left") => {
       const p = payload.perEye[eyeKey];

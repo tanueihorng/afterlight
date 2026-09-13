@@ -330,6 +330,7 @@ export default function Today() {
                 type="text"
                 value={r.description}
                 placeholder={t("today.describe_placeholder")}
+                aria-label={t("today.describe")}
                 onChange={(e) => updateRow(r.key, { description: e.target.value })}
               />
             </div>

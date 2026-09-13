@@ -29,6 +29,28 @@ export async function openRoute(page: Page, route: string) {
   await page.waitForTimeout(400);
 }
 
+/** Open the search palette on either shell — desktop keeps it in the sidebar, phone in More. */
+export async function openSearch(page: Page) {
+  const sidebar = page.getByRole("button", { name: /search my records/i });
+  if (await sidebar.isVisible().catch(() => false)) {
+    await sidebar.click();
+    return;
+  }
+  await page.getByRole("button", { name: /^more/i }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /search my records/i }).click();
+}
+
+/** Open the ask palette on either shell. */
+export async function openAsk(page: Page) {
+  const sidebar = page.getByRole("button", { name: /ask my records/i });
+  if (await sidebar.isVisible().catch(() => false)) {
+    await sidebar.click();
+    return;
+  }
+  await page.getByRole("button", { name: /^more/i }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /ask my records/i }).click();
+}
+
 /**
  * Collect every page error and console error. A page that logs errors is broken even when it
  * looks fine; the sweep and the flow specs both assert this stays empty.

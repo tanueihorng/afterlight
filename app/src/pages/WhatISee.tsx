@@ -5,7 +5,7 @@ import { DARK_PALETTE, drawingToDataURL, renderDrawing, renderMark } from "../li
 import { describeDrawing, describeMark } from "../lib/describe";
 import { conditionById } from "../engine/conditions";
 import { ConfirmButton, DemoBadge, EyeBadge, EmptyState, Field, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
-import { formatDate, formatTime, nowISO } from "../lib/util";
+import { formatDate, formatTime, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
 
 const CANVAS_W = 800;
 const CANVAS_H = 740;
@@ -465,7 +465,7 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
             />
           </Field>
           <button className="btn primary" onClick={save} disabled={marks.length === 0} style={{ width: "100%", justifyContent: "center" }}>
-            Save drawing · {formatDate(new Date().toISOString().slice(0, 10))}
+            Save drawing · {formatDate(todayLocal())}
           </button>
         </div>
       </div>
@@ -505,12 +505,12 @@ function HistoryTab({ onCompare }: { onCompare: () => void }) {
         {drawings.map((d) => (
           <button key={d.id} className="gallery-item" onClick={() => setOpenId(d.id)}>
             {d.thumbnail ? (
-              <img src={d.thumbnail} alt={`${formatDate(d.date_time.slice(0, 10))}. ${describeDrawing(d.canvas_data.marks, d.eye)}`} />
+              <img src={d.thumbnail} alt={`${formatDate(isoToDateOnly(d.date_time))}. ${describeDrawing(d.canvas_data.marks, d.eye)}`} />
             ) : (
               <div className="img-ph" aria-hidden />
             )}
             <div className="gallery-meta">
-              <span>{formatDate(d.date_time.slice(0, 10))}</span>
+              <span>{formatDate(isoToDateOnly(d.date_time))}</span>
               <EyeBadge eye={d.eye} />
             </div>
           </button>
@@ -525,7 +525,7 @@ function DrawingDetail({ drawing, onClose }: { drawing: VisualFieldDrawing; onCl
   const store = useStore();
   const big = useMemo(() => drawingToDataURL(drawing.canvas_data.marks, 800, 740, "#0b0f17"), [drawing]);
   return (
-    <Modal title={`Visual field drawing — ${formatDate(drawing.date_time.slice(0, 10))}`} onClose={onClose} wide>
+    <Modal title={`Visual field drawing — ${formatDate(isoToDateOnly(drawing.date_time))}`} onClose={onClose} wide>
       <img
         src={big}
         alt={describeDrawing(drawing.canvas_data.marks, drawing.eye)}
@@ -543,7 +543,7 @@ function DrawingDetail({ drawing, onClose }: { drawing: VisualFieldDrawing; onCl
         <dt>Marks</dt>
         <dd>{drawing.canvas_data.marks.length}</dd>
         <dt>First recorded</dt>
-        <dd>{formatDate(drawing.created_at.slice(0, 10))}</dd>
+        <dd>{formatDate(isoToDateOnly(drawing.created_at))}</dd>
       </dl>
       <div className="modal-actions">
         <ConfirmButton
@@ -611,7 +611,7 @@ function CompareTab() {
             <div className="gallery-meta">
               <span>
                 {aId === d.id ? "A · " : bId === d.id ? "B · " : ""}
-                {formatDate(d.date_time.slice(0, 10))}
+                {formatDate(isoToDateOnly(d.date_time))}
               </span>
               <EyeBadge eye={d.eye} />
             </div>
@@ -626,11 +626,11 @@ function CompareTab() {
               Overlay — slider reveals the later drawing over the earlier one
             </div>
             <div className="compare-wrap">
-              <img src={drawingToDataURL(b.canvas_data.marks, 800, 740, "#0b0f17")} alt={`Later, ${formatDate(b.date_time.slice(0, 10))}. ${describeDrawing(b.canvas_data.marks, b.eye)}`} />
+              <img src={drawingToDataURL(b.canvas_data.marks, 800, 740, "#0b0f17")} alt={`Later, ${formatDate(isoToDateOnly(b.date_time))}. ${describeDrawing(b.canvas_data.marks, b.eye)}`} />
               <div className="compare-overlay" style={{ width: `${pos}%` }}>
                 <img
                   src={drawingToDataURL(a.canvas_data.marks, 800, 740, "#0b0f17")}
-                  alt={`Earlier, ${formatDate(a.date_time.slice(0, 10))}. ${describeDrawing(a.canvas_data.marks, a.eye)}`}
+                  alt={`Earlier, ${formatDate(isoToDateOnly(a.date_time))}. ${describeDrawing(a.canvas_data.marks, a.eye)}`}
                   style={{ width: `${(100 / pos) * 100}%`, maxWidth: "none", position: "absolute", inset: 0, height: "100%", objectFit: "cover" }}
                 />
               </div>
@@ -645,16 +645,16 @@ function CompareTab() {
               style={{ marginTop: 12 }}
             />
             <div className="muted">
-              Left: {formatDate(a.date_time.slice(0, 10))} · Right: {formatDate(b.date_time.slice(0, 10))}
+              Left: {formatDate(isoToDateOnly(a.date_time))} · Right: {formatDate(isoToDateOnly(b.date_time))}
             </div>
           </div>
           <div className="grid-2" style={{ marginTop: 16 }}>
             {[a, b].map((d, i) => (
               <div className="card" key={d.id}>
                 <div className="card-title">
-                  {i === 0 ? "Earlier" : "Later"} · {formatDate(d.date_time.slice(0, 10))} <EyeBadge eye={d.eye} />
+                  {i === 0 ? "Earlier" : "Later"} · {formatDate(isoToDateOnly(d.date_time))} <EyeBadge eye={d.eye} />
                 </div>
-                <img src={d.thumbnail} alt={`${formatDate(d.date_time.slice(0, 10))}. ${describeDrawing(d.canvas_data.marks, d.eye)}`} style={{ width: "100%", borderRadius: "var(--radius-sm)" }} />
+                <img src={d.thumbnail} alt={`${formatDate(isoToDateOnly(d.date_time))}. ${describeDrawing(d.canvas_data.marks, d.eye)}`} style={{ width: "100%", borderRadius: "var(--radius-sm)" }} />
                 {d.description && <p className="muted" style={{ marginTop: 8 }}>{d.description}</p>}
               </div>
             ))}
