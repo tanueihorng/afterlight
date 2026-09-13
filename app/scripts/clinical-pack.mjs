@@ -264,19 +264,38 @@ const structureTable = eyeStudio.match(/const STRUCTURES[^=]*= \[([\s\S]*?)\n\];
 const structureItems = [...structureTable.matchAll(/id: "([^"]+)",\s*name: "([^"]+)",\s*description:\s*"([^"]+)"/g)].map(
   (m) => ({ id: m[1], name: m[2], text: m[3] }),
 );
+const sourcesFor = {
+  cornea: "StatPearls NBK556110; AAO EyeNet (most densely innervated tissue); eyewiki.aao.org/Cornea_Anatomy",
+  iris: "eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures; nei.nih.gov eye anatomy",
+  lens: "nei.nih.gov eye anatomy (accommodation); EyeWiki Presbyopia",
+  ciliary_body: "eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures; PMC3032230",
+  zonules: "eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures",
+  sclera: "my.clevelandclinic.org/health/body/22088-sclera; aao.org/eye-health/anatomy/parts-of-eye",
+  choroid: "PMC2913695 (major supply for the outer retina); kenhub.com choroid",
+  retina: "nei.nih.gov eye anatomy; my.clevelandclinic.org/health/body/21982-retina",
+  nerve_head: "nei.nih.gov eye anatomy; EyeWiki Optic Disc",
+  optic_nerve_sheath: "radiopaedia.org/articles/optic-nerve (sheath continuous with dura)",
+  optic_nerve_core: "StatPearls NBK538217 (irreversible); PMC10922496 (RGC axons lack regeneration)",
+  muscle_superior: "aao.org/eye-health/anatomy/parts-of-eye; eyewiki.org/Extraocular_Muscles",
+  muscle_inferior: "aao.org/eye-health/anatomy/parts-of-eye; eyewiki.org/Extraocular_Muscles",
+  muscle_medial: "aao.org/eye-health/anatomy/parts-of-eye; eyewiki.org/Extraocular_Muscles",
+  muscle_lateral: "aao.org/eye-health/anatomy/parts-of-eye; eyewiki.org/Extraocular_Muscles",
+};
 sections.push({
   title: "6. Eye-model structure descriptions (phase 14)",
   intro:
     "One-sentence descriptions shown when a person selects a part of the 3D eye model. Plain " +
-    "descriptive anatomy: no advice, no diagnosis, no 'normal'. The reviewer should check each " +
-    "for accuracy and for tone at a difficult moment.",
+    "descriptive anatomy: no advice, no diagnosis, no 'normal'. Each was checked against the " +
+    "trusted sources listed in docs/atlas-review.md (AAO/EyeWiki, StatPearls/NCBI, NEI, " +
+    "Cleveland Clinic; per-sentence mapping there). The reviewer should still check each for " +
+    "accuracy and for tone at a difficult moment.",
   questions: [
     "Is each sentence anatomically accurate?",
     "Does any sentence read as reassurance, diagnosis or advice rather than description?",
     "Is 'damaged fibres do not grow back' acceptable honesty here, or too blunt?",
   ],
   items: structureItems.map((item) => ({
-    where: `components/EyeStudio.tsx → STRUCTURES.${item.id} (${item.name})`,
+    where: `components/EyeStudio.tsx → STRUCTURES.${item.id} (${item.name}) — sources: ${sourcesFor[item.id] ?? "docs/atlas-review.md"}`,
     text: item.text,
   })),
 });

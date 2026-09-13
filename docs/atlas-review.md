@@ -37,6 +37,33 @@ Specific questions for the reviewer: is any sentence wrong or misleading? Does "
 nerve endings" overstate? Is "fluid that nourishes the front of the eye" an acceptable plain
 rendering of aqueous humour production, or does it need the term named?
 
+### Trusted sources checked against these sentences (2026-09-14)
+
+Every factual claim in the fifteen sentences was checked against at least one of the following
+authoritative pages; the pack section in `docs/clinical-pack.md` carries the source line per
+sentence.
+
+| Sentence claim | Confirmed by |
+|---|---|
+| Cornea: clear front window; does most of the eye's focusing; packed with nerve endings | StatPearls/NCBI ([NBK556110](https://www.ncbi.nlm.nih.gov/books/NBK556110/)): the cornea accounts for ~two-thirds of the eye's refractive power (~43 of ~60 D). AAO EyeNet: the cornea is "the most densely innervated tissue of the human body"; [EyeWiki, Cornea Anatomy](https://eyewiki.aao.org/Cornea_Anatomy): 300–600× the sensory nerve endings of skin |
+| Iris: muscles change the pupil's size to control light | [EyeWiki, Basic Histology of the Eye](https://eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures); [NEI, Eye Anatomy](https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/anatomy-eye) |
+| Lens: flexible, changes shape to focus near and far, stiffens with age | [NEI](https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/anatomy-eye) (accommodation); presbyopia as age-related stiffening is standard textbook content (EyeWiki, *Presbyopia*) |
+| Ciliary body: focuses the lens, makes the fluid nourishing the front of the eye | [EyeWiki, Basic Histology](https://eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures): controls lens shape and produces aqueous humour; [Goel 2010, PMC3032230](https://pmc.ncbi.nlm.nih.gov/articles/PMC3032230/) |
+| Zonules: fine fibres holding the lens, ciliary ring to lens edge | [EyeWiki, Basic Histology](https://eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures) (suspensory ligaments/zonules) |
+| Sclera: tough white wall; holds shape; muscles pull on it | [Cleveland Clinic, Sclera](https://my.clevelandclinic.org/health/body/22088-sclera): maintains the eye's shape, muscles attach to it; [AAO, Parts of the Eye](https://www.aao.org/eye-health/anatomy/parts-of-eye) |
+| Choroid: dark blood-rich layer between sclera and retina; nourishes the outer retina | [Nickla 2009, PMC2913695](https://pmc.ncbi.nlm.nih.gov/articles/PMC2913695/): the choroid's vasculature is the major supply for the outer retina; [Kenhub, Choroid](https://www.kenhub.com/en/library/anatomy/choroid) |
+| Retina: light-sensing lining; turns light into signals leaving through the optic nerve | [NEI, Eye Anatomy](https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/anatomy-eye); [Cleveland Clinic, Retina](https://my.clevelandclinic.org/health/body/21982-retina) |
+| Optic disc: where the optic nerve leaves the eye | [NEI](https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/anatomy-eye); EyeWiki, *Optic Disc* |
+| Nerve sheath: protective wrapping continuous with the brain's coverings | [Radiopaedia, Optic nerve](https://radiopaedia.org/articles/optic-nerve): the sheath is continuous with the intracranial dura |
+| Optic nerve: fibre bundle to the brain; damaged fibres do not grow back | [StatPearls, Glaucoma (NBK538217)](https://www.ncbi.nlm.nih.gov/books/NBK538217/): irreversible damage to the optic nerve and retinal ganglion cells; [Lee 2024, PMC10922496](https://pmc.ncbi.nlm.nih.gov/articles/PMC10922496/): RGC axons lack the ability to regenerate; [Glaucoma Research Foundation](https://glaucoma.org/articles/optic-nerve-regeneration) |
+| Rectus muscles ×4: six strap-like muscles turning the eye, pulling on the white from inside the orbit | [AAO, Parts of the Eye](https://www.aao.org/eye-health/anatomy/parts-of-eye); [EyeWiki, Extraocular Muscles](https://eyewiki.org/Extraocular_Muscles) (spiral of Tillaux insertions on the sclera) |
+
+Nothing in the sentences was found to contradict these sources. Two wording notes for the
+reviewer's attention rather than changes: "packed with nerve endings" is well supported (the
+cornea is the most densely innervated tissue in the body), and "fluid that nourishes the front
+of the eye" is a plain rendering of aqueous humour production — the term itself is deliberately
+not used at this reading level, and the reviewer may disagree.
+
 ---
 
 ## What kind of copy this is

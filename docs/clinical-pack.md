@@ -429,7 +429,7 @@ The Amsler grid, the card-calibrated distance check and the contrast check. A re
 
 ## 6. Eye-model structure descriptions (phase 14)
 
-One-sentence descriptions shown when a person selects a part of the 3D eye model. Plain descriptive anatomy: no advice, no diagnosis, no 'normal'. The reviewer should check each for accuracy and for tone at a difficult moment.
+One-sentence descriptions shown when a person selects a part of the 3D eye model. Plain descriptive anatomy: no advice, no diagnosis, no 'normal'. Each was checked against the trusted sources listed in docs/atlas-review.md (AAO/EyeWiki, StatPearls/NCBI, NEI, Cleveland Clinic; per-sentence mapping there). The reviewer should still check each for accuracy and for tone at a difficult moment.
 
 **Questions:**
 
@@ -437,63 +437,63 @@ One-sentence descriptions shown when a person selects a part of the 3D eye model
 - Does any sentence read as reassurance, diagnosis or advice rather than description?
 - Is 'damaged fibres do not grow back' acceptable honesty here, or too blunt?
 
-### 91. `components/EyeStudio.tsx → STRUCTURES.cornea (Cornea)`
+### 91. `components/EyeStudio.tsx → STRUCTURES.cornea (Cornea) — sources: StatPearls NBK556110; AAO EyeNet (most densely innervated tissue); eyewiki.aao.org/Cornea_Anatomy`
 
 > The clear front window. It does most of the eye's focusing and is packed with nerve endings.
 
-### 92. `components/EyeStudio.tsx → STRUCTURES.iris (Iris)`
+### 92. `components/EyeStudio.tsx → STRUCTURES.iris (Iris) — sources: eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures; nei.nih.gov eye anatomy`
 
 > The coloured ring. Its muscles change the pupil's size to control how much light gets in.
 
-### 93. `components/EyeStudio.tsx → STRUCTURES.lens (Lens)`
+### 93. `components/EyeStudio.tsx → STRUCTURES.lens (Lens) — sources: nei.nih.gov eye anatomy (accommodation); EyeWiki Presbyopia`
 
 > A clear, flexible oval behind the iris. It changes shape to focus near and far, and stiffens with age.
 
-### 94. `components/EyeStudio.tsx → STRUCTURES.ciliary_body (Ciliary body)`
+### 94. `components/EyeStudio.tsx → STRUCTURES.ciliary_body (Ciliary body) — sources: eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures; PMC3032230`
 
 > The ring of muscle behind the iris. It focuses the lens and makes the fluid that nourishes the front of the eye.
 
-### 95. `components/EyeStudio.tsx → STRUCTURES.zonules (Zonules)`
+### 95. `components/EyeStudio.tsx → STRUCTURES.zonules (Zonules) — sources: eyewiki.org/Basic_Histology_of_the_Eye_and_Accessory_Structures`
 
 > Fine fibres holding the lens in place, from the ciliary ring to the lens's edge.
 
-### 96. `components/EyeStudio.tsx → STRUCTURES.sclera (Sclera)`
+### 96. `components/EyeStudio.tsx → STRUCTURES.sclera (Sclera) — sources: my.clevelandclinic.org/health/body/22088-sclera; aao.org/eye-health/anatomy/parts-of-eye`
 
 > The tough white wall of the eye. It holds the eye's shape and gives the eye muscles something to pull on.
 
-### 97. `components/EyeStudio.tsx → STRUCTURES.choroid (Choroid)`
+### 97. `components/EyeStudio.tsx → STRUCTURES.choroid (Choroid) — sources: PMC2913695 (major supply for the outer retina); kenhub.com choroid`
 
 > The dark, blood-rich layer between the white of the eye and the retina. It nourishes the outer retina.
 
-### 98. `components/EyeStudio.tsx → STRUCTURES.retina (Retina)`
+### 98. `components/EyeStudio.tsx → STRUCTURES.retina (Retina) — sources: nei.nih.gov eye anatomy; my.clevelandclinic.org/health/body/21982-retina`
 
 > The light-sensing lining at the back of the eye. It turns light into signals that leave through the optic nerve.
 
-### 99. `components/EyeStudio.tsx → STRUCTURES.nerve_head (Optic disc)`
+### 99. `components/EyeStudio.tsx → STRUCTURES.nerve_head (Optic disc) — sources: nei.nih.gov eye anatomy; EyeWiki Optic Disc`
 
 > The spot where the optic nerve leaves the eye, visible as the optic disc.
 
-### 100. `components/EyeStudio.tsx → STRUCTURES.optic_nerve_sheath (Optic nerve sheath)`
+### 100. `components/EyeStudio.tsx → STRUCTURES.optic_nerve_sheath (Optic nerve sheath) — sources: radiopaedia.org/articles/optic-nerve (sheath continuous with dura)`
 
 > The protective wrapping around the optic nerve, continuous with the coverings of the brain.
 
-### 101. `components/EyeStudio.tsx → STRUCTURES.optic_nerve_core (Optic nerve)`
+### 101. `components/EyeStudio.tsx → STRUCTURES.optic_nerve_core (Optic nerve) — sources: StatPearls NBK538217 (irreversible); PMC10922496 (RGC axons lack regeneration)`
 
 > The bundle of fibres carrying what the retina sees towards the brain. Damaged fibres do not grow back.
 
-### 102. `components/EyeStudio.tsx → STRUCTURES.muscle_superior (Superior rectus muscle)`
+### 102. `components/EyeStudio.tsx → STRUCTURES.muscle_superior (Superior rectus muscle) — sources: aao.org/eye-health/anatomy/parts-of-eye; eyewiki.org/Extraocular_Muscles`
 
 > One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit.
 
-### 103. `components/EyeStudio.tsx → STRUCTURES.muscle_inferior (Inferior rectus muscle)`
+### 103. `components/EyeStudio.tsx → STRUCTURES.muscle_inferior (Inferior rectus muscle) — sources: aao.org/eye-health/anatomy/parts-of-eye; eyewiki.org/Extraocular_Muscles`
 
 > One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit.
 
-### 104. `components/EyeStudio.tsx → STRUCTURES.muscle_medial (Medial rectus muscle)`
+### 104. `components/EyeStudio.tsx → STRUCTURES.muscle_medial (Medial rectus muscle) — sources: aao.org/eye-health/anatomy/parts-of-eye; eyewiki.org/Extraocular_Muscles`
 
 > One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit.
 
-### 105. `components/EyeStudio.tsx → STRUCTURES.muscle_lateral (Lateral rectus muscle)`
+### 105. `components/EyeStudio.tsx → STRUCTURES.muscle_lateral (Lateral rectus muscle) — sources: aao.org/eye-health/anatomy/parts-of-eye; eyewiki.org/Extraocular_Muscles`
 
 > One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit.
 
