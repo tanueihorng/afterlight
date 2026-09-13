@@ -1,4 +1,4 @@
-import { expect, test, asReturningUser, loadDemo, collectErrors } from "./helpers";
+import { expect, test, asReturningUser, loadDemo } from "./helpers";
 
 test.describe("timeline — reading the record", () => {
   test("the story view is the default and the Everything view shows daily texture", async ({ page }) => {

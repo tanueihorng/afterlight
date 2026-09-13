@@ -55,7 +55,6 @@ for (const route of ROUTES) {
       await page.waitForTimeout(350);
       const el = page.locator(INTERACTIVE).nth(i);
       if (!(await el.isVisible().catch(() => false))) continue;
-      const label = (await el.textContent().catch(() => ""))?.trim().slice(0, 60) || `#${i}`;
       try {
         await el.click({ timeout: 2_000 });
       } catch {

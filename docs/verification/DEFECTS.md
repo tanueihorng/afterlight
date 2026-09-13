@@ -164,8 +164,10 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   partition under memory pressure, not an application data-loss path; real usage is a
   persistent installed profile, and Settings offers `requestPersistence`.
 - **Judgement** Test-environment artefact, recorded so it is never mistaken for lost patient
-  data. Mitigation: one local retry in playwright.config (matching CI); a genuine regression
-  fails twice and stays red. Revisit if it ever reproduces serially.
+  data. Mitigations: one retry in playwright.config (matching CI), and local e2e runs capped at
+  two workers — under the full default parallelism it recurred (three reload tests, two
+  attempts each, in one 12-minute run), while the same specs pass serially every time. A
+  genuine regression fails twice and stays red. Revisit if it ever reproduces serially.
 
 ### V-104 — WebKit logs repeated texImage3D errors from the 3D-texture path
 - **Found** 2026-09-14 (controls sweep, mobile project)

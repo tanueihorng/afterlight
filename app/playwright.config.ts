@@ -8,12 +8,17 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  // Two workers locally: the engine's software GL starves when more contexts render at once
+  // (docs/plan/PHASE-16-HANDOFF.md), and heavy parallel contexts can also trigger the
+  // ephemeral-storage eviction recorded in docs/verification/DEFECTS.md V-103. CI keeps the
+  // default; its runners are small.
+  workers: process.env.CI ? undefined : 2,
   forbidOnly: !!process.env.CI,
   // One retry locally too: under heavy parallel load Chromium can evict an ephemeral test
   // context's storage entirely (every IndexedDB store empty), which reads as data loss but is
   // an artefact of test isolation — see docs/verification/DEFECTS.md V-103. A real regression
   // fails twice and stays red.
-  retries: process.env.CI ? 1 : 1,
+  retries: 1,
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL: "http://localhost:4173",
