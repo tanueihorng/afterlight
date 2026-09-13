@@ -120,7 +120,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const next = {
           id: "meta" as const,
           onboarded: false,
-          theme: "dark" as const,
+          theme: "light" as const,
           demo_seeded: false,
           ...metaRef.current,
           ...patch,

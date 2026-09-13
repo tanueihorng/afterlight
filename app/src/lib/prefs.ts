@@ -9,7 +9,8 @@ import type { AppMeta } from "./models";
 export type ThemeId = "dark" | "light" | "hc-dark" | "hc-light";
 
 export const THEMES: { id: ThemeId; label: string; description: string }[] = [
-  { id: "dark", label: "Dark", description: "Low light, gentle contrast." },
+  { id: "light", label: "Light", description: "Warm paper, gentle contrast." },
+  { id: "dark", label: "Dark", description: "Warm charcoal, low light." },
   { id: "light", label: "Light", description: "Paper-like, gentle contrast." },
   { id: "hc-dark", label: "High contrast dark", description: "White on black, maximum separation." },
   { id: "hc-light", label: "High contrast light", description: "Black on white, maximum separation." },
@@ -33,7 +34,7 @@ export interface DisplayPrefs {
 }
 
 export const DEFAULT_PREFS: DisplayPrefs = {
-  theme: "dark",
+  theme: "light",
   typeScale: 1,
   reducedMotion: false,
   glareComfort: false,

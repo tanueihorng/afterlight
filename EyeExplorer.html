@@ -638,11 +638,11 @@ noiseTex.wrapS=noiseTex.wrapT=THREE.RepeatWrapping;
 /* backdrop dome so refraction & reflections have something real to sample */
 const backdrop = new THREE.Mesh(new THREE.SphereGeometry(45,32,16),
   new THREE.MeshBasicMaterial({ side:THREE.BackSide }));
-backdrop.material.color = new THREE.Color('#101b30');
+backdrop.material.color = new THREE.Color('#241d13');
 {
   const bt=canvasTex(512,(g,S)=>{
     const gr=g.createLinearGradient(0,0,0,S);
-    gr.addColorStop(0,'#20344f'); gr.addColorStop(0.45,'#101b30'); gr.addColorStop(0.8,'#0a1120'); gr.addColorStop(1,'#070c16');
+    gr.addColorStop(0,'#3a2f22'); gr.addColorStop(0.45,'#241d13'); gr.addColorStop(0.8,'#171209'); gr.addColorStop(1,'#0f0b06');
     g.fillStyle=gr; g.fillRect(0,0,S,S);
   });
   backdrop.material.map=bt; backdrop.material.needsUpdate=true;

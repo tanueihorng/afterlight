@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Afterlight design system — calm, precise, "light after uncertainty".
-   Dark-first with a light theme; high contrast; scalable type; reduced motion.
+   Afterlight design system — warm humanist: cream paper, sage accents, editorial serif.
+   Light-first with a warm dark theme; high contrast; scalable type; reduced motion.
    ========================================================================== */
 
 :root {
@@ -8,29 +8,29 @@
   --font-display: "Iowan Old Style", "Palatino", "Georgia", serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* dark theme (default) */
-  --bg: #0a0e16;
-  --bg-elev: #101623;
-  --bg-elev2: #161d2e;
-  --border: #5a6885;
-  --border-soft: #2b364f;
-  --text: #e8edf6;
-  --text-2: #aab6cb;
-  --text-3: #7a88a1;
-  --accent: #e9b96f;
-  --accent-strong: #f2c078;
-  --accent-ink: #201505;
-  --accent-soft: rgba(233, 185, 111, 0.14);
+  /* dark theme (default): warm charcoal, sage accent */
+  --bg: #171310;
+  --bg-elev: #1e1913;
+  --bg-elev2: #262017;
+  --border: #8f8069;
+  --border-soft: #3a3226;
+  --text: #f1ece2;
+  --text-2: #c6bba8;
+  --text-3: #998d78;
+  --accent: #a9c29b;
+  --accent-strong: #bcd2ab;
+  --accent-ink: #1a2415;
+  --accent-soft: rgba(169, 194, 155, 0.14);
   --right-eye: #e9a08f;
-  --left-eye: #8fb8c9;
-  --ok: #7fc9a2;
-  --warn: #e9b96f;
-  --diagram-alert: #d98f8f;
-  --diagram-good: #86b394;
+  --left-eye: #9fc0c9;
+  --ok: #93c9a4;
+  --warn: #d9c29a;
+  --diagram-alert: #d99898;
+  --diagram-good: #93c9a4;
   --danger: #d98c8c;
-  --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-  --radius: 14px;
-  --radius-sm: 9px;
+  --shadow: 0 12px 40px rgba(20, 14, 6, 0.5);
+  --radius: 16px;
+  --radius-sm: 10px;
 
   /* Type scale. --type-scale is set by the user (100/125/150/200%); every size derives from it,
      so nothing in the interface is fixed at a size someone cannot read. Nothing below --fs-sm
@@ -104,26 +104,26 @@
 }
 
 [data-theme="light"] {
-  --bg: #f4f2ec;
-  --bg-elev: #ffffff;
-  --bg-elev2: #f7f5ef;
-  --border: #8a8577;
-  --border-soft: #cfc9ba;
-  --text: #23293a;
-  --text-2: #4d5872;
-  --text-3: #5f6a80;
-  --accent: #a5681c;
-  --accent-strong: #8f5714;
-  --accent-ink: #fffaf0;
-  --accent-soft: rgba(165, 104, 28, 0.12);
+  --bg: #f7f1e8;
+  --bg-elev: #fffdf8;
+  --bg-elev2: #f1e9dc;
+  --border: #877759;
+  --border-soft: #ddd2bd;
+  --text: #3d3428;
+  --text-2: #5f5442;
+  --text-3: #6f6350;
+  --accent: #4f6745;
+  --accent-strong: #43593b;
+  --accent-ink: #f7f4ec;
+  --accent-soft: rgba(79, 103, 69, 0.12);
   --right-eye: #b3563f;
   --left-eye: #2f6d86;
-  --ok: #2f7d52;
-  --warn: #a5681c;
+  --ok: #3f7a52;
+  --warn: #9c6b1c;
   --diagram-alert: #a84f4f;
   --diagram-good: #3f7a52;
   --danger: #a83c3c;
-  --shadow: 0 10px 30px rgba(60, 50, 30, 0.12);
+  --shadow: 0 10px 30px rgba(74, 63, 46, 0.14);
 }
 
 * {

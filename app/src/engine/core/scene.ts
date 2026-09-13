@@ -146,7 +146,7 @@ export class EyeScene {
 
     this.camera = new PerspectiveCamera(28, 1, 0.01, 100);
     this.camera.position.set(0, 0, 7.2);
-    this.scene.background = new Color(0x05070c);
+    this.scene.background = new Color(0x141009);
 
     this.renderer = new WebGLRenderer({
       canvas,
