@@ -1,0 +1,91 @@
+{
+ "EYE": {
+  "axialLength": 24,
+  "horizontalDiameter": 23.5,
+  "verticalDiameter": 23,
+  "cornea": {
+   "anteriorRadius": 7.8,
+   "posteriorRadius": 6.5,
+   "centralThickness": 0.55,
+   "peripheralThickness": 0.67,
+   "Q": -0.26,
+   "ior": 1.376
+  },
+  "limbus": {
+   "diameter": 11.7,
+   "width": 1.2
+  },
+  "anteriorChamber": {
+   "depth": 3.1
+  },
+  "iris": {
+   "pupilMin": 2,
+   "pupilMax": 8,
+   "collaretteRatio": 0.36,
+   "thickness": 0.5
+  },
+  "lens": {
+   "diameter": 9,
+   "thickness": 4,
+   "anteriorRadius": 10,
+   "posteriorRadius": -6
+  },
+  "retina": {
+   "discWidth": 1.8,
+   "discHeight": 1.9,
+   "discNasalDegrees": 15.5,
+   "discSuperiorDegrees": 1.5,
+   "favDiameter": 0.5,
+   "maculaDiameter": 5.5,
+   "thickness": 0.25,
+   "oraBehindLimbus": 6.1
+  },
+  "choroid": {
+   "thickness": 0.18
+  },
+  "nerve": {
+   "canalDiameter": 1.9,
+   "intraorbitalLength": 25,
+   "coreDiameter": 3.3,
+   "sheathDiameterAtGlobe": 5,
+   "sheathDiameterDistal": 4.6
+  },
+  "muscles": {
+   "insertionBehindLimbus": {
+    "medial": 5.5,
+    "inferior": 6.5,
+    "lateral": 6.9,
+    "superior": 7.7
+   },
+   "bellyWidth": {
+    "medial": 10,
+    "inferior": 9.6,
+    "lateral": 9.2,
+    "superior": 10.6
+   },
+   "bellyThickness": 3.8,
+   "totalLength": 40,
+   "tendonLength": {
+    "medial": 4.2,
+    "inferior": 5,
+    "lateral": 8.8,
+    "superior": 5.5
+   },
+   "apexBehindCentre": 28,
+   "apexRingRadius": 2.6
+  },
+  "ciliaryBody": {
+   "width": 6
+  },
+  "sclera": {
+   "thicknessPosterior": 1,
+   "thicknessEquator": 0.5,
+   "thicknessLimbal": 0.4,
+   "canalDiameter": 1.9
+  }
+ },
+ "SCENE_SCALE": 10,
+ "model": {
+  "choroidMagnification": 3
+ }
+}

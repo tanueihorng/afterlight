@@ -137,12 +137,12 @@ rows = '\n'.join(f'| {name} | Blender Cycles, build-eye.py | Afterlight project 
 Neutral iris surface detail, authored locally with Blender. No photographs or third-party assets.
 Colour, pupil diameter, vessel patterns and condition parameters remain procedural.
 
-Regenerate with `blender --background --python assets-src/build-eye.py` (Blender 5.2 LTS).
-`eye.blend` preserves the editable high-resolution sculpt and the polar-UV bake receiver.
-Run `blender --background assets-src/eye.blend --python assets-src/preview-eye.py` for the
-full eye scene and the separate Cycles material study.
+Regenerate everything with `blender --background --python assets-src/build-anatomy.py`
+(Blender 5.2 LTS), which runs this iris bake in-process, then authors the full anatomical
+model, exports the browser assets and renders the studies into assets-src/renders/.
+`eye.blend` preserves the editable sculpt, the bake receiver and the whole model scene.
 `iris-normal.png` is a tangent-space normal bake; `iris-relief.png` is a linear neutral relief mask.
-The scene units represent millimetres. Dimensions are read from `dimensions.ts`.
+The scene units represent millimetres. Dimensions come from app/scripts/anatomy/export-anatomy-data.mjs.
 
 | File | Origin | Author | Licence | SHA-256 |
 |---|---|---|---|---|

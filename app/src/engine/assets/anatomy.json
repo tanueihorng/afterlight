@@ -1,0 +1,3257 @@
+{
+ "generator": "assets-src/build-anatomy.py (Blender 5.2.1 LTS)",
+ "units": "millimetres; +Z anterior, +Y superior, +X nasal (right eye)",
+ "decoding": "int16 positions quantised per-structure bbox, int16 UVs; indices regenerated from rows\u00d7cols; coincident positions welded; normals computed at load",
+ "disc3d": [
+  3.676,
+  0.306,
+  -9.521
+ ],
+ "fovea3d": [
+  0,
+  0,
+  -10.21
+ ],
+ "retinaInnerRadiusMm": 10.21,
+ "layerMagnification": 3,
+ "openStructures": [
+  "zonules",
+  "retinal_vessels"
+ ],
+ "parts": [
+  {
+   "id": "sclera.sclera_outer",
+   "structure": "sclera",
+   "slot": "sclera_outer",
+   "rows": 56,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 0,
+   "vertexCount": 5432,
+   "bboxMin": [
+    -12.0,
+    -12.0,
+    -11.9996
+   ],
+   "bboxSpan": [
+    23.9999,
+    23.9999,
+    22.4771
+   ]
+  },
+  {
+   "id": "sclera.sclera_outer",
+   "structure": "sclera",
+   "slot": "sclera_outer",
+   "rows": 10,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 54320,
+   "vertexCount": 970,
+   "bboxMin": [
+    -12.0,
+    -12.0,
+    -11.9996
+   ],
+   "bboxSpan": [
+    23.9999,
+    23.9999,
+    22.4771
+   ]
+  },
+  {
+   "id": "sclera.sclera_inner",
+   "structure": "sclera",
+   "slot": "sclera_inner",
+   "rows": 56,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 64020,
+   "vertexCount": 5432,
+   "bboxMin": [
+    -12.0,
+    -12.0,
+    -11.9996
+   ],
+   "bboxSpan": [
+    23.9999,
+    23.9999,
+    22.4771
+   ]
+  },
+  {
+   "id": "sclera.sclera_inner",
+   "structure": "sclera",
+   "slot": "sclera_inner",
+   "rows": 10,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 118340,
+   "vertexCount": 970,
+   "bboxMin": [
+    -12.0,
+    -12.0,
+    -11.9996
+   ],
+   "bboxSpan": [
+    23.9999,
+    23.9999,
+    22.4771
+   ]
+  },
+  {
+   "id": "sclera.sclera_cut",
+   "structure": "sclera",
+   "slot": "sclera_cut",
+   "rows": 2,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 128040,
+   "vertexCount": 194,
+   "bboxMin": [
+    -12.0,
+    -12.0,
+    -11.9996
+   ],
+   "bboxSpan": [
+    23.9999,
+    23.9999,
+    22.4771
+   ]
+  },
+  {
+   "id": "sclera.sclera_cut",
+   "structure": "sclera",
+   "slot": "sclera_cut",
+   "rows": 2,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 129980,
+   "vertexCount": 194,
+   "bboxMin": [
+    -12.0,
+    -12.0,
+    -11.9996
+   ],
+   "bboxSpan": [
+    23.9999,
+    23.9999,
+    22.4771
+   ]
+  },
+  {
+   "id": "cornea.cornea",
+   "structure": "cornea",
+   "slot": "cornea",
+   "rows": 81,
+   "cols": 80,
+   "wrap": true,
+   "rowWrap": true,
+   "byteOffset": 131920,
+   "vertexCount": 6480,
+   "bboxMin": [
+    -5.85,
+    -5.85,
+    9.8075
+   ],
+   "bboxSpan": [
+    11.7,
+    11.7,
+    3.1572
+   ]
+  },
+  {
+   "id": "iris.iris_front",
+   "structure": "iris",
+   "slot": "iris_front",
+   "rows": 33,
+   "cols": 128,
+   "wrap": true,
+   "rowWrap": true,
+   "byteOffset": 196720,
+   "vertexCount": 4224,
+   "bboxMin": [
+    -5.85,
+    -5.85,
+    6.4665
+   ],
+   "bboxSpan": [
+    11.7,
+    11.7,
+    1.5238
+   ]
+  },
+  {
+   "id": "lens.lens",
+   "structure": "lens",
+   "slot": "lens",
+   "rows": 65,
+   "cols": 64,
+   "wrap": true,
+   "rowWrap": true,
+   "byteOffset": 238960,
+   "vertexCount": 4160,
+   "bboxMin": [
+    -4.5,
+    -4.5,
+    -2.6186
+   ],
+   "bboxSpan": [
+    9.0,
+    9.0,
+    3.9984
+   ]
+  },
+  {
+   "id": "ciliary_body.ciliary_body",
+   "structure": "ciliary_body",
+   "slot": "ciliary_body",
+   "rows": 6,
+   "cols": 72,
+   "wrap": true,
+   "rowWrap": true,
+   "byteOffset": 280560,
+   "vertexCount": 432,
+   "bboxMin": [
+    -10.1997,
+    -10.1997,
+    5.1462
+   ],
+   "bboxSpan": [
+    20.3993,
+    20.3993,
+    1.5813
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 284880,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285030,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285130,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285230,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285380,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285480,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285580,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285730,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285830,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 285930,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286080,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286180,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286280,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286430,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286530,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286630,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286780,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286880,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 286980,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 287130,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 287230,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 287330,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 287480,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 287580,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 287680,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 287830,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 287930,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288030,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288180,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288280,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288380,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288530,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288630,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288730,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288880,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 288980,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 289080,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 289230,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 289330,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 289430,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 289580,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 289680,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 289780,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 289930,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290030,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290130,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290280,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290380,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290480,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290630,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290730,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290830,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 290980,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 291080,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 291180,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 291330,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 291430,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 291530,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 291680,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 291780,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 291880,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292030,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292130,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292230,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292380,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292480,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292580,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292730,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292830,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 292930,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293080,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293180,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293280,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293430,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293530,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293630,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293780,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293880,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 293980,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 294130,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 294230,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 294330,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 294480,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 294580,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 294680,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 294830,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 294930,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295030,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295180,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295280,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295380,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295530,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295630,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295730,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295880,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 295980,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 296080,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 296230,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 296330,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 296430,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 296580,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 296680,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 296780,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 296930,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 297030,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 3,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 297130,
+   "vertexCount": 15,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 297280,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "zonules.zonules",
+   "structure": "zonules",
+   "slot": "zonules",
+   "rows": 2,
+   "cols": 5,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 297380,
+   "vertexCount": 10,
+   "bboxMin": [
+    -8.3715,
+    -8.3647,
+    4.6775
+   ],
+   "bboxSpan": [
+    16.7542,
+    16.7127,
+    1.7439
+   ]
+  },
+  {
+   "id": "retina.cut",
+   "structure": "retina",
+   "slot": "cut",
+   "rows": 56,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 297480,
+   "vertexCount": 5432,
+   "bboxMin": [
+    -10.46,
+    -10.46,
+    -10.4596
+   ],
+   "bboxSpan": [
+    20.92,
+    20.92,
+    15.9557
+   ]
+  },
+  {
+   "id": "retina.cut",
+   "structure": "retina",
+   "slot": "cut",
+   "rows": 10,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 351800,
+   "vertexCount": 970,
+   "bboxMin": [
+    -10.46,
+    -10.46,
+    -10.4596
+   ],
+   "bboxSpan": [
+    20.92,
+    20.92,
+    15.9557
+   ]
+  },
+  {
+   "id": "retina.retina_inner",
+   "structure": "retina",
+   "slot": "retina_inner",
+   "rows": 56,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 361500,
+   "vertexCount": 5432,
+   "bboxMin": [
+    -10.46,
+    -10.46,
+    -10.4596
+   ],
+   "bboxSpan": [
+    20.92,
+    20.92,
+    15.9557
+   ]
+  },
+  {
+   "id": "retina.retina_inner",
+   "structure": "retina",
+   "slot": "retina_inner",
+   "rows": 10,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 415820,
+   "vertexCount": 970,
+   "bboxMin": [
+    -10.46,
+    -10.46,
+    -10.4596
+   ],
+   "bboxSpan": [
+    20.92,
+    20.92,
+    15.9557
+   ]
+  },
+  {
+   "id": "retina.cut",
+   "structure": "retina",
+   "slot": "cut",
+   "rows": 2,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 425520,
+   "vertexCount": 194,
+   "bboxMin": [
+    -10.46,
+    -10.46,
+    -10.4596
+   ],
+   "bboxSpan": [
+    20.92,
+    20.92,
+    15.9557
+   ]
+  },
+  {
+   "id": "retina.cut",
+   "structure": "retina",
+   "slot": "cut",
+   "rows": 2,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 427460,
+   "vertexCount": 194,
+   "bboxMin": [
+    -10.46,
+    -10.46,
+    -10.4596
+   ],
+   "bboxSpan": [
+    20.92,
+    20.92,
+    15.9557
+   ]
+  },
+  {
+   "id": "choroid.cut",
+   "structure": "choroid",
+   "slot": "cut",
+   "rows": 56,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 429400,
+   "vertexCount": 5432,
+   "bboxMin": [
+    -11.0,
+    -11.0,
+    -10.9992
+   ],
+   "bboxSpan": [
+    22.0,
+    22.0,
+    16.7791
+   ]
+  },
+  {
+   "id": "choroid.cut",
+   "structure": "choroid",
+   "slot": "cut",
+   "rows": 10,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 483720,
+   "vertexCount": 970,
+   "bboxMin": [
+    -11.0,
+    -11.0,
+    -10.9992
+   ],
+   "bboxSpan": [
+    22.0,
+    22.0,
+    16.7791
+   ]
+  },
+  {
+   "id": "choroid.choroid_inner",
+   "structure": "choroid",
+   "slot": "choroid_inner",
+   "rows": 56,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 493420,
+   "vertexCount": 5432,
+   "bboxMin": [
+    -11.0,
+    -11.0,
+    -10.9992
+   ],
+   "bboxSpan": [
+    22.0,
+    22.0,
+    16.7791
+   ]
+  },
+  {
+   "id": "choroid.choroid_inner",
+   "structure": "choroid",
+   "slot": "choroid_inner",
+   "rows": 10,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 547740,
+   "vertexCount": 970,
+   "bboxMin": [
+    -11.0,
+    -11.0,
+    -10.9992
+   ],
+   "bboxSpan": [
+    22.0,
+    22.0,
+    16.7791
+   ]
+  },
+  {
+   "id": "choroid.cut",
+   "structure": "choroid",
+   "slot": "cut",
+   "rows": 2,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 557440,
+   "vertexCount": 194,
+   "bboxMin": [
+    -11.0,
+    -11.0,
+    -10.9992
+   ],
+   "bboxSpan": [
+    22.0,
+    22.0,
+    16.7791
+   ]
+  },
+  {
+   "id": "choroid.cut",
+   "structure": "choroid",
+   "slot": "cut",
+   "rows": 2,
+   "cols": 97,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 559380,
+   "vertexCount": 194,
+   "bboxMin": [
+    -11.0,
+    -11.0,
+    -10.9992
+   ],
+   "bboxSpan": [
+    22.0,
+    22.0,
+    16.7791
+   ]
+  },
+  {
+   "id": "nerve_head.nerve_head",
+   "structure": "nerve_head",
+   "slot": "nerve_head",
+   "rows": 10,
+   "cols": 49,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 561320,
+   "vertexCount": 490,
+   "bboxMin": [
+    2.6784,
+    -0.762,
+    -9.907
+   ],
+   "bboxSpan": [
+    1.9948,
+    2.136,
+    0.8461
+   ]
+  },
+  {
+   "id": "nerve_head.nerve_head",
+   "structure": "nerve_head",
+   "slot": "nerve_head",
+   "rows": 2,
+   "cols": 49,
+   "wrap": false,
+   "rowWrap": false,
+   "byteOffset": 566220,
+   "vertexCount": 98,
+   "bboxMin": [
+    2.6784,
+    -0.762,
+    -9.907
+   ],
+   "bboxSpan": [
+    1.9948,
+    2.136,
+    0.8461
+   ]
+  },
+  {
+   "id": "optic_nerve_sheath.optic_nerve_sheath",
+   "structure": "optic_nerve_sheath",
+   "slot": "optic_nerve_sheath",
+   "rows": 25,
+   "cols": 24,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 567200,
+   "vertexCount": 600,
+   "bboxMin": [
+    2.0837,
+    -2.0832,
+    -35.3833
+   ],
+   "bboxSpan": [
+    13.3733,
+    6.33,
+    24.8729
+   ]
+  },
+  {
+   "id": "optic_nerve_sheath.optic_nerve_sheath",
+   "structure": "optic_nerve_sheath",
+   "slot": "optic_nerve_sheath",
+   "rows": 2,
+   "cols": 24,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 573200,
+   "vertexCount": 48,
+   "bboxMin": [
+    2.0837,
+    -2.0832,
+    -35.3833
+   ],
+   "bboxSpan": [
+    13.3733,
+    6.33,
+    24.8729
+   ]
+  },
+  {
+   "id": "optic_nerve_sheath.optic_nerve_sheath",
+   "structure": "optic_nerve_sheath",
+   "slot": "optic_nerve_sheath",
+   "rows": 2,
+   "cols": 24,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 573680,
+   "vertexCount": 48,
+   "bboxMin": [
+    2.0837,
+    -2.0832,
+    -35.3833
+   ],
+   "bboxSpan": [
+    13.3733,
+    6.33,
+    24.8729
+   ]
+  },
+  {
+   "id": "optic_nerve_core.optic_nerve_core",
+   "structure": "optic_nerve_core",
+   "slot": "optic_nerve_core",
+   "rows": 25,
+   "cols": 20,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 574160,
+   "vertexCount": 500,
+   "bboxMin": [
+    2.764,
+    -0.5833,
+    -33.4537
+   ],
+   "bboxSpan": [
+    11.4427,
+    4.0298,
+    24.629
+   ]
+  },
+  {
+   "id": "optic_nerve_core.optic_nerve_core",
+   "structure": "optic_nerve_core",
+   "slot": "optic_nerve_core",
+   "rows": 2,
+   "cols": 20,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 579160,
+   "vertexCount": 40,
+   "bboxMin": [
+    2.764,
+    -0.5833,
+    -33.4537
+   ],
+   "bboxSpan": [
+    11.4427,
+    4.0298,
+    24.629
+   ]
+  },
+  {
+   "id": "optic_nerve_core.optic_nerve_core",
+   "structure": "optic_nerve_core",
+   "slot": "optic_nerve_core",
+   "rows": 2,
+   "cols": 20,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 579560,
+   "vertexCount": 40,
+   "bboxMin": [
+    2.764,
+    -0.5833,
+    -33.4537
+   ],
+   "bboxSpan": [
+    11.4427,
+    4.0298,
+    24.629
+   ]
+  },
+  {
+   "id": "muscle_medial.muscle_belly",
+   "structure": "muscle_medial",
+   "slot": "muscle_belly",
+   "rows": 45,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 579960,
+   "vertexCount": 720,
+   "bboxMin": [
+    8.4324,
+    -4.9363,
+    -25.3492
+   ],
+   "bboxSpan": [
+    5.9677,
+    10.6145,
+    32.3519
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 39,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_medial.muscle_belly",
+   "structure": "muscle_medial",
+   "slot": "muscle_belly",
+   "rows": 2,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 587160,
+   "vertexCount": 32,
+   "bboxMin": [
+    8.4324,
+    -4.9363,
+    -25.3492
+   ],
+   "bboxSpan": [
+    5.9677,
+    10.6145,
+    32.3519
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 39,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_medial.muscle_tendon",
+   "structure": "muscle_medial",
+   "slot": "muscle_tendon",
+   "rows": 2,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 587480,
+   "vertexCount": 32,
+   "bboxMin": [
+    8.4324,
+    -4.9363,
+    -25.3492
+   ],
+   "bboxSpan": [
+    5.9677,
+    10.6145,
+    32.3519
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 39,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_lateral.muscle_belly",
+   "structure": "muscle_lateral",
+   "slot": "muscle_belly",
+   "rows": 45,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 587800,
+   "vertexCount": 720,
+   "bboxMin": [
+    -11.0419,
+    -4.6362,
+    -27.9765
+   ],
+   "bboxSpan": [
+    20.3526,
+    9.9629,
+    33.9125
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 34,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_lateral.muscle_belly",
+   "structure": "muscle_lateral",
+   "slot": "muscle_belly",
+   "rows": 2,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 595000,
+   "vertexCount": 32,
+   "bboxMin": [
+    -11.0419,
+    -4.6362,
+    -27.9765
+   ],
+   "bboxSpan": [
+    20.3526,
+    9.9629,
+    33.9125
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 34,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_lateral.muscle_tendon",
+   "structure": "muscle_lateral",
+   "slot": "muscle_tendon",
+   "rows": 2,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 595320,
+   "vertexCount": 32,
+   "bboxMin": [
+    -11.0419,
+    -4.6362,
+    -27.9765
+   ],
+   "bboxSpan": [
+    20.3526,
+    9.9629,
+    33.9125
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 34,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_superior.muscle_belly",
+   "structure": "muscle_superior",
+   "slot": "muscle_belly",
+   "rows": 45,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 595640,
+   "vertexCount": 720,
+   "bboxMin": [
+    -4.5194,
+    1.4804,
+    -27.0647
+   ],
+   "bboxSpan": [
+    17.9001,
+    10.4943,
+    33.2864
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 37,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_superior.muscle_belly",
+   "structure": "muscle_superior",
+   "slot": "muscle_belly",
+   "rows": 2,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 602840,
+   "vertexCount": 32,
+   "bboxMin": [
+    -4.5194,
+    1.4804,
+    -27.0647
+   ],
+   "bboxSpan": [
+    17.9001,
+    10.4943,
+    33.2864
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 37,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_superior.muscle_tendon",
+   "structure": "muscle_superior",
+   "slot": "muscle_tendon",
+   "rows": 2,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 603160,
+   "vertexCount": 32,
+   "bboxMin": [
+    -4.5194,
+    1.4804,
+    -27.0647
+   ],
+   "bboxSpan": [
+    17.9001,
+    10.4943,
+    33.2864
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 37,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_inferior.muscle_belly",
+   "structure": "muscle_inferior",
+   "slot": "muscle_belly",
+   "rows": 45,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 603480,
+   "vertexCount": 720,
+   "bboxMin": [
+    -4.1132,
+    -11.5329,
+    -27.1451
+   ],
+   "bboxSpan": [
+    17.1291,
+    11.7432,
+    34.3258
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 38,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_inferior.muscle_belly",
+   "structure": "muscle_inferior",
+   "slot": "muscle_belly",
+   "rows": 2,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 610680,
+   "vertexCount": 32,
+   "bboxMin": [
+    -4.1132,
+    -11.5329,
+    -27.1451
+   ],
+   "bboxSpan": [
+    17.1291,
+    11.7432,
+    34.3258
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 38,
+     "toRow": 44
+    }
+   ]
+  },
+  {
+   "id": "muscle_inferior.muscle_tendon",
+   "structure": "muscle_inferior",
+   "slot": "muscle_tendon",
+   "rows": 2,
+   "cols": 16,
+   "wrap": true,
+   "rowWrap": false,
+   "byteOffset": 611000,
+   "vertexCount": 32,
+   "bboxMin": [
+    -4.1132,
+    -11.5329,
+    -27.1451
+   ],
+   "bboxSpan": [
+    17.1291,
+    11.7432,
+    34.3258
+   ],
+   "rowSlots": [
+    {
+     "slot": "muscle_tendon",
+     "fromRow": 38,
+     "toRow": 44
+    }
+   ]
+  }
+ ]
+}

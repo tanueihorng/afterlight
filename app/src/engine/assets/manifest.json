@@ -6,5 +6,13 @@
   "iris-relief.png": {
     "sha256": "7038eeb0ce7e0e34bc31aa725e21b132946ec1ced5351c1f517d723319d31196",
     "bytes": 232325
+  },
+  "anatomy.bin": {
+    "sha256": "ccc1191709aa0167bd7e540ad9f3ed819a23912626d25a5a23d6f2aba4b72f8a",
+    "bytes": 611320
+  },
+  "anatomy.json": {
+    "sha256": "f4936851dcc6a9dbca3a8bc07d2626262d6732ae608ba1a1ea6083d6cb6fc526",
+    "bytes": 49901
   }
 }

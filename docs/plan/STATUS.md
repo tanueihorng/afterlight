@@ -20,7 +20,7 @@ marked blocked.
 | 09 | Clinician handoff & sharing | done, pending clinical review | phase-09-clinician-handoff | 2026-09-09 | deterministic PDF, print, encrypted range shares, QR, ingestion; **`docs/clinician-note.md` and the printed wording need sign-off**; OCR engine not bundled |
 | 10 | Release & clinical review | done, blocked on clinical review | phase-10-release | 2026-09-09 | landing page, guide, backup story, i18n layer, issue templates, versioning; **release script refuses to tag while `docs/clinical-review.md` says NOT REVIEWED** |
 | 11 | Eye reference, baseline and anatomy contract | done | phase-11-baseline-contract | 2026-09-13 | Baseline recorded with captures of both viewers; contract at docs/eye-realism/anatomy-contract.md. Reference confirmed commercial (not downloaded). `verify` clean |
-| 12 | Original Blender anatomy and reproducible assets | not started | — | 2026-09-13 | [Brief](phase-12-original-blender-anatomy.md); original eye realism follow-up |
+| 12 | Original Blender anatomy and reproducible assets | done | phase-11-baseline-contract | 2026-09-13 | Full model authored from params.json, watertight, exported (0.6 MB) with 9 geometry tests; 4 studies inspected; `verify` clean (554 tests) |
 | 13 | Browser rendering and solid interactive sections | not started | — | 2026-09-13 | [Brief](phase-13-eye-renderer-and-sections.md); original eye realism follow-up |
 | 14 | Interactive cornea, retina and layer inspection | not started | — | 2026-09-13 | [Brief](phase-14-eye-exploration-controls.md); original eye realism follow-up |
 | 15 | Bring the original explorer to the same model quality | not started | — | 2026-09-13 | [Brief](phase-15-explorer-renderer-parity.md); original eye realism follow-up |
@@ -30,6 +30,24 @@ marked blocked.
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-09-13** — **Phase 12 done.** The original anatomical eye exists in Blender and in the
+  repo's browser assets. `build-anatomy.py` runs the preserved iris bake in-process, then authors
+  sclera, cornea (posterior conic solved to the measured 0.67 mm peripheral thickness), iris,
+  lens (caps solved to Ø9 × 4), ciliary body, 36 zonules, retina with fundus-painter UVs,
+  choroid at the labelled ×3 magnification, nerve core+sheath with a cupped nerve head, and four
+  tapered rectus muscles with tendon slots — every solid validated watertight with outward
+  winding. It took four real debugging rounds to get honest geometry: polar caps that swept
+  across occupied surface made the render-only boolean collapse the shells to nothing (now a
+  per-column slerp loft that meets the main grid exactly), revolve profiles double-closed into
+  degenerate rings, the render camera sat inside an unhidden boolean cutter (the mysterious
+  black/grey frames), and the browser's exact weld missed seam columns that differ by one int16
+  quantum (now a 0.01 mm tolerance). The exporter writes quantised regular grids (0.6 MB) that
+  `model.ts` decodes to plain typed arrays for both Three versions; 9 CI tests pin topology,
+  bounds, disc laterality, the iris UV convention and the budget. Four inspected Cycles studies
+  satisfy the structural contract items; dark choroid cut-band and polar-cap normal seams are
+  recorded as phase-13 material work. `verify` clean: 554 tests. Not done here: no browser
+  rendering changes (phase 13), no slice caps yet, study iris intentionally unpainted.
 
 - **2026-09-13** — **Phase 11 done.** The baseline is real images, not memory: both viewers
   captured in every mode at a fixed viewport by a reusable `capture-eye-views.mjs` (GPU

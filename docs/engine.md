@@ -80,8 +80,13 @@ come from a generated softbox environment, with no downloaded textures or enviro
 
 ## Blender surface detail
 
-Both eye viewers now share the baked iris normal and relief maps described in
-[the asset pipeline](asset-pipeline.md). The browser still colours and sizes the iris from its
-parameters. The cornea uses the stored asphericity and joins the scleral opening at the limbus;
-the anterior chamber is measured from the inner corneal apex. The editable Blender scene and its
-Cycles study are source assets, not the browser render.
+The whole static model is Blender-authored now, not just the iris: `assets-src/build-anatomy.py`
+reads the same parameter data the browser exports (`assets-src/generated/params.json`) and
+produces `app/src/engine/assets/anatomy.bin` + `anatomy.json` — quantised regular grids that
+`engine/anatomy/model.ts` decodes into plain typed arrays. Both eye viewers adapt those arrays
+through their own thin adapters; no Three instance crosses between them. The browser still
+colours, sizes and deforms everything the contract keeps runtime-owned: iris colour and pupil,
+vessel growth, the fundus, laterality, slices. The cornea uses the stored asphericity and joins
+the scleral opening at the limbus; the anterior chamber is measured from the inner corneal apex.
+The editable Blender scene and its Cycles studies are source assets, not the browser render —
+see [the asset pipeline](asset-pipeline.md) for the rebuild commands and budgets.
