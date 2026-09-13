@@ -20,6 +20,15 @@
 import { EYE_LABELS, EYE_SHORT, SOURCE_LABELS } from "../models";
 
 export const EN = {
+  "eye.view.exterior": "Whole eye",
+  "eye.view.cross_section": "Cross-section",
+  "eye.view.cornea": "Cornea",
+  "eye.view.fundus": "Retina",
+  "eye.slice": "Slice position",
+  "eye.separation": "Separate parts (illustrative spacing)",
+  "eye.zoom": "Zoom",
+  "eye.controls":
+    "Drag or use the arrow keys to turn the model. Use the sliders to explore the view.",
   /* ------------------------------------------------------------- app shell */
 
   "app.name": "Afterlight",

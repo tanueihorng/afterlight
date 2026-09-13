@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  EyeScene,
-  GENERIC_MODEL_BOUNDARY,
-  probeCapability,
-  type EyeSceneOptions,
-} from "../engine";
+import { EyeScene, GENERIC_MODEL_BOUNDARY, probeCapability, type EyeSceneOptions } from "../engine";
 
 /**
  * React wrapper around the engine: mount, resize, dispose, and an honest fallback.
@@ -26,7 +21,8 @@ export default function EyeCanvas({
   const [unavailable, setUnavailable] = useState<string | null>(null);
 
   // Serialised so a new object literal with the same values does not rebuild the scene.
-  const key = JSON.stringify(options);
+  const { view, slice, separation, zoom, ...appearance } = options;
+  const key = JSON.stringify(appearance);
 
   useEffect(() => {
     const capability = probeCapability();
@@ -41,7 +37,10 @@ export default function EyeCanvas({
 
     let scene: EyeScene | null = null;
     try {
-      scene = new EyeScene(canvas, JSON.parse(key) as Partial<EyeSceneOptions>);
+      scene = new EyeScene(canvas, {
+        ...JSON.parse(key),
+        reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+      });
     } catch (e) {
       const reason = e instanceof Error ? e.message : "The 3D view could not start.";
       setUnavailable(reason);
@@ -114,6 +113,13 @@ export default function EyeCanvas({
       sceneRef.current = null;
     };
   }, [key, onFallback]);
+
+  useEffect(() => {
+    if (view) sceneRef.current?.setView(view);
+    if (slice !== undefined) sceneRef.current?.setSlice(slice);
+    if (separation !== undefined) sceneRef.current?.setSeparation(separation);
+    if (zoom !== undefined) sceneRef.current?.setZoom(zoom);
+  }, [view, slice, separation, zoom, key]);
 
   if (unavailable) {
     return (

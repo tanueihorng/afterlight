@@ -6,6 +6,9 @@
 import {
   ACESFilmicToneMapping,
   AmbientLight,
+  MeshBasicMaterial,
+  PlaneGeometry,
+  FrontSide,
   BufferAttribute,
   CircleGeometry,
   Clock,
@@ -17,20 +20,32 @@ import {
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
+  Plane,
+  Vector3,
+  PMREMGenerator,
   RingGeometry,
+  TextureLoader,
+  Vector2,
   Scene,
   SphereGeometry,
   SRGBColorSpace,
   WebGLRenderer,
   type Object3D,
 } from "three";
-import { EYE, mm } from "../anatomy/dimensions";
+import { irisNormalUrl } from "../materials/iris-detail";
+import { anteriorSurface, cornealSag } from "../anatomy/surface";
+import { EYE, mm, SCENE_SCALE } from "../anatomy/dimensions";
 import { DEFAULT_IRIS, pupilRadiusMm, type IrisParams } from "../anatomy/iris";
 import { DEFAULT_FUNDUS, type FundusParams } from "../anatomy/fundus";
-import { irisTexture, scleraTexture, disposeTextureCache } from "../materials/textures";
+import {
+  irisTexture,
+  scleraTexture,
+  fundusTexture,
+  disposeTextureCache,
+} from "../materials/textures";
 import { TIERS, probeCapability, type QualityTier } from "./capability";
 
-export type ViewMode = "exterior" | "cross_section" | "fundus";
+export type ViewMode = "exterior" | "cross_section" | "fundus" | "cornea";
 
 export interface EyeSceneOptions {
   eye: "right" | "left";
@@ -42,6 +57,9 @@ export interface EyeSceneOptions {
   view: ViewMode;
   /** 0 dark to 1 bright; drives pupil size. */
   light: number;
+  slice: number;
+  separation: number;
+  zoom: number;
   reducedMotion: boolean;
 }
 
@@ -52,6 +70,9 @@ export const DEFAULT_SCENE: EyeSceneOptions = {
   scleraVessels: 0.45,
   view: "exterior",
   light: 0.5,
+  slice: 0.5,
+  separation: 0,
+  zoom: 1,
   reducedMotion: false,
 };
 
@@ -60,7 +81,7 @@ export const DEFAULT_SCENE: EyeSceneOptions = {
  * RingGeometry maps a square over the annulus, which smears an iris texture badly.
  */
 function polarRing(inner: number, outer: number, segments: number): RingGeometry {
-  const geometry = new RingGeometry(inner, outer, segments, 2);
+  const geometry = new RingGeometry(inner, outer, segments, 32);
   const position = geometry.getAttribute("position");
   const uv = new Float32Array(position.count * 2);
   for (let i = 0; i < position.count; i++) {
@@ -69,9 +90,12 @@ function polarRing(inner: number, outer: number, segments: number): RingGeometry
     const radius = Math.hypot(x, y);
     const angle = Math.atan2(y, x);
     uv[i * 2] = (angle + Math.PI) / (Math.PI * 2);
-    uv[i * 2 + 1] = 1 - (radius - inner) / (outer - inner);
+    const radial = (radius - inner) / (outer - inner);
+    uv[i * 2 + 1] = radial;
+    position.setZ(i, mm(EYE.iris.thickness) * 0.18 * Math.sin(radial * Math.PI));
   }
   geometry.setAttribute("uv", new BufferAttribute(uv, 2));
+  geometry.computeVertexNormals();
   return geometry;
 }
 
@@ -90,11 +114,16 @@ export class EyeScene {
   private disposables: { dispose(): void }[] = [];
   private iris: Mesh | null = null;
   private eyeGroup: Group | null = null;
+  private sectionPlane = new Plane(new Vector3(-1, 0, 0), 0);
+  private rotationTarget = { x: 0, y: 0 };
   private targetPupil = 0;
   private currentPupil = 0;
   private onContextLost?: () => void;
 
-  constructor(private canvas: HTMLCanvasElement, options: Partial<EyeSceneOptions> = {}) {
+  constructor(
+    private canvas: HTMLCanvasElement,
+    options: Partial<EyeSceneOptions> = {},
+  ) {
     this.options = { ...DEFAULT_SCENE, ...options };
     const capability = probeCapability();
     this.tier = this.options.quality ?? capability.tier;
@@ -111,15 +140,37 @@ export class EyeScene {
     });
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 0.9;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, TIERS[this.tier].pixelRatioCap));
 
     canvas.addEventListener("webglcontextlost", this.handleContextLost);
     canvas.addEventListener("webglcontextrestored", this.handleContextRestored);
 
+    this.renderer.localClippingEnabled = true;
+    const room = new Scene();
+    room.background = new Color(0x343536);
+    const softboxGeometry = new PlaneGeometry(3.5, 5);
+    const softboxMaterial = new MeshBasicMaterial({ color: new Color(0xfff3df).multiplyScalar(4) });
+    const softbox = new Mesh(softboxGeometry, softboxMaterial);
+    softbox.position.set(-4, 5, 6);
+    softbox.lookAt(0, 0, 0);
+    room.add(softbox);
+    const pmrem = new PMREMGenerator(this.renderer);
+    const environment = this.track(pmrem.fromScene(room, 0.04, 0.1, 100, { size: 64 }));
+    this.scene.environment = environment.texture;
+    this.scene.environmentIntensity = 0.45;
+    softboxGeometry.dispose();
+    softboxMaterial.dispose();
+    room.clear();
+    pmrem.dispose();
     this.build();
+    this.setView(this.options.view);
+    this.setSlice(this.options.slice);
+    this.setSeparation(this.options.separation);
+    this.setZoom(this.options.zoom);
     this.currentPupil = pupilRadiusMm(this.options.iris);
     this.targetPupil = this.currentPupil;
+    this.updatePupil();
   }
 
   /* ------------------------------------------------------------ building */
@@ -140,8 +191,9 @@ export class EyeScene {
     const limbusAngle = Math.asin(limbusRadius / globeRadius);
     const corneaRadius = mm(EYE.cornea.anteriorRadius);
     // The corneal cap must meet the globe exactly at the limbus, or there is a visible seam.
-    const corneaCentreZ = limbusZ - Math.sqrt(corneaRadius ** 2 - limbusRadius ** 2);
-    const irisZ = limbusZ - mm(EYE.anteriorChamber.depth);
+    const anterior = anteriorSurface();
+    const corneaCentreZ = mm(anterior.apexZ) - corneaRadius;
+    const irisZ = mm(anterior.irisZ);
 
     const eyeGroup = new Group();
     eyeGroup.name = "eye";
@@ -176,27 +228,37 @@ export class EyeScene {
     const globe = new Mesh(globeGeometry, globeMaterial);
     // The sphere's pole is +Y; rotate it so the aperture faces the viewer.
     globe.rotation.x = Math.PI / 2;
-    globe.scale.set(EYE.horizontalDiameter / EYE.axialLength, 1, EYE.verticalDiameter / EYE.axialLength);
+    globe.scale.set(
+      EYE.horizontalDiameter / EYE.axialLength,
+      1,
+      EYE.verticalDiameter / EYE.axialLength,
+    );
+    globe.name = "sclera";
+    globeMaterial.clippingPlanes = [this.sectionPlane];
     eyeGroup.add(globe);
 
     // Iris: a flat annulus behind the anterior chamber, textured in polar coordinates.
     const irisGeometry = this.track(
-      polarRing(mm(1), limbusRadius, settings.irisSegments),
+      polarRing(mm(pupilRadiusMm(this.options.iris)), limbusRadius, settings.irisSegments),
     );
-    const irisMap = irisTexture(this.options.iris, settings.textureSize);
+    const irisMap = irisTexture(this.options.iris, settings.textureSize, () => this.renderOnce());
+    const irisNormal = this.track(new TextureLoader().load(irisNormalUrl, () => this.renderOnce()));
+    irisNormal.anisotropy = 8;
     const irisMaterial = this.track(
       new MeshStandardMaterial({
         map: irisMap ?? undefined,
-        // The same painting drives relief: fibres and crypts have depth, which is most of what
-        // separates an iris from a flat disc with a pattern on it.
-        bumpMap: irisMap ?? undefined,
-        bumpScale: 0.6,
-        roughness: 0.5,
+        normalMap: irisNormal,
+        normalScale: new Vector2(
+          0.65 * this.options.iris.fibreDensity,
+          0.65 * this.options.iris.fibreDensity,
+        ),
+        roughness: 0.78,
         metalness: 0,
         side: DoubleSide,
       }),
     );
     this.iris = new Mesh(irisGeometry, irisMaterial);
+    this.iris.name = "iris";
     this.iris.position.z = irisZ;
     eyeGroup.add(this.iris);
 
@@ -221,39 +283,52 @@ export class EyeScene {
         Math.asin(limbusRadius / corneaRadius),
       ),
     );
+    const corneaPositions = corneaGeometry.getAttribute("position");
+    for (let i = 0; i < corneaPositions.count; i++) {
+      const radial = Math.hypot(corneaPositions.getX(i), corneaPositions.getZ(i));
+      corneaPositions.setY(i, corneaRadius - mm(cornealSag(radial * SCENE_SCALE)));
+    }
+    corneaGeometry.computeVertexNormals();
     const corneaMaterial = this.track(
       new MeshPhysicalMaterial({
         transmission: 1,
-        thickness: mm(EYE.cornea.centralThickness) * 6,
+        thickness: mm(EYE.cornea.centralThickness),
         ior: EYE.cornea.ior,
         roughness: 0.015,
         metalness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.01,
-        transparent: true,
-        side: DoubleSide,
+        clearcoat: 0,
+        envMapIntensity: 0.8,
+        specularIntensity: 0.55,
+        side: FrontSide,
       }),
     );
     const cornea = new Mesh(corneaGeometry, corneaMaterial);
     cornea.rotation.x = Math.PI / 2;
     cornea.position.z = corneaCentreZ;
+    cornea.name = "cornea";
     eyeGroup.add(cornea);
 
     // Limbus: the transition from clear cornea to sclera is a soft band, not an edge.
     const limbusGeometry = this.track(
-      new RingGeometry(limbusRadius * 0.94, limbusRadius * 1.13, 96, 1),
+      new RingGeometry(
+        limbusRadius - mm(EYE.limbus.width / 4),
+        limbusRadius + mm(EYE.limbus.width / 4),
+        96,
+        1,
+      ),
     );
     const limbusMaterial = this.track(
       new MeshStandardMaterial({
         color: 0x2b2530,
         transparent: true,
-        opacity: 0.42 * this.options.iris.limbalRing,
+        opacity: 0.14 * this.options.iris.limbalRing,
         roughness: 0.8,
         side: DoubleSide,
       }),
     );
     const limbus = new Mesh(limbusGeometry, limbusMaterial);
     limbus.position.z = limbusZ - mm(0.2);
+    limbus.name = "limbus";
     eyeGroup.add(limbus);
 
     // Tear film: a thin, very smooth layer whose specular is the wet look.
@@ -282,10 +357,70 @@ export class EyeScene {
     const tear = new Mesh(tearGeometry, tearMaterial);
     tear.rotation.x = Math.PI / 2;
     tear.position.z = corneaCentreZ;
+    tear.name = "tear";
     eyeGroup.add(tear);
 
+    const retinaRadius = globeRadius - mm(EYE.sclera.thicknessPosterior);
+    const retinaGeometry = this.track(
+      new SphereGeometry(
+        retinaRadius,
+        settings.globeSegments,
+        settings.globeSegments,
+        0,
+        Math.PI * 2,
+        0,
+        Math.PI / 2,
+      ),
+    );
+    retinaGeometry.rotateX(-Math.PI / 2);
+    // Project the existing fundus painter onto the posterior bowl, preserving its laterality.
+    const positions = retinaGeometry.getAttribute("position");
+    const retinaUV = retinaGeometry.getAttribute("uv");
+    for (let i = 0; i < positions.count; i++) {
+      retinaUV.setXY(
+        i,
+        0.5 + positions.getX(i) / (2 * retinaRadius),
+        0.5 + positions.getY(i) / (2 * retinaRadius),
+      );
+    }
+    const retinaMaterial = this.track(
+      new MeshStandardMaterial({
+        map: fundusTexture(this.options.fundus, settings.textureSize) ?? undefined,
+        side: DoubleSide,
+        roughness: 0.65,
+        clippingPlanes: [this.sectionPlane],
+      }),
+    );
+    const retina = new Mesh(retinaGeometry, retinaMaterial);
+    retina.name = "retina";
+    eyeGroup.add(retina);
+
+    const lens = new Mesh(
+      this.track(new SphereGeometry(1, 64, 32)),
+      this.track(
+        new MeshPhysicalMaterial({
+          color: 0xf4e5c5,
+          transmission: 0.8,
+          roughness: 0.06,
+          thickness: mm(EYE.lens.thickness),
+          side: DoubleSide,
+        }),
+      ),
+    );
+    lens.name = "lens";
+    lens.scale.set(
+      mm(EYE.lens.diameter / 2),
+      mm(EYE.lens.diameter / 2),
+      mm(EYE.lens.thickness / 2),
+    );
+    lens.position.z = irisZ - mm(EYE.lens.thickness / 2);
+    eyeGroup.add(lens);
+    eyeGroup.children.forEach((part) => {
+      part.userData.baseZ = part.position.z;
+    });
+
     // Lighting: a key, a fill and a rim, all generated. Nothing is fetched.
-    const key = new DirectionalLight(0xfff4e6, 3.1);
+    const key = new DirectionalLight(0xfff4e6, 2.0);
     key.position.set(2.2, 2.4, 4.4);
     this.scene.add(key);
 
@@ -305,6 +440,11 @@ export class EyeScene {
   setLight(light: number): void {
     this.options.light = light;
     this.targetPupil = (8 - 6 * Math.min(1, Math.max(0, light)) ** 0.55) / 2;
+    if (this.options.reducedMotion) {
+      this.currentPupil = this.targetPupil;
+      this.updatePupil();
+      this.renderOnce();
+    } else this.start();
   }
 
   resize(width: number, height: number): void {
@@ -317,9 +457,76 @@ export class EyeScene {
   /** Rotate the eye, as a person would turn a model in their hand. */
   rotate(deltaX: number, deltaY: number): void {
     if (!this.eyeGroup) return;
-    this.eyeGroup.rotation.y = clampAngle(this.eyeGroup.rotation.y + deltaX, 1.1);
-    this.eyeGroup.rotation.x = clampAngle(this.eyeGroup.rotation.x + deltaY, 0.8);
+    this.rotationTarget.y = clampAngle(this.rotationTarget.y + deltaX, Math.PI);
+    this.rotationTarget.x = clampAngle(this.rotationTarget.x + deltaY, 1.4);
+    if (this.options.reducedMotion) {
+      this.eyeGroup.rotation.set(this.rotationTarget.x, this.rotationTarget.y, 0);
+    }
+    if (!this.options.reducedMotion) this.start();
     this.renderOnce();
+  }
+
+  setView(view: ViewMode): void {
+    this.options.view = view;
+    const visible: Record<ViewMode, string[]> = {
+      exterior: ["sclera", "iris", "pupil", "cornea", "limbus"],
+      cross_section: ["sclera", "iris", "pupil", "cornea", "limbus", "retina", "lens"],
+      fundus: ["retina"],
+      cornea: ["cornea", "limbus", "iris", "pupil"],
+    };
+    this.eyeGroup?.children.forEach((part) => {
+      part.visible = visible[view].includes(part.name);
+    });
+    this.rotationTarget = {
+      x: 0,
+      y: view === "cross_section" ? -0.85 : view === "cornea" ? 0.65 : 0,
+    };
+    if (this.options.reducedMotion) this.eyeGroup?.rotation.set(0, this.rotationTarget.y, 0);
+    this.setSlice(this.options.slice);
+    this.setSeparation(this.options.separation);
+    if (!this.options.reducedMotion) this.start();
+  }
+
+  setSlice(value: number): void {
+    this.options.slice = Math.max(0, Math.min(1, value));
+    this.sectionPlane.constant =
+      this.options.view === "cross_section"
+        ? (this.options.slice * 2 - 1) * mm(EYE.axialLength / 2)
+        : mm(EYE.axialLength);
+    this.renderOnce();
+  }
+
+  setSeparation(value: number): void {
+    this.options.separation = Math.max(0, Math.min(1, value));
+    const order: Record<string, number> = {
+      cornea: 1,
+      tear: 1,
+      limbus: 0.7,
+      iris: 0.4,
+      pupil: 0.4,
+      lens: 0.2,
+    };
+    this.eyeGroup?.children.forEach((part) => {
+      part.position.z =
+        Number(part.userData.baseZ) +
+        (order[part.name] ?? 0) *
+          (this.options.view === "cross_section" || this.options.view === "cornea"
+            ? this.options.separation
+            : 0) *
+          mm(EYE.anteriorChamber.depth);
+    });
+    this.renderOnce();
+  }
+
+  setZoom(value: number): void {
+    this.camera.zoom = Math.max(0.7, Math.min(1.6, value));
+    this.camera.updateProjectionMatrix();
+    this.renderOnce();
+  }
+
+  private updatePupil(): void {
+    const pupil = this.eyeGroup?.getObjectByName("pupil");
+    if (pupil) pupil.scale.setScalar(this.currentPupil / 2);
   }
 
   private tick = (): void => {
@@ -329,12 +536,25 @@ export class EyeScene {
     // The pupil eases to its target; an instant jump reads as a glitch, not a reflex.
     const speed = this.options.reducedMotion ? 1 : 4;
     this.currentPupil += (this.targetPupil - this.currentPupil) * Math.min(1, delta * speed);
-    const pupil = this.eyeGroup?.getObjectByName("pupil");
-    // The disc is built at 2 mm radius; scale it to the current pupil radius.
-    if (pupil) pupil.scale.setScalar(Math.max(0.1, this.currentPupil / 2));
+    this.updatePupil();
+    if (this.eyeGroup) {
+      const ease = this.options.reducedMotion ? 1 : 1 - Math.exp(-12 * delta);
+      this.eyeGroup.rotation.x += (this.rotationTarget.x - this.eyeGroup.rotation.x) * ease;
+      this.eyeGroup.rotation.y += (this.rotationTarget.y - this.eyeGroup.rotation.y) * ease;
+    }
 
+    this.updateSectionPlane();
     this.renderer.render(this.scene, this.camera);
-    this.frame = requestAnimationFrame(this.tick);
+    const turning =
+      this.eyeGroup &&
+      (Math.abs(this.eyeGroup.rotation.x - this.rotationTarget.x) > 0.0001 ||
+        Math.abs(this.eyeGroup.rotation.y - this.rotationTarget.y) > 0.0001);
+    // Once the control settles, a still eye needs no further GPU work.
+    if (turning || Math.abs(this.targetPupil - this.currentPupil) > 0.0001) {
+      this.frame = requestAnimationFrame(this.tick);
+    } else {
+      this.frame = 0;
+    }
   };
 
   start(): void {
@@ -349,7 +569,12 @@ export class EyeScene {
   }
 
   /** Render exactly one frame — used for stills and for reduced-motion mode. */
+  private updateSectionPlane(): void {
+    if (this.eyeGroup) this.sectionPlane.normal.set(-1, 0, 0).applyEuler(this.eyeGroup.rotation);
+  }
+
   renderOnce(): void {
+    this.updateSectionPlane();
     this.renderer?.render(this.scene, this.camera);
   }
 

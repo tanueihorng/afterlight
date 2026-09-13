@@ -29,8 +29,9 @@ proportions is the difference between "an eye" and "a ball with a picture on it"
 geometry is derived from these — the sclera's corneal aperture, the corneal cap and the limbus
 meet where the arithmetic says they meet, not where they looked right.
 
-**Everything generates locally.** No texture, model, HDRI or font is fetched at runtime. Textures
-are painted into canvases at load and cached by their parameters.
+**Everything stays local.** The Blender-baked iris maps are embedded in the lazy renderer.
+Iris colour, sclera and fundus textures are painted on-device and cached by their parameters.
+No texture, model, HDRI or font is fetched from a third party.
 
 **Parameters, not pictures.** Iris colour comes from one melanin model rather than four swapped
 textures; the fundus comes from a vessel-growth algorithm rather than an image. Phase 07's disease
@@ -66,3 +67,21 @@ from a USB stick on a machine with no internet. The original hand-built `EyeExpl
 ships alongside it and is still what the Visualize page's "3D explorer" tab loads — it carries
 disease scenarios and a diagnose flow the engine does not have yet. Replacing it is a decision for
 a human once Phase 07 reaches parity.
+
+## Interactive views
+
+The main **Visualize → The eye** view offers whole-eye, cross-section, isolated cornea and
+posterior retina views. Slice position clips the outer shell and retinal bowl; it is an open
+cutaway, not a scan or a histological section. Separate parts uses illustrative spacing, labelled
+at the control. Zoom, slice and separation update the mounted renderer without rebuilding it.
+Dragging and arrow keys ease towards a rotation target; reduced motion applies rotation directly.
+Rendering stops when movement settles and resumes on interaction. The retina reuses the local fundus painter with its eye-specific vessel layout. Surface reflections
+come from a generated softbox environment, with no downloaded textures or environment maps.
+
+## Blender surface detail
+
+Both eye viewers now share the baked iris normal and relief maps described in
+[the asset pipeline](asset-pipeline.md). The browser still colours and sizes the iris from its
+parameters. The cornea uses the stored asphericity and joins the scleral opening at the limbus;
+the anterior chamber is measured from the inner corneal apex. The editable Blender scene and its
+Cycles study are source assets, not the browser render.

@@ -27,7 +27,9 @@ test.describe("the eye engine", () => {
     await expect(page.getByText(/does not support WebGL2/i)).toHaveCount(0);
   });
 
-  test("carries the generic-model boundary in the accessible name and on the page", async ({ page }) => {
+  test("carries the generic-model boundary in the accessible name and on the page", async ({
+    page,
+  }) => {
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
     await page.goto("/#/visualize");
@@ -99,4 +101,65 @@ test.describe("the eye engine", () => {
 
     expect(Buffer.compare(before, after)).not.toBe(0);
   });
+});
+
+test("explores slices, cornea and retina without replacing the canvas", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await page.getByRole("button", { name: /skip setup/i }).click();
+  await page.goto("/#/visualize");
+  const canvas = page.locator("canvas").first();
+  await expect(canvas).toBeVisible({ timeout: 15_000 });
+  await canvas.evaluate((node) => node.setAttribute("data-original", "yes"));
+  await page.getByRole("button", { name: "Cross-section", exact: true }).click();
+  const before = await canvas.screenshot();
+  const slice = page.getByRole("slider", { name: "Slice position" });
+  await slice.focus();
+  await page.keyboard.press("Home");
+  const after = await canvas.screenshot();
+  expect(Buffer.compare(before, after)).not.toBe(0);
+  await page.getByRole("button", { name: "Cornea", exact: true }).click();
+  const separation = page.getByRole("slider", { name: "Separate parts (illustrative spacing)" });
+  await separation.focus();
+  await page.keyboard.press("End");
+  await expect(separation).toHaveValue("1");
+  await page.getByRole("button", { name: "Retina", exact: true }).click();
+  await expect(slice).toHaveCount(0);
+  expect(Buffer.compare(after, await canvas.screenshot())).not.toBe(0);
+  await expect(canvas).toHaveAttribute("data-original", "yes");
+  await expect(canvas).toHaveAccessibleName(/not your anatomy/);
+  await page.getByRole("button", { name: "Whole eye", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Whole eye", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});
+
+test("the standalone explorer loads baked detail and remains interactive offline", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(60_000);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  const remote: string[] = [];
+  page.on("request", (request) => {
+    if (/^https?:/.test(request.url()) && !request.url().startsWith("http://localhost:"))
+      remote.push(request.url());
+  });
+  await page.goto("/EyeExplorer.html");
+  const canvas = page.locator("#viewport canvas");
+  await expect(canvas).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator("#bootmsg")).not.toBeVisible();
+  await expect(canvas).toHaveAccessibleName(/not your anatomy/);
+  await context.setOffline(true);
+  await page.locator("#eyeColor").selectOption("blue");
+  await expect(page.locator("#eyeColor")).toHaveValue("blue");
+  await page.locator("#cutSlider").focus();
+  await page.keyboard.press("End");
+  await expect(page.locator("#cutSlider")).toHaveValue("100");
+  expect((await canvas.screenshot()).byteLength).toBeGreaterThan(20_000);
+  expect(errors).toEqual([]);
+  expect(remote).toEqual([]);
 });

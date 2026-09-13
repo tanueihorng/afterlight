@@ -9,6 +9,8 @@ import {
   type IrisParams,
 } from "../engine";
 import { useStore } from "../lib/store";
+import { t } from "../lib/i18n";
+import type { ViewMode } from "../engine";
 import { Field } from "./ui";
 
 /**
@@ -27,6 +29,10 @@ export default function EyeStudio() {
   const [fundusPigment, setFundusPigment] = useState(saved?.fundusPigmentation ?? 0.55);
   const [scleraVessels, setScleraVessels] = useState(saved?.scleraVessels ?? 0.45);
   const [eye, setEye] = useState<"right" | "left">("right");
+  const [view, setView] = useState<ViewMode>("exterior");
+  const [slice, setSlice] = useState(0.5);
+  const [separation, setSeparation] = useState(0);
+  const [zoom, setZoom] = useState(1);
   const [light, setLight] = useState(0.5);
 
   const fundus: FundusParams = useMemo(
@@ -46,9 +52,43 @@ export default function EyeStudio() {
   return (
     <>
       <div className="card">
+        <div className="btn-row" style={{ flexWrap: "wrap", marginBottom: 12 }}>
+          {(["exterior", "cross_section", "cornea", "fundus"] as const).map((mode) => (
+            <button
+              key={mode}
+              className={`btn ${view === mode ? "primary" : "subtle"}`}
+              aria-pressed={view === mode}
+              onClick={() => setView(mode)}
+            >
+              {t(`eye.view.${mode}`)}
+            </button>
+          ))}
+        </div>
         <EyeCanvas
-          options={{ eye, iris: { ...iris, pupilMm: 8 - 6 * light ** 0.55 }, fundus, scleraVessels, light }}
-          height={440}
+          options={{
+            view,
+            slice,
+            separation,
+            zoom,
+            eye,
+            iris: { ...iris, pupilMm: 8 - 6 * light ** 0.55 },
+            fundus,
+            scleraVessels,
+            light,
+          }}
+          height={500}
+        />
+        <p className="muted">{t("eye.controls")}</p>
+        {view === "cross_section" && (
+          <Slider label={t("eye.slice")} value={slice} onChange={setSlice} />
+        )}
+        {(view === "cross_section" || view === "cornea") && (
+          <Slider label={t("eye.separation")} value={separation} onChange={setSeparation} />
+        )}
+        <Slider
+          label={t("eye.zoom")}
+          value={(zoom - 0.7) / 0.9}
+          onChange={(v) => setZoom(0.7 + v * 0.9)}
         />
       </div>
 
