@@ -47,7 +47,10 @@ export function irisTexture(params: IrisParams, size = 1024, onReady?: () => voi
   texture.anisotropy = 8;
   cancelDetailLoads.push(
     withIrisRelief(() => {
-      paintIrisDetail(ctx, size, base, pupillary, params.limbalRing, params);
+      // the model's geometric aperture is fixed at 0.7 mm; paint the live pupil out to its
+      // radius as a fraction of the annulus (0.7 → limbus 5.85 mm)
+      const pupilZone = Math.max(0, Math.min(1, (params.pupilMm / 2 - 0.7) / (5.85 - 0.7)));
+      paintIrisDetail(ctx, size, base, pupillary, params.limbalRing, params, pupilZone);
       texture.needsUpdate = true;
       onReady?.();
     }),
@@ -99,6 +102,36 @@ export function scleraTexture(vesselDensity = 0.5, size = 1024): Texture | null 
 
   const texture = new CanvasTexture(surface.canvas);
   texture.colorSpace = SRGBColorSpace;
+  cache.set(key, texture);
+  return texture;
+}
+
+/**
+ * Muscle fibre striations: fine lines along the texture's v axis, which the muscle grid runs
+ * along its length, so the bump reads as directional fibres rather than noise.
+ */
+export function muscleFibreTexture(size = 256): Texture | null {
+  const key = `muscle-fibre:${size}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const surface = canvas(size);
+  if (!surface) return null;
+  const { ctx } = surface;
+  ctx.fillStyle = "rgb(128, 128, 128)";
+  ctx.fillRect(0, 0, size, size);
+  for (let x = 0; x < size; x += 2) {
+    const shade = 108 + Math.round(Math.random() * 48);
+    ctx.strokeStyle = `rgb(${shade}, ${shade}, ${shade})`;
+    ctx.lineWidth = 1 + Math.random();
+    ctx.beginPath();
+    ctx.moveTo(x + (Math.random() - 0.5), 0);
+    ctx.lineTo(x + (Math.random() - 0.5), size);
+    ctx.stroke();
+  }
+  const texture = new CanvasTexture(surface.canvas);
+  texture.wrapS = RepeatWrapping;
+  texture.wrapT = RepeatWrapping;
+  texture.repeat.set(3, 6);
   cache.set(key, texture);
   return texture;
 }

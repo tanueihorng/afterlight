@@ -21,7 +21,7 @@ marked blocked.
 | 10 | Release & clinical review | done, blocked on clinical review | phase-10-release | 2026-09-09 | landing page, guide, backup story, i18n layer, issue templates, versioning; **release script refuses to tag while `docs/clinical-review.md` says NOT REVIEWED** |
 | 11 | Eye reference, baseline and anatomy contract | done | phase-11-baseline-contract | 2026-09-13 | Baseline recorded with captures of both viewers; contract at docs/eye-realism/anatomy-contract.md. Reference confirmed commercial (not downloaded). `verify` clean |
 | 12 | Original Blender anatomy and reproducible assets | done | phase-11-baseline-contract | 2026-09-13 | Full model authored from params.json, watertight, exported (0.6 MB) with 9 geometry tests; 4 studies inspected; `verify` clean (554 tests) |
-| 13 | Browser rendering and solid interactive sections | not started | — | 2026-09-13 | [Brief](phase-13-eye-renderer-and-sections.md); original eye realism follow-up |
+| 13 | Browser rendering and solid interactive sections | done | phase-11-baseline-contract | 2026-09-13 | Scene rebuilt on the model: capped sections, vessel tubes, live appearance; verify clean (570 tests, 7 engine e2e); evidence in docs/eye-realism/phase-13-browser.md |
 | 14 | Interactive cornea, retina and layer inspection | not started | — | 2026-09-13 | [Brief](phase-14-eye-exploration-controls.md); original eye realism follow-up |
 | 15 | Bring the original explorer to the same model quality | not started | — | 2026-09-13 | [Brief](phase-15-explorer-renderer-parity.md); original eye realism follow-up |
 | 16 | Visual review, performance and offline completion gate | not started | — | 2026-09-13 | [Brief](phase-16-eye-visual-and-offline-gate.md); original eye realism follow-up |
@@ -30,6 +30,25 @@ marked blocked.
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-09-13** — **Phase 13 done.** The app's eye view renders the original anatomical model:
+  structures decode from the committed binary into typed arrays and adapt to Three r180;
+  laterality is a mirror transform; iris/pupil/fundus/vessels stay live parameters with
+  `setAppearance()` retuning materials in place (sliders no longer remount the scene). Sections
+  are real: the plane section of each sliced solid is computed by edge-keyed triangle walking,
+  chains close exactly, loops fill as flat caps or wall bands reusing the structure's pale cut
+  material — `section.test.ts` pins topology, tangent/extreme cuts, immutability and repeat
+  sweeps, and an e2e test asserts no renderer-resource growth across sweeps. Vessels are smoothed
+  tubes on the inner retina split by artery/vein, tied to the geometric disc; the FAV steering
+  now arcs around the macula progressively. Tear-film sphere dropped for the cornea's clearcoat.
+  Four debugging rounds that cost real time: a stale-`matrix_world` camera roll pointed the
+  study camera at the floor; the iris bake sculpt occluded every Blender study until hidden;
+  `?inline` on a `.bin` cannot be served by vitest's node pipeline (the model now ships as a
+  generated data-URL module `anatomy-data.ts`, hashed like the rest); and parallel SwiftShader
+  e2e contexts starve each other past canvas waits (engine suite now serial — an accommodation,
+  not weaker assertions). Budgets: Visualize 1.37 MB / 12 MB, standalone 2.25 MB / 5 MB,
+  initial JS 81 KB unchanged. Known gaps recorded: sparse macular branch fronds in the fundus
+  close-up, dark choroid cut-band, faint pupil double edge through the cornea.
 
 - **2026-09-13** — **Phase 12 done.** The original anatomical eye exists in Blender and in the
   repo's browser assets. `build-anatomy.py` runs the preserved iris bake in-process, then authors

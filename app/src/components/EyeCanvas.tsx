@@ -21,8 +21,11 @@ export default function EyeCanvas({
   const [unavailable, setUnavailable] = useState<string | null>(null);
 
   // Serialised so a new object literal with the same values does not rebuild the scene.
+  // Appearance changes retune materials in place; the scene is built once per mount.
   const { view, slice, separation, zoom, ...appearance } = options;
   const key = JSON.stringify(appearance);
+  const keyRef = useRef(key);
+  keyRef.current = key;
 
   useEffect(() => {
     const capability = probeCapability();
@@ -49,6 +52,8 @@ export default function EyeCanvas({
     }
 
     sceneRef.current = scene;
+    // diagnostics hook: e2e resource tests read renderer.info through it (no page API surface)
+    (window as unknown as { __eyeScene?: EyeScene }).__eyeScene = scene;
     scene.onContextLoss(() =>
       setUnavailable("The 3D view lost its graphics context. Reload the page to bring it back."),
     );
@@ -103,6 +108,7 @@ export default function EyeCanvas({
     else scene.start();
 
     return () => {
+      delete (window as unknown as { __eyeScene?: EyeScene }).__eyeScene;
       observer.disconnect();
       canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointermove", onMove);
@@ -119,7 +125,13 @@ export default function EyeCanvas({
     if (slice !== undefined) sceneRef.current?.setSlice(slice);
     if (separation !== undefined) sceneRef.current?.setSeparation(separation);
     if (zoom !== undefined) sceneRef.current?.setZoom(zoom);
-  }, [view, slice, separation, zoom, key]);
+  }, [view, slice, separation, zoom]);
+
+  useEffect(() => {
+    if (sceneRef.current) {
+      sceneRef.current.setAppearance(JSON.parse(key));
+    }
+  }, [key]);
 
   if (unavailable) {
     return (

@@ -14,5 +14,9 @@
   "anatomy.json": {
     "sha256": "f4936851dcc6a9dbca3a8bc07d2626262d6732ae608ba1a1ea6083d6cb6fc526",
     "bytes": 49901
+  },
+  "anatomy-data.ts": {
+    "sha256": "fe9e2cffb3a56944d36bf955d52b96e64b4e28fbd845d072f055d3d758a2c525",
+    "bytes": 815392
   }
 }
