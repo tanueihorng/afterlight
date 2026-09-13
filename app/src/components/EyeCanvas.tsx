@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { EyeScene, GENERIC_MODEL_BOUNDARY, probeCapability, type EyeSceneOptions } from "../engine";
+import { t } from "../lib/i18n";
 
 /**
  * React wrapper around the engine: mount, resize, dispose, and an honest fallback.
@@ -179,6 +180,18 @@ export default function EyeCanvas({
     }
   }, [resetSignal]);
 
+  const shellRef = useRef<HTMLElement>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void shellRef.current?.requestFullscreen();
+  };
+
   if (unavailable) {
     return (
       <div className="card" role="status">
@@ -191,7 +204,7 @@ export default function EyeCanvas({
   }
 
   return (
-    <figure style={{ margin: 0 }}>
+    <figure className="eye-shell" ref={shellRef} style={{ margin: 0, position: "relative" }}>
       <canvas
         ref={canvasRef}
         style={{
@@ -206,6 +219,15 @@ export default function EyeCanvas({
         role="img"
         aria-label={`${GENERIC_MODEL_BOUNDARY} Drag, or use the arrow keys, to turn it.`}
       />
+      <button
+        type="button"
+        className="eye-full-btn"
+        aria-pressed={fullscreen}
+        aria-label={fullscreen ? t("eye.fullscreen.exit") : t("eye.fullscreen")}
+        onClick={toggleFullscreen}
+      >
+        {fullscreen ? "⤡" : "⛶"}
+      </button>
       <figcaption className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 8 }}>
         {GENERIC_MODEL_BOUNDARY}
       </figcaption>

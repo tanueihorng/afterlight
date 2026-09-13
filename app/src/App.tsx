@@ -126,6 +126,19 @@ export default function App() {
             </span>
             <span className="nav-label">{t("app.ask")}</span>
           </button>
+          <button
+            className="nav-item"
+            onClick={() =>
+              store.setMeta({ theme: (store.meta?.theme ?? "light") === "dark" ? "light" : "dark" })
+            }
+          >
+            <span className="nav-icon" aria-hidden>
+              ◑
+            </span>
+            <span className="nav-label">
+              {(store.meta?.theme ?? "light") === "dark" ? t("app.light_mode") : t("app.dark_mode")}
+            </span>
+          </button>
           <div className="sidebar-footer">{t("app.local_only")}</div>
         </aside>
         <nav className="tabbar" aria-label="Main">

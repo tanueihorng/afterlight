@@ -2105,3 +2105,32 @@ a:hover {
   padding: 7px 0;
   line-height: 1.5;
 }
+
+/* Eye fullscreen: the specimen fills the screen; the boundary caption is hidden while
+   fullscreen (the accessible name and the controls' labels still carry it). */
+.eye-shell:fullscreen {
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.eye-shell:fullscreen canvas {
+  height: min(100vh, 100vw * 0.62);
+  width: 100vw;
+  border-radius: 0;
+}
+.eye-full-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  min-width: var(--target);
+  min-height: var(--target);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
+  color: var(--text-2);
+  font-size: var(--fs-lg);
+  cursor: pointer;
+}
+.eye-full-btn:hover { color: var(--text); border-color: var(--border); }
+.eye-shell:fullscreen .eye-full-btn { position: fixed; }

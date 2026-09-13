@@ -37,6 +37,10 @@ export const EN = {
     "Choose a part to highlight it on the model. The magnifier button moves the camera there.",
   "eye.structures.focus": "Move the camera to the {name}",
   "eye.structures.focusShort": "Focus",
+  "app.dark_mode": "Dark mode",
+  "app.light_mode": "Light mode",
+  "eye.fullscreen": "Fullscreen",
+  "eye.fullscreen.exit": "Exit fullscreen",
   "eye.controls":
     "Drag or use the arrow keys to turn the model. Use the sliders to explore the view.",
   /* ------------------------------------------------------------- app shell */
