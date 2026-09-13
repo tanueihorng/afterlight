@@ -2134,3 +2134,52 @@ a:hover {
 }
 .eye-full-btn:hover { color: var(--text); border-color: var(--border); }
 .eye-shell:fullscreen .eye-full-btn { position: fixed; }
+
+/* ---- Story timeline: one spine, events weighted by what they mean ---- */
+.tl-story { position: relative; padding-left: 6px; }
+.tl-story .tl-day {
+  position: relative;
+  border-left: 2px solid var(--border-soft);
+  margin-left: 10px;
+  padding: 0 0 22px 20px;
+}
+.tl-story .tl-day:last-child { padding-bottom: 6px; }
+.tl-story .tl-day-date {
+  display: inline-block;
+  background: var(--bg-elev2);
+  border: 1px solid var(--border-soft);
+  border-radius: 99px;
+  padding: 2px 12px;
+  margin: 0 0 10px -30px;
+  font-size: var(--fs-sm);
+  letter-spacing: 0.04em;
+}
+.tl-story .tl-event { position: relative; }
+.tl-story .tl-node {
+  position: absolute;
+  left: -27px;
+  top: 1.35em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.tl-story .w-milestone .tl-node {
+  width: 14px;
+  height: 14px;
+  left: -30px;
+  top: 1.2em;
+  background: var(--accent-strong);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.tl-story .w-treatment .tl-node {
+  width: 11px;
+  height: 11px;
+  left: -28.5px;
+  top: 1.25em;
+  background: var(--accent);
+  opacity: 0.85;
+}
+.tl-story .w-milestone .tl-title { font-size: var(--fs-md); font-weight: 650; }
+.tl-story .w-observation .tl-summary,
+.tl-story .w-observation .tl-title { opacity: 0.88; }

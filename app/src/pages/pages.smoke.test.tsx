@@ -90,6 +90,9 @@ describe("Timeline", () => {
       symptoms: [aSymptom({ eye: "left", date_time: `${today}T09:00:00` })],
       imaging: [anImaging({ source_type: "clinician_reported", date: today })],
     });
+    // the story opens on the clinical spine; the lens brings in the person's own notes,
+    // still provenance-labelled — that is the blending the timeline must never do
+    await screen.getByRole("button", { name: "With my notes" }).click();
     await waitFor(() => {
       expect(screen.getAllByText(/patient reported/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/device measurement|clinician documented/i).length).toBeGreaterThan(0);
