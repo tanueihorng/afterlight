@@ -46,6 +46,7 @@ export default function TimelinePage() {
   const [detail, setDetail] = useState<TimelineEvent | null>(null);
   const [compare, setCompare] = useState<SymptomEntry | null>(null);
   const [view, setView] = useState<"story" | "detailed">("story");
+  const [adding, setAdding] = useState(false);
   const [lens, setLens] = useState<StoryLens>("clinical");
 
   const rangeStart = useMemo(() => {
@@ -144,6 +145,13 @@ export default function TimelinePage() {
             aria-pressed={view === "detailed"}
           >
             Everything
+          </button>
+          <button
+            className="btn"
+            style={{ marginLeft: "auto", minHeight: "var(--target)" }}
+            onClick={() => setAdding(true)}
+          >
+            + Add event
           </button>
           {view === "story" && (
             <>
@@ -319,6 +327,44 @@ export default function TimelinePage() {
         </div>
       )}
 
+      {adding && (
+        <Modal title="Add an event" onClose={() => setAdding(false)}>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Each kind is recorded where it belongs — pick one and you'll land in the right form.
+            Set the date to whenever it actually happened; past events land on the timeline by
+            their own date.
+          </p>
+          <div style={{ display: "grid", gap: 8 }}>
+            {(
+              [
+                ["Daily log or symptom", "#/today", "How your eyes are today, compared with your usual"],
+                ["Drawing of what you see", "#/what-i-see", "Sketch floaters, glare, blind spots"],
+                ["Diagnosis", "#/my-eyes", "Something a clinician named — dated when first documented"],
+                ["Procedure or surgery", "#/my-eyes", "Dated to the day it happened"],
+                ["Medication", "#/my-eyes", "Start and stop dates, so the arc shows its span"],
+                ["Imaging or scan", "#/my-eyes", "OCT, photos, scans — a milestone on the spine"],
+                ["Appointment", "#/appointments", "Past or upcoming, with the clinic"],
+              ] as const
+            ).map(([label, hash, sub]) => (
+              <button
+                key={label}
+                className="btn subtle"
+                style={{ justifyContent: "flex-start", textAlign: "left", minHeight: "var(--target)" }}
+                onClick={() => {
+                  setAdding(false);
+                  location.hash = hash;
+                }}
+              >
+                <span>
+                  <strong>{label}</strong>
+                  <br />
+                  <span className="muted" style={{ fontWeight: 400 }}>{sub}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
       {detail && <EventDetail event={detail} onClose={() => setDetail(null)} onCompare={setCompare} />}
       {compare && <SameAsLastTime entry={compare} onClose={() => setCompare(null)} />}
     </>
