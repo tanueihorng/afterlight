@@ -24,6 +24,7 @@ import {
   MeshStandardMaterial,
   PerspectiveCamera,
   Plane,
+  Raycaster,
   PMREMGenerator,
   PlaneGeometry,
   Vector2,
@@ -48,7 +49,7 @@ import {
   muscleFibreTexture,
   disposeTextureCache,
 } from "../materials/textures";
-import { loadEyeModel } from "../anatomy/model-assets";
+import { loadEyeModel, EYE_MODEL_MANIFEST, type StructureMesh } from "../anatomy/model-assets";
 import { sectionCap, type SectionPlane } from "../anatomy/section";
 import { vesselTubesFor, type VesselTubeMesh } from "../anatomy/vessels3d";
 import { TIERS, probeCapability, type QualityTier } from "./capability";
@@ -69,6 +70,8 @@ export interface EyeSceneOptions {
   separation: number;
   zoom: number;
   reducedMotion: boolean;
+  /** Illustrative retina/choroid wall magnification; labelled as such in the UI. */
+  layerMagnification?: number;
 }
 
 export const DEFAULT_SCENE: EyeSceneOptions = {
@@ -123,6 +126,15 @@ export class EyeScene {
   private targetPupil = 0;
   private currentPupil = 0;
   private onContextLost?: () => void;
+  private selected: string | null = null;
+  private raycaster = new Raycaster();
+  private magnification = EYE_MODEL_MANIFEST.layerMagnification;
+  /**
+   * The model this scene renders — the shared decoded arrays until the layer magnification
+   * changes, after which the two shell entries are private scaled copies. Geometry AND section
+   * caps both read from here, so a cut always matches the walls on screen.
+   */
+  private sceneModel: Map<string, StructureMesh> | null = null;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -350,7 +362,8 @@ export class EyeScene {
   }
 
   private build(): void {
-    const model = loadEyeModel();
+    const model = this.sceneModel ?? loadEyeModel();
+    this.sceneModel = model;
     const materials = this.buildMaterials();
 
     const eyeGroup = new Group();
@@ -541,7 +554,7 @@ export class EyeScene {
   /* -------------------------------------------------------------- sections */
 
   private rebuildCaps(): void {
-    const model = loadEyeModel();
+    const model = this.sceneModel ?? loadEyeModel();
     for (const [structure, node] of this.structures) {
       for (const cap of node.caps) {
         node.group.remove(cap);
@@ -630,11 +643,16 @@ export class EyeScene {
     this.renderOnce();
   }
 
+  private pickWidth = 1;
+  private pickHeight = 1;
+
   resize(width: number, height: number): void {
     if (!this.renderer) return;
     this.camera.aspect = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+    this.pickWidth = Math.max(1, width);
+    this.pickHeight = Math.max(1, height);
   }
 
   /** Rotate the eye, as a person would turn a model in their hand. */
@@ -727,6 +745,170 @@ export class EyeScene {
   setZoom(value: number): void {
     this.camera.zoom = Math.max(0.7, Math.min(1.6, value));
     this.camera.updateProjectionMatrix();
+    this.renderOnce();
+  }
+
+  /* --------------------------------------------------- inspection (phase 14) */
+
+  /** Pick the structure under canvas-local pixel coordinates, or null. */
+  pick(offsetX: number, offsetY: number): string | null {
+    if (!this.renderer) return null;
+    const nx = (offsetX / this.pickWidth) * 2 - 1;
+    const ny = -(offsetY / this.pickHeight) * 2 + 1;
+    this.raycaster.setFromCamera(new Vector2(nx, ny), this.camera);
+    const targets: Mesh[] = [];
+    for (const [name, node] of this.structures) {
+      if (node.group.visible) targets.push(node.mesh);
+      void name;
+    }
+    const hits = this.raycaster.intersectObjects(targets, false);
+    return hits.length ? (hits[0].object.name || null) : null;
+  }
+
+  /** Select a structure (outline via emissive tint) or clear the selection. */
+  setSelected(id: string | null): void {
+    if (this.selected && this.structures.has(this.selected)) {
+      const prev = this.structures.get(this.selected)!;
+      const mats = Array.isArray(prev.mesh.material) ? prev.mesh.material : [prev.mesh.material];
+      for (const m of mats) {
+        (m as MeshStandardMaterial).emissive?.set(0x000000);
+      }
+    }
+    this.selected = id;
+    if (id && this.structures.has(id)) {
+      const node = this.structures.get(id)!;
+      const mats = Array.isArray(node.mesh.material) ? node.mesh.material : [node.mesh.material];
+      for (const m of mats) {
+        (m as MeshStandardMaterial).emissive?.set(0x33261a);
+      }
+    }
+    this.renderOnce();
+  }
+
+  get selection(): string | null {
+    return this.selected;
+  }
+
+  /** Structure bounds in scene units, for the accessible text and focus requests. */
+  structureBounds(id: string): { min: [number, number, number]; max: [number, number, number] } | null {
+    const node = this.structures.get(id);
+    if (!node) return null;
+    const s = 1 / 10; // mm → scene
+    return {
+      min: [node.minX * s, 0, 0],
+      max: [node.maxX * s, 0, 0],
+    };
+  }
+
+  /** Move the camera to frame a structure — only on an explicit request, never on selection. */
+  focusStructure(id: string): void {
+    const centres: Record<string, [number, number, number]> = {
+      cornea: [0, 0, 1.05],
+      lens: [0, 0, 0.72],
+      iris: [0, 0, 0.93],
+      sclera: [0, 0, 0],
+      retina: [0, 0, -0.5],
+      choroid: [0, 0, -0.5],
+      optic_nerve_sheath: [0.3, 0, -1.8],
+      optic_nerve_core: [0.3, 0, -1.8],
+      nerve_head: [0.35, 0.03, -0.98],
+      ciliary_body: [0, 0, 0.65],
+      zonules: [0, 0, 0.7],
+      muscle_medial: [0.9, 0, -0.8],
+      muscle_lateral: [-0.9, 0, -0.8],
+      muscle_superior: [0, 0.9, -0.8],
+      muscle_inferior: [0, -0.9, -0.8],
+    };
+    const target = centres[id];
+    if (!target) return;
+    this.rotationTarget = { x: 0, y: this.rotationTarget.y };
+    this.camera.position.set(target[0] * 0.4, target[1] * 0.4 + 0.1, 3.6);
+    this.camera.lookAt(target[0], target[1], target[2]);
+    this.renderOnce();
+  }
+
+  /** Show or hide one structure (the accessible layer list drives this). */
+  setLayerVisible(id: string, visible: boolean): void {
+    const node = this.structures.get(id);
+    if (node) node.group.visible = visible;
+    if (id === "retina") {
+      for (const vessel of this.vesselMeshes) vessel.visible = visible;
+    }
+    this.renderOnce();
+  }
+
+  isLayerVisible(id: string): boolean {
+    return this.structures.get(id)?.group.visible ?? false;
+  }
+
+  /**
+   * The illustrative layer magnification (retina + choroid walls), labelled as such in the UI.
+   * Rescales those two shells radially about the globe centre in the scene's own model copy and
+   * rebuilds their geometry and sections, so a cut through a magnified wall stays truthful.
+   */
+  setLayerMagnification(factor: number): void {
+    const clamped = Math.max(1, Math.min(4, factor));
+    const ratio = clamped / this.magnification;
+    if (Math.abs(ratio - 1) < 0.001) return;
+    this.magnification = clamped;
+    if (!this.sceneModel) return;
+    for (const id of ["choroid", "retina"]) {
+      const original = loadEyeModel().get(id);
+      const node = this.structures.get(id);
+      if (!original || !node) continue;
+      if (this.sceneModel.get(id) === original) {
+        // fork into a private scaled copy on first change; the shared arrays stay immutable
+        this.sceneModel.set(id, {
+          ...original,
+          positions: new Float32Array(original.positions),
+        });
+      }
+      const scaled = this.sceneModel.get(id)!;
+      for (let i = 0; i < scaled.positions.length; i += 3) {
+        const x = original.positions[i];
+        const y = original.positions[i + 1];
+        const z = original.positions[i + 2];
+        scaled.positions[i] = x * ratio;
+        scaled.positions[i + 1] = y * ratio;
+        scaled.positions[i + 2] = z * ratio;
+      }
+      node.mesh.geometry.dispose();
+      node.mesh.geometry = this.geometryFromMesh(scaled.positions, scaled.uvs, scaled.indices);
+      let minX = Infinity;
+      let maxX = -Infinity;
+      for (let i = 0; i < scaled.positions.length; i += 3) {
+        minX = Math.min(minX, scaled.positions[i]);
+        maxX = Math.max(maxX, scaled.positions[i]);
+      }
+      node.minX = minX;
+      node.maxX = maxX;
+    }
+    this.rebuildCaps();
+    this.renderOnce();
+  }
+
+  get layerMagnification(): number {
+    return this.magnification;
+  }
+
+  get currentZoom(): number {
+    return this.camera.zoom;
+  }
+
+  /** Restore the documented initial state of the current view (phase 14's reset action). */
+  reset(): void {
+    this.setSelected(null);
+    for (const [id] of this.structures) this.setLayerVisible(id, true);
+    for (const vessel of this.vesselMeshes) vessel.visible = true;
+    this.setLayerMagnification(EYE_MODEL_MANIFEST.layerMagnification);
+    this.setView(this.options.view);
+    this.setSlice(this.options.slice);
+    this.setSeparation(this.options.separation);
+    this.setZoom(1);
+    this.options.zoom = 1;
+    this.camera.position.set(0, 0, this.options.view === "cornea" ? 5.4 : this.options.view === "fundus" ? 3.4 : this.options.view === "cross_section" ? 5.6 : 7.2);
+    this.camera.lookAt(0, 0, this.options.view === "fundus" ? -1.0 : 0);
+    if (this.eyeGroup && !this.options.reducedMotion) this.start();
     this.renderOnce();
   }
 

@@ -27,6 +27,16 @@ export const EN = {
   "eye.slice": "Slice position",
   "eye.separation": "Separate parts (illustrative spacing)",
   "eye.zoom": "Zoom",
+  "eye.reset": "Reset view",
+  "eye.selection.empty":
+    "Nothing selected. Choose a part from the list, or click it on the model.",
+  "eye.status": "Cut at {slice} · layer thickness {magnification} (illustrative, not measured)",
+  "eye.magnification": "Layer thickness (illustrative)",
+  "eye.structures.title": "Parts of the eye",
+  "eye.structures.hint":
+    "Choose a part to highlight it on the model. The magnifier button moves the camera there.",
+  "eye.structures.focus": "Move the camera to the {name}",
+  "eye.structures.focusShort": "Focus",
   "eye.controls":
     "Drag or use the arrow keys to turn the model. Use the sliders to explore the view.",
   /* ------------------------------------------------------------- app shell */

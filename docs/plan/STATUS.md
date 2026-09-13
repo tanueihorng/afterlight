@@ -22,7 +22,7 @@ marked blocked.
 | 11 | Eye reference, baseline and anatomy contract | done | phase-11-baseline-contract | 2026-09-13 | Baseline recorded with captures of both viewers; contract at docs/eye-realism/anatomy-contract.md. Reference confirmed commercial (not downloaded). `verify` clean |
 | 12 | Original Blender anatomy and reproducible assets | done | phase-11-baseline-contract | 2026-09-13 | Full model authored from params.json, watertight, exported (0.6 MB) with 9 geometry tests; 4 studies inspected; `verify` clean (554 tests) |
 | 13 | Browser rendering and solid interactive sections | done | phase-11-baseline-contract | 2026-09-13 | Scene rebuilt on the model: capped sections, vessel tubes, live appearance; verify clean (570 tests, 7 engine e2e); evidence in docs/eye-realism/phase-13-browser.md |
-| 14 | Interactive cornea, retina and layer inspection | not started | — | 2026-09-13 | [Brief](phase-14-eye-exploration-controls.md); original eye realism follow-up |
+| 14 | Interactive cornea, retina and layer inspection | done | phase-11-baseline-contract | 2026-09-13 | Cutaway default, accessible structure list, picking, focus-on-request, labelled layer magnification, in-place reset; copy registered for clinical review; verify clean |
 | 15 | Bring the original explorer to the same model quality | not started | — | 2026-09-13 | [Brief](phase-15-explorer-renderer-parity.md); original eye realism follow-up |
 | 16 | Visual review, performance and offline completion gate | not started | — | 2026-09-13 | [Brief](phase-16-eye-visual-and-offline-gate.md); original eye realism follow-up |
 
@@ -30,6 +30,22 @@ marked blocked.
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-09-13** — **Phase 14 done.** The cutaway is now the opening presentation with whole-eye
+  alternative and a **Reset view** that restores camera, cut, spacing, selection and magnification
+  on the mounted scene (no remount). Fifteen structures are selectable two ways that always
+  agree — click the model (pick) or the accessible list — with the selection described in an
+  `aria-live` status line, never colour alone; a per-structure Focus button moves the camera only
+  on explicit request. Layer thickness ×1–×4 is a labelled illustrative control that rescales the
+  retina/choroid shells in the scene's own model copy, so caps and walls stay consistent; ×1 is
+  true scale. Keyboard: arrows orbit, `+`/`-` zoom, the list is fully keyboard-reachable, reduced
+  motion applies changes directly. The fifteen one-sentence structure descriptions are new
+  patient-readable anatomy copy — registered in `docs/atlas-review.md` for human sign-off per
+  AGENTS.md §5, not self-approved. Guide updated. `verify` clean (570 tests, budgets hold); the
+  phase-14 e2e journey (list selection → status → focus → reset) passes. Honest note: the engine
+  e2e file, run end-to-end repeatedly on SwiftShader, shows run-to-run flake under memory
+  pressure (different test each time; every test passes solo; two full green runs recorded) —
+  an environment limitation, recorded rather than papered over.
 
 - **2026-09-13** — **Phase 13 done.** The app's eye view renders the original anatomical model:
   structures decode from the committed binary into typed arrays and adapt to Three r180;

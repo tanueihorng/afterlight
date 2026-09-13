@@ -9,10 +9,55 @@ import { expect, test } from "@playwright/test";
 // WebGL test in this file runs one at a time, including the top-level ones.
 test.describe.configure({ mode: "serial" });
 
+test("inspects structures from the accessible list and resets", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await page.getByRole("button", { name: /skip setup/i }).click();
+  await page.goto("/#/visualize");
+  const canvas = page.locator("canvas").first();
+  await expect(canvas).toBeVisible({ timeout: 30_000 });
+
+  // the cutaway is the initial presentation
+  await expect(page.getByRole("button", { name: "Cross-section", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  // list selection names the part and describes it in text, not colour alone
+  const list = page.getByRole("list", { name: "Parts of the eye" });
+  await list.getByRole("button", { name: "Cornea", exact: true }).click();
+  const status = page.locator('p[aria-live="polite"]');
+  await expect(status).toContainText("Cornea:");
+  await expect(status).toContainText("clear front window");
+
+  // keyboard-only: the selection carries to the aria-live status via keyboard alone
+  await list.getByRole("button", { name: "Retina", exact: true }).focus();
+  await page.keyboard.press("Enter");
+  await expect(status).toContainText("Retina:");
+
+  // focus request moves the camera: the canvas must re-render (still the same element)
+  await canvas.evaluate((node) => node.setAttribute("data-original", "yes"));
+  await list.getByRole("button", { name: "Move the camera to the Retina" }).click();
+  await expect(canvas).toHaveAttribute("data-original", "yes");
+
+  // reset restores the documented initial state
+  await page.getByRole("button", { name: "Reset view" }).click();
+  await expect(status).toContainText("Nothing selected");
+  await expect(page.getByRole("button", { name: "Cross-section", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(canvas).toHaveAttribute("data-original", "yes");
+  await expect(canvas).toHaveAccessibleName(/not your anatomy/);
+});
+
 test.describe("the eye engine", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "needs Chromium's WebGL and metrics");
 
   test("renders a real eye rather than falling back", async ({ page }) => {
+    // retries against software-GL screenshot races need room beyond the 30s default
+    test.setTimeout(120_000);
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
     await page.goto("/#/visualize");
@@ -23,9 +68,18 @@ test.describe("the eye engine", () => {
 
     // The WebGL drawing buffer is cleared once presented, so readPixels sees nothing; the honest
     // check is the rendered image itself. A blank canvas compresses to a couple of kilobytes,
-    // a rendered eye does not.
-    const shot = await canvas.screenshot();
-    expect(shot.byteLength).toBeGreaterThan(20_000);
+    // a rendered eye does not. SwiftShader screenshots can hit element-stability races under
+    // load, so this retries rather than weakening the byte threshold.
+    let shot: Buffer | null = null;
+    for (let attempt = 0; attempt < 3 && !shot; attempt++) {
+      try {
+        const candidate = await canvas.screenshot({ timeout: 15_000 });
+        if (candidate.byteLength > 20_000) shot = candidate;
+      } catch {
+        await page.waitForTimeout(1000);
+      }
+    }
+    expect(shot, "the canvas never produced a rendered frame").not.toBeNull();
 
     // And the engine did not quietly fall back to the "3D unavailable" message.
     await expect(page.getByText(/does not support WebGL2/i)).toHaveCount(0);
@@ -128,6 +182,7 @@ test.describe("the eye engine", () => {
   });
 
   test("turns with the keyboard, not only the mouse", async ({ page }) => {
+    test.setTimeout(120_000);
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
     await page.goto("/#/visualize");
@@ -135,14 +190,21 @@ test.describe("the eye engine", () => {
     await expect(canvas).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(1500);
     await canvas.focus();
-    const before = await canvas.screenshot();
-    await page.keyboard.press("ArrowRight");
-    await page.keyboard.press("ArrowRight");
-    await page.keyboard.press("ArrowRight");
-    await page.waitForTimeout(400);
-    const after = await canvas.screenshot();
+    // retry: under software GL the element-stability wait can race the eased rotation
+    let changed = false;
+    for (let attempt = 0; attempt < 3 && !changed; attempt++) {
+      const before = await canvas.screenshot({ timeout: 15_000 }).catch(() => null);
+      if (!before) continue;
+      for (let i = 0; i < 4; i++) {
+        await page.keyboard.press("ArrowRight");
+        await page.waitForTimeout(150);
+      }
+      await page.waitForTimeout(600);
+      const after = await canvas.screenshot({ timeout: 15_000 }).catch(() => null);
+      changed = !!after && Buffer.compare(before, after) !== 0;
+    }
 
-    expect(Buffer.compare(before, after)).not.toBe(0);
+    expect(changed, "keyboard arrows never changed the rendered eye").toBe(true);
   });
 });
 
@@ -155,25 +217,25 @@ test("explores slices, cornea and retina without replacing the canvas", async ({
   const canvas = page.locator("canvas").first();
   await expect(canvas).toBeVisible({ timeout: 30_000 });
   await canvas.evaluate((node) => node.setAttribute("data-original", "yes"));
-  await page.getByRole("button", { name: "Cross-section", exact: true }).click();
+  await page.getByRole("button", { name: "Cross-section", exact: true }).first().click();
   const before = await canvas.screenshot();
   const slice = page.getByRole("slider", { name: "Slice position" });
   await slice.focus();
   await page.keyboard.press("Home");
   const after = await canvas.screenshot();
   expect(Buffer.compare(before, after)).not.toBe(0);
-  await page.getByRole("button", { name: "Cornea", exact: true }).click();
+  await page.getByRole("button", { name: "Cornea", exact: true }).first().click();
   const separation = page.getByRole("slider", { name: "Separate parts (illustrative spacing)" });
   await separation.focus();
   await page.keyboard.press("End");
   await expect(separation).toHaveValue("1");
-  await page.getByRole("button", { name: "Retina", exact: true }).click();
+  await page.getByRole("button", { name: "Retina", exact: true }).first().click();
   await expect(slice).toHaveCount(0);
   expect(Buffer.compare(after, await canvas.screenshot())).not.toBe(0);
   await expect(canvas).toHaveAttribute("data-original", "yes");
   await expect(canvas).toHaveAccessibleName(/not your anatomy/);
-  await page.getByRole("button", { name: "Whole eye", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Whole eye", exact: true })).toHaveAttribute(
+  await page.getByRole("button", { name: "Whole eye", exact: true }).first().click();
+  await expect(page.getByRole("button", { name: "Whole eye", exact: true }).first()).toHaveAttribute(
     "aria-pressed",
     "true",
   );

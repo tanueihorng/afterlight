@@ -11,10 +11,16 @@ export default function EyeCanvas({
   options,
   height = 420,
   onFallback,
+  onPick,
+  focusRequest,
+  resetSignal,
 }: {
   options: Partial<EyeSceneOptions>;
   height?: number;
   onFallback?: (reason: string) => void;
+  onPick?: (structure: string | null) => void;
+  focusRequest?: { id: string; nonce: number };
+  resetSignal?: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<EyeScene | null>(null);
@@ -81,7 +87,14 @@ export default function EyeCanvas({
       scene?.rotate((e.clientX - last.x) * 0.006, (e.clientY - last.y) * 0.006);
       last = { x: e.clientX, y: e.clientY };
     };
-    const onUp = () => {
+    const onUp = (e: PointerEvent) => {
+      if (dragging && onPick) {
+        const moved = Math.hypot(e.clientX - last.x, e.clientY - last.y);
+        if (moved < 4) {
+          const rect = canvas.getBoundingClientRect();
+          onPick(scene?.pick(e.clientX - rect.left, e.clientY - rect.top) ?? null);
+        }
+      }
       dragging = false;
     };
     canvas.addEventListener("pointerdown", onDown);
@@ -96,7 +109,13 @@ export default function EyeCanvas({
       else if (e.key === "ArrowRight") scene?.rotate(step, 0);
       else if (e.key === "ArrowUp") scene?.rotate(0, -step);
       else if (e.key === "ArrowDown") scene?.rotate(0, step);
-      else return;
+      else if (e.key === "+" || e.key === "=") {
+        const current = scene?.currentZoom ?? 1;
+        scene?.setZoom(Math.min(1.6, current + 0.15));
+      } else if (e.key === "-" || e.key === "_") {
+        const current = scene?.currentZoom ?? 1;
+        scene?.setZoom(Math.max(0.7, current - 0.15));
+      } else return;
       e.preventDefault();
     };
     canvas.addEventListener("keydown", onKey);
@@ -132,6 +151,33 @@ export default function EyeCanvas({
       sceneRef.current.setAppearance(JSON.parse(key));
     }
   }, [key]);
+
+  // camera moves to a structure only on an explicit request from the layer list
+  useEffect(() => {
+    if (focusRequest && sceneRef.current) {
+      sceneRef.current.focusStructure(focusRequest.id);
+    }
+  }, [focusRequest]);
+
+  // the studio's layer magnification (illustrative) — applied live
+  useEffect(() => {
+    if (sceneRef.current && typeof options.layerMagnification === "number") {
+      sceneRef.current.setLayerMagnification(options.layerMagnification);
+    }
+  }, [options.layerMagnification]);
+
+  // reset restores state on the mounted scene — never a remount
+  const firstReset = useRef(true);
+  useEffect(() => {
+    if (firstReset.current) {
+      firstReset.current = false;
+      return;
+    }
+    if (sceneRef.current) {
+      sceneRef.current.setSelected(null);
+      sceneRef.current.reset();
+    }
+  }, [resetSignal]);
 
   if (unavailable) {
     return (

@@ -12,6 +12,33 @@ When it has been reviewed, record the outcome, the reviewer's role and the date 
 
 ---
 
+## Eye structure descriptions (phase 14) — awaiting the same review
+
+Fifteen one-sentence descriptions shown under the 3D model when a structure is selected
+(`EyeStudio.tsx`, the `STRUCTURES` table). Plain descriptive anatomy; no advice, no diagnosis,
+no "normal". Each needs a clinician's eyes for accuracy before release:
+
+| Structure | Copy as shown |
+|---|---|
+| Cornea | The clear front window. It does most of the eye's focusing and is packed with nerve endings. |
+| Iris | The coloured ring. Its muscles change the pupil's size to control how much light gets in. |
+| Lens | A clear, flexible oval behind the iris. It changes shape to focus near and far, and stiffens with age. |
+| Ciliary body | The ring of muscle behind the iris. It focuses the lens and makes the fluid that nourishes the front of the eye. |
+| Zonules | Fine fibres holding the lens in place, from the ciliary ring to the lens's edge. |
+| Sclera | The tough white wall of the eye. It holds the eye's shape and gives the eye muscles something to pull on. |
+| Choroid | The dark, blood-rich layer between the white of the eye and the retina. It nourishes the outer retina. |
+| Retina | The light-sensing lining at the back of the eye. It turns light into signals that leave through the optic nerve. |
+| Optic disc | The spot where the optic nerve leaves the eye, visible as the optic disc. |
+| Optic nerve sheath | The protective wrapping around the optic nerve, continuous with the coverings of the brain. |
+| Optic nerve | The bundle of fibres carrying what the retina sees towards the brain. Damaged fibres do not grow back. |
+| Superior / inferior / medial / lateral rectus (one shared sentence) | One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit. |
+
+Specific questions for the reviewer: is any sentence wrong or misleading? Does "packed with
+nerve endings" overstate? Is "fluid that nourishes the front of the eye" an acceptable plain
+rendering of aqueous humour production, or does it need the term named?
+
+---
+
 ## What kind of copy this is
 
 Each entry carries four things, with different risk:

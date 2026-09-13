@@ -76,6 +76,21 @@ never mentioned.
 **Gaps are fine.** There are no streaks, no reminders designed to make you feel bad, and no reward
 for a perfect run. If you miss a fortnight, the app says gaps are fine, because they are.
 
+## The model eye
+
+Visualize → The eye shows a generic model of a human eye — cut open, so you can see the layers
+a clinician names: the white wall (sclera), the dark blood-rich layer (choroid), and the
+light-sensing lining (retina). It is not your eye and shows nothing about your condition; every
+view says so.
+
+- Drag the model or use the arrow keys to turn it. `+` and `-` zoom.
+- **Cross-section** is the cutaway. The *Slice position* slider moves the cut; *Layer thickness*
+  exaggerates the two thin walls so they read at a distance — it is illustrative, not measured,
+  and ×1 shows true scale.
+- Click a part of the model, or choose it from **Parts of the eye**, to see what it is. The
+  magnifier button moves the camera to that part.
+- **Reset view** puts the camera, cut, spacing and selection back to the start.
+
 ## Drawing what you see
 
 **What I See** gives you a canvas shaped like your field of view. Draw the floater, the shadow, the
