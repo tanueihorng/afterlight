@@ -337,11 +337,11 @@ export default function TimelinePage() {
           <div style={{ display: "grid", gap: 8 }}>
             {(
               [
-                ["Daily log or symptom", "#/today", "How your eyes are today, compared with your usual"],
+                ["Daily log or symptom", "#/today?add=changed", "The form opens directly — set the date to when it happened"],
                 ["Drawing of what you see", "#/what-i-see", "Sketch floaters, glare, blind spots"],
-                ["Diagnosis", "#/my-eyes", "Something a clinician named — dated when first documented"],
-                ["Procedure or surgery", "#/my-eyes", "Dated to the day it happened"],
-                ["Medication", "#/my-eyes", "Start and stop dates, so the arc shows its span"],
+                ["Diagnosis", "#/my-eyes?add=diagnosis", "Opens the diagnosis form — dated when first documented"],
+                ["Procedure or surgery", "#/my-eyes?add=procedure", "Opens the procedure form — dated to the day it happened"],
+                ["Medication", "#/my-eyes?add=medication", "Opens the medication form — start and stop dates"],
                 ["Imaging or scan", "#/my-eyes", "OCT, photos, scans — a milestone on the spine"],
                 ["Appointment", "#/appointments", "Past or upcoming, with the clinic"],
               ] as const

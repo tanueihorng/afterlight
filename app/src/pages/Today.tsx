@@ -73,7 +73,11 @@ export default function Today() {
   // The daily loop is a decision before it is a form: answer the question, then only fill in what
   // the answer requires.
   const [mode, setMode] = useState<"asking" | "recording">(() =>
-    todaysSymptoms.length > 0 ? "recording" : "asking",
+    // arriving from a timeline "Add event" jumps straight to recording — the two-target
+    // question is for the daily habit, not for someone backdating history
+    window.location.hash.includes("add=changed") || todaysSymptoms.length > 0
+      ? "recording"
+      : "asking",
   );
   const [when, setWhen] = useState<WhenOption>("today");
   const [customDate, setCustomDate] = useState(addDays(date, -1));

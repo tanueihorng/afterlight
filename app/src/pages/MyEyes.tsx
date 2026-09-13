@@ -16,8 +16,18 @@ import { formatDate, isoToDateOnly, todayLocal } from "../lib/util";
 type EyeSide = "right" | "left";
 type ModalKind = "baseline" | "diagnosis" | "procedure" | "medication" | "measurement" | "prescription" | null;
 
+const ADD_KINDS: Record<string, Exclude<ModalKind, null>> = {
+  diagnosis: "diagnosis",
+  procedure: "procedure",
+  medication: "medication",
+};
+
 export default function MyEyes() {
-  const [modal, setModal] = useState<ModalKind>(null);
+  const [modal, setModal] = useState<ModalKind>(() => {
+    // arriving from a timeline "Add event" opens the requested form directly
+    const kind = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("add");
+    return (kind && ADD_KINDS[kind]) || null;
+  });
   const [editEye, setEditEye] = useState<EyeSide>("right");
 
   return (
