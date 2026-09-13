@@ -19,7 +19,7 @@ marked blocked.
 | 08 | Records intelligence | done | phase-08-records-intelligence | 2026-09-08 | query layer, ask grammar, search v2, descriptive trends, accessible charts |
 | 09 | Clinician handoff & sharing | done, pending clinical review | phase-09-clinician-handoff | 2026-09-09 | deterministic PDF, print, encrypted range shares, QR, ingestion; **`docs/clinician-note.md` and the printed wording need sign-off**; OCR engine not bundled |
 | 10 | Release & clinical review | done, blocked on clinical review | phase-10-release | 2026-09-09 | landing page, guide, backup story, i18n layer, issue templates, versioning; **release script refuses to tag while `docs/clinical-review.md` says NOT REVIEWED** |
-| 11 | Eye reference, baseline and anatomy contract | in progress | phase-11-baseline-contract | 2026-09-13 | [Brief](phase-11-eye-reference-and-contract.md); original eye realism follow-up |
+| 11 | Eye reference, baseline and anatomy contract | done | phase-11-baseline-contract | 2026-09-13 | Baseline recorded with captures of both viewers; contract at docs/eye-realism/anatomy-contract.md. Reference confirmed commercial (not downloaded). `verify` clean |
 | 12 | Original Blender anatomy and reproducible assets | not started | — | 2026-09-13 | [Brief](phase-12-original-blender-anatomy.md); original eye realism follow-up |
 | 13 | Browser rendering and solid interactive sections | not started | — | 2026-09-13 | [Brief](phase-13-eye-renderer-and-sections.md); original eye realism follow-up |
 | 14 | Interactive cornea, retina and layer inspection | not started | — | 2026-09-13 | [Brief](phase-14-eye-exploration-controls.md); original eye realism follow-up |
@@ -30,6 +30,27 @@ marked blocked.
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-09-13** — **Phase 11 done.** The baseline is real images, not memory: both viewers
+  captured in every mode at a fixed viewport by a reusable `capture-eye-views.mjs` (GPU
+  draw-call/triangle sampling via a WebGL wrapper; the demand renderer's idle zero-frame is
+  itself recorded). Honest scorecard: contract items 1, 2, 4, 5 fail in both viewers — the
+  explorer's cut reveals hollow sliced capsules, a rod nerve and a zero-thickness shell; the app
+  has no nerve or muscles at all. The reference was confirmed as a commercial MotionCow licence
+  (the thing the user declined to buy); its viewer is not reachable from here, so the handoff's
+  written target plus its ~65k-triangle complexity reference stand in — gap recorded. The
+  contract fixes what phases 12–15 build: stable structure IDs, mm units, +Z-anterior axes with
+  laterality as a mirror transform, verified sources for every new dimension (classic spiral of
+  Tillaux, 25 mm intraorbital nerve, ONSD-scaled sheath, cited), labelled illustrative
+  magnification for the two sub-millimetre walls, the section-cap design that keeps cut edges
+  closed (analytic caps for surfaces of revolution, planar-loop caps for tubes), parameter
+  ownership so no condition can freeze geometry, the full legacy-hook mapping, and the shared
+  path: Blender authors statics → quantised regular grids + manifest → plain typed arrays →
+  thin adapters per Three version (r180 app, r160 embedded), no cross-version objects, no
+  network. Prior session's uncommitted iris-bake work committed first as the recorded baseline.
+  Not done here, deliberately: no source files changed (read-only phase); exact
+  `renderer.info` numbers wait for phase 13's diagnostics accessor; phone captures wait for
+  phase 16.
 
 - **2026-09-13** — Planned phases 11–16 for an original Blender/Three.js anatomical eye in both
   Visualize viewers. See [execution handoff](EYE-REALISM-HANDOFF.md). Planning only; implementation
