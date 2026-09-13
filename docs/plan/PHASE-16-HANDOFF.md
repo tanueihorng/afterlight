@@ -107,3 +107,24 @@ geometric disc so refraction can't separate the edges, explorer label anchors re
 the model). The clinical pack now carries the fifteen phase-14 structure descriptions as its
 own section (`npm run clinical-pack` → docs/clinical-pack.md, section 6) — that is the
 document to send for sign-off; the sign-off itself stays with a human.
+
+## Open defect (found 2026-09-14, needs a fresh-context session)
+
+**Timeline inline add: the modal saves but the record never lands.** Reproduce with
+`app/scripts/debug-timeline-add.mjs` (node, preview on :4173). The *same* ProcedureModal saves
+and lists correctly when opened from My Eyes; mounted on the Timeline it closes after Save
+(`store.procedures.put(rec)` resolves, no console/page errors) but the record is absent — not
+in the timeline, not after a full reload, so it never reached the store's data snapshot.
+Diagnosis and Medication modals share the pattern and are presumably affected the same way.
+
+Prime suspect: the `ops()` helper in `app/src/lib/store.tsx` (procedures: ops("procedures")) —
+read how put() notifies the React store; the derived `useTimeline` caches on the data object's
+identity. The modal uses its own `useStore()` so context should be identical — something about
+the Timeline mount path differs. Next step is a five-minute read of `ops()` with fresh eyes,
+not another browser repro.
+
+**User-facing workaround until fixed:** the chooser's *Diagnosis / Procedure / Medication*
+entries on the Timeline fall back to nothing right now — add those via **My Eyes** (proven
+working, record appears on the timeline spine). Daily log/symptom (sessionStorage flag → Today
+recording form) and the plain routes (drawing, imaging, appointment) work. The chooser's
+labels for the three broken kinds should say "opens in My Eyes" until this is fixed.

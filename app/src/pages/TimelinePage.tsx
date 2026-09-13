@@ -355,6 +355,9 @@ export default function TimelinePage() {
                 onClick={() => {
                   setAdding(false);
                   if (target === "diagnosis" || target === "procedure" || target === "medication") {
+                    // history is usually older than the current range: widen so the saved
+                    // event is on screen the moment the form closes
+                    setRange("all");
                     setInlineAdd(target);
                   } else if (target === "today") {
                     sessionStorage.setItem("today-add", "1");
