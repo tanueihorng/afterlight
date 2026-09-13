@@ -189,7 +189,8 @@ export default function EyeCanvas({
   }, []);
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
-    else void shellRef.current?.requestFullscreen();
+    // Optional call: iOS Safari exposes no element fullscreen, and the button must not throw there.
+    else void shellRef.current?.requestFullscreen?.();
   };
 
   if (unavailable) {

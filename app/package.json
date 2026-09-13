@@ -18,6 +18,7 @@
     "verify": "tsc -b && npm run lint && npm run guard && npm run verify:assets && npm run changelog:check && npm run test && npm run build && npm run bundle && npm run nonetwork",
     "bundle": "node scripts/check-bundle.mjs",
     "e2e": "playwright test",
+    "e2e:verify": "playwright test e2e/verify --workers=2",
     "e2e:ui": "playwright test --ui",
     "build:standalone": "node scripts/build-standalone.mjs",
     "verify:assets": "node scripts/verify-assets.mjs && node scripts/sync-eye-assets.mjs --check",

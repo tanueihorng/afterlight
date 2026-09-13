@@ -20,6 +20,7 @@ const CATEGORIES = [
   { id: "medication", label: "Medications" },
   { id: "prescription", label: "Prescriptions" },
   { id: "measurement", label: "Measurements" },
+  { id: "self_test", label: "My checks" },
   { id: "document", label: "Documents" },
 ] as const;
 

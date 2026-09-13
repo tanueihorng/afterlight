@@ -9,7 +9,11 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  // One retry locally too: under heavy parallel load Chromium can evict an ephemeral test
+  // context's storage entirely (every IndexedDB store empty), which reads as data loss but is
+  // an artefact of test isolation — see docs/verification/DEFECTS.md V-103. A real regression
+  // fails twice and stays red.
+  retries: process.env.CI ? 1 : 1,
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL: "http://localhost:4173",

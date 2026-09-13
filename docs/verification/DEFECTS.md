@@ -87,6 +87,14 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
 
 ## Flagged (needs a human or a product decision; agent must not change)
 
+### V-106 — Saved briefs are invisible outside search
+- **Found** 2026-09-14 (with V-006)
+- **Severity** low (the artefact is safe; discovery is poor)
+- **Symptom** A person can build and save an appointment brief, but no page lists saved briefs;
+  they surface only if the person searches. Rendering them on the timeline means adding a
+  "brief" event type through `buildTimeline`, the category toggles, story weights and
+  provenance badges — a product decision, not a mechanical fix.
+
 ### V-105 — A just-recorded symptom is invisible on the timeline's default view
 - **Found** 2026-09-14 (today spec / V-004 investigation)
 - **Severity** medium (a frightened person records a change, opens the Timeline, and reads
@@ -101,6 +109,29 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   product decision about the timeline's reading experience, not a mechanical fix.
 - **Recommendation** After a Today save, land the timeline with the lens that includes
   observations (or switch the lens automatically the way the chooser widens the range).
+
+### V-006 — "Save brief into timeline" promised an appearance the timeline never makes
+- **Found** 2026-09-14 (appointments spec)
+- **Severity** medium (the copy promised something the app does not do)
+- **Symptom** The brief's "Save brief into timeline" button wrote the brief to the briefs store
+  and told the person "Saved briefs appear on your timeline and in My Records." — but
+  `buildTimeline` never emits brief events, and no page called "My Records" exists. A saved
+  brief was reachable only through the search palette, which does index briefs.
+- **Fix** The copy now tells the truth: the button reads "Save this brief" and the status line
+  says saved briefs turn up in search results as Appointment briefs.
+- **Related (flagged, V-106)** whether saved briefs *should* render on the timeline is a
+  product decision — it would add a new event type through the timeline's categories, story
+  weights and provenance badges.
+
+### V-008 — The eye viewer's fullscreen button threw on iOS
+- **Found** 2026-09-14 (controls sweep, mobile project)
+- **Severity** medium (the button crashed instead of toggling on iPhones)
+- **Symptom** `EyeCanvas` called `requestFullscreen()` unguarded. iOS Safari exposes no element
+  fullscreen, so on the phone the "⛶" button raised `TypeError: requestFullscreen is not a
+  function` and did nothing.
+- **Fix** Optional call (`requestFullscreen?.()`) — on platforms without element fullscreen the
+  button is a no-op rather than a crash (app/src/components/EyeCanvas.tsx).
+- **Test** controls-sweep, mobile project: the Visualize sweep logs no page errors.
 
 ## Recorded (unexpected but judged correct-or-tolerable)
 
@@ -123,6 +154,27 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   `setRange("all")` and the "absent after reload" observation was V-101. Resolution appended to
   the handoff. Regression guards: src/lib/store.ops.test.tsx (ops put/del → timeline → IndexedDB)
   and e2e/verify/timeline-add.spec.ts (all seven kinds).
+
+### V-103 — Parallel e2e runs can evict a test context's storage entirely
+- **Found** 2026-09-14 (persistence spec, full-suite parallel runs)
+- **Symptom** Roughly one run in eight under full-suite parallelism reloads into an app whose
+  IndexedDB is completely empty — meta included, so onboarding reappears. It never happens
+  serially, and the app's own write was confirmed committed before the reload. The signature
+  (every store empty at once) matches Chromium evicting an ephemeral per-context storage
+  partition under memory pressure, not an application data-loss path; real usage is a
+  persistent installed profile, and Settings offers `requestPersistence`.
+- **Judgement** Test-environment artefact, recorded so it is never mistaken for lost patient
+  data. Mitigation: one local retry in playwright.config (matching CI); a genuine regression
+  fails twice and stays red. Revisit if it ever reproduces serially.
+
+### V-104 — WebKit logs repeated texImage3D errors from the 3D-texture path
+- **Found** 2026-09-14 (controls sweep, mobile project)
+- **Symptom** On the WebKit mobile project, the 3D eye logs
+  `WebGL: INVALID_OPERATION: texImage3D: FLIP_Y or PREMULTIPLY_ALPHA isn't allowed for
+  uploading 3D textures` on every frame. Chromium does not. The render still produces frames.
+- **Judgement** Recorded as a renderer follow-up rather than swept as a page defect; the
+  mobile sweep tolerates this one message explicitly. Deep renderer work is out of scope for
+  the verification pass.
 
 ## To verify (candidates from the code inventory; each gets a verdict)
 

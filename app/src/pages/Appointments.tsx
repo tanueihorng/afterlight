@@ -612,11 +612,12 @@ function BriefView({ appointmentId, onBack }: { appointmentId: string; onBack: (
             setSaved(true);
           }}
         >
-          {saved ? "Saved to timeline" : "Save brief into timeline"}
+          {saved ? "Brief saved" : "Save this brief"}
         </button>
       </div>
       <p className="muted no-print" role="status">
-        {exported || "Saved briefs appear on your timeline and in My Records."}
+        {exported ||
+          "Saved briefs turn up in your search results, listed as Appointment briefs."}
       </p>
 
       {present && (
