@@ -16,18 +16,8 @@ import { formatDate, isoToDateOnly, todayLocal } from "../lib/util";
 type EyeSide = "right" | "left";
 type ModalKind = "baseline" | "diagnosis" | "procedure" | "medication" | "measurement" | "prescription" | null;
 
-const ADD_KINDS: Record<string, Exclude<ModalKind, null>> = {
-  diagnosis: "diagnosis",
-  procedure: "procedure",
-  medication: "medication",
-};
-
 export default function MyEyes() {
-  const [modal, setModal] = useState<ModalKind>(() => {
-    // arriving from a timeline "Add event" opens the requested form directly
-    const kind = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("add");
-    return (kind && ADD_KINDS[kind]) || null;
-  });
+  const [modal, setModal] = useState<ModalKind>(null);
   const [editEye, setEditEye] = useState<EyeSide>("right");
 
   return (
@@ -272,7 +262,9 @@ function fmtRx(e: { sphere?: number; cylinder?: number; axis?: number; acuity?: 
     e.cylinder != null ? (e.cylinder > 0 ? `+${e.cylinder}` : `${e.cylinder}`) : "—",
     e.axis != null ? `×${e.axis}` : "—",
   ];
-  return parts.join(" ");
+  const rx = parts.join(" ");
+  // Acuity goes in at add time; if it was recorded it must come back out, not vanish.
+  return e.acuity ? `${rx} · ${e.acuity}` : rx;
 }
 
 /* ---------------- modals ---------------- */
@@ -531,6 +523,7 @@ function MeasurementModal({ onClose }: { onClose: () => void }) {
           <option value="patient_reported">Patient reported</option>
         </select>
       </Field>
+      <Field label="Note (optional)"><input type="text" value={m.note} onChange={(e) => setM({ ...m, note: e.target.value })} placeholder="e.g. taken with the new drops" /></Field>
       <div className="modal-actions">
         <button className="btn" onClick={onClose}>Cancel</button>
         <button

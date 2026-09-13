@@ -176,7 +176,25 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   mobile sweep tolerates this one message explicitly. Deep renderer work is out of scope for
   the verification pass.
 
-## To verify (candidates from the code inventory; each gets a verdict)
+## Inventory candidates — verdicts
+
+- **`#/my-eyes?add=…` unreachable deep link — fixed.** Nothing in the app ever navigated with
+  `?add=` (the chooser opens the modals inline), and the router treats the query as part of an
+  unknown route. The dead parameter handling and its `ADD_KINDS` map are removed.
+- **`EyeSelect` exported, never used — recorded.** Dead export in ui.tsx; harmless, left for the
+  component library's next touch.
+- **Visualize tab type member `"conditions"` never rendered — fixed.** Removed from the `Tab` union.
+- **MeasurementModal `note` state with no input — fixed.** The model, the save path and the
+  timeline summary all support a note; only the input was missing. Added ("Note (optional)").
+- **DisplaySettings showed "Light" twice — fixed.** The duplicate entry in `prefs.ts` THEMES is
+  removed; one Light button remains.
+- **Prescription acuity saved but never displayed — fixed.** `fmtRx` now appends the recorded
+  acuity when present, so what goes in comes back out.
+- **Timeline category filters hidden in Story view — recorded (by design).** The filters belong
+  to the Everything view; the Story view's lens does that filtering instead.
+- **ConfirmButton 2.6s re-arm — recorded (by design).** Verified: a prompt second click confirms
+  (the suite double-clicks), a slow second click re-arms. The window is generous enough for a
+  deliberate destructive confirm.
 
 - `#/my-eyes?add=…` deep link reads a parameter nothing ever sends (unreachable?)
 - `EyeSelect` component exported, never used

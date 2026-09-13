@@ -617,7 +617,7 @@ function BriefView({ appointmentId, onBack }: { appointmentId: string; onBack: (
       </div>
       <p className="muted no-print" role="status">
         {exported ||
-          "Saved briefs turn up in your search results, listed as Appointment briefs."}
+          "Saved briefs turn up when you search your records."}
       </p>
 
       {present && (
