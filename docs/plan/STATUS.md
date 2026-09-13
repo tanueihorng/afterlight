@@ -24,7 +24,7 @@ marked blocked.
 | 13 | Browser rendering and solid interactive sections | done | phase-11-baseline-contract | 2026-09-13 | Scene rebuilt on the model: capped sections, vessel tubes, live appearance; verify clean (570 tests, 7 engine e2e); evidence in docs/eye-realism/phase-13-browser.md |
 | 14 | Interactive cornea, retina and layer inspection | done | phase-11-baseline-contract | 2026-09-13 | Cutaway default, accessible structure list, picking, focus-on-request, labelled layer magnification, in-place reset; copy registered for clinical review; verify clean |
 | 15 | Bring the original explorer to the same model quality | done | phase-11-baseline-contract | 2026-09-13 | Model embedded via generated adapter block; primitives replaced, lids removed, cut caps live; regression matrix in docs/eye-realism/phase-15-explorer.md |
-| 16 | Visual review, performance and offline completion gate | not started | — | 2026-09-13 | [Brief](phase-16-eye-visual-and-offline-gate.md); original eye realism follow-up |
+| 16 | Visual review, performance and offline completion gate | in progress | phase-11-baseline-contract | 2026-09-13 | Paused mid-phase: final captures need a quiet-machine retake (see docs/plan/PHASE-16-HANDOFF.md); verify+standalone clean at phase 15 |
 
 ## Log
 
