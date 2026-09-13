@@ -119,6 +119,13 @@ export default function TimelinePage() {
         sub="What happened first, what changed, what has remained stable — symptoms, drawings, scans and clinical events on one continuous record."
       />
 
+      <p className="muted" style={{ margin: "0 0 12px" }}>
+        The timeline mirrors what you record — nothing is added here directly.{" "}
+        <a href="#/today">Log today</a> · <a href="#/what-i-see">Draw what you see</a> ·{" "}
+        <a href="#/my-eyes">Diagnoses, medications, imaging</a> ·{" "}
+        <a href="#/appointments">Appointments</a>
+      </p>
+
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="btn-row" style={{ marginBottom: 14 }}>
           <span className="muted" style={{ minWidth: 48 }}>View:</span>
