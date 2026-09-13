@@ -87,3 +87,23 @@ phase-13-browser.md, phase-15-explorer.md are the evidence trail.
   muscle sections, identify the cylinder).
 - The lazy 12 MB renderer cap is reported but not enforced by `check-bundle.mjs` (Visualize
   chunk 1.37 MB gzip / 2.41 MB raw). Note it in the acceptance report.
+
+## Third pause resolved (2026-09-13, later)
+
+Both findings from the second pause are fixed at source and committed:
+
+- **The cutaway defect** was a phase-12 geometry error — the muscle-cone apex sat at the disc
+  direction × orbital depth (10 mm nasal), so the lateral rectus crossed the vitreous and the
+  cut shredded the straps. The apex now sits on the eye's axis, the nerve converges onto it,
+  and the straps bow around the globe (equatorial control point). Model rebuilt, re-validated,
+  re-embedded; before/after in `captures/phase13/` vs `captures/phase16/` and the re-rendered
+  Blender study.
+- **The 12 MB lazy-renderer cap is enforced** by `check-bundle.mjs` (tested against a lowered
+  budget; fails correctly).
+
+The four cosmetic gaps also got fixes (macular tube keep-out widened to 4.5 FAV radii with
+longer tip fade, brighter choroid cut material, painted pupil zone widened ~0.4 mm past the
+geometric disc so refraction can't separate the edges, explorer label anchors re-anchored to
+the model). The clinical pack now carries the fifteen phase-14 structure descriptions as its
+own section (`npm run clinical-pack` → docs/clinical-pack.md, section 6) — that is the
+document to send for sign-off; the sign-off itself stays with a human.

@@ -99,7 +99,9 @@ export function buildVesselTubes(
   // Segments crowding the fovea stay in the painted fundus only: as tubes they are thinner
   // than their own specular width at that scale and read as a knot next to the reflex. The
   // trunks and arcade branches — the part that must read as geometry — stay.
-  const keepOut = DEFAULT_FAV_RADIUS * 2.5;
+  // 4.5 FAV radii: within this the painted fundus carries the vessels alone. Tubes this close
+  // to the fovea are thinner than their own specular width at that scale and read as a knot.
+  const keepOut = DEFAULT_FAV_RADIUS * 4.5;
   for (const segment of layout.segments) {
     if (segment.depth > maxDepth) continue;
     const nearest = Math.min(
@@ -167,7 +169,7 @@ function appendTube(
     const upz = tx * sy - ty * sx;
     const t = j / (pts.length - 1);
     // taper the last quarter to nothing: tube tips fade out instead of ending with knobs
-    const tipFade = t > 0.75 ? 1 - (t - 0.75) / 0.25 : 1;
+    const tipFade = t > 0.6 ? 1 - (t - 0.6) / 0.4 : 1;
     const r =
       baseRadius * params.calibre * (1 - 0.55 * t) * (1 - 0.12 * Math.min(1, segment.depth / 4)) * tipFade;
     const height = lift + 0.015 * Math.min(1, segment.depth / 3);

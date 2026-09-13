@@ -29,23 +29,11 @@ The sentences that tell someone to seek urgent care, and the list of symptoms th
 - Is the trigger list complete, and is anything on it that should not be?
 - Does it appear often enough to matter and rarely enough to still be read?
 
-### 1. `pages/Today.tsx`
+### 1. `pages/Settings.tsx`
 
-> Some sudden visual changes can require urgent eye assessment. Afterlight cannot determine the cause. If this is a new or sudden change, consider contacting an ophthalmologist or emergency eye service promptly.
+> The wording in this app that describes eye conditions, the home checks and the urgent-care notices has not yet been reviewed by an ophthalmologist or optometrist. Until it has, treat every explanation here as background reading rather than as advice about your eyes.
 
-### 2. `pages/Settings.tsx`
-
-> Afterlight is a personal record — it does not diagnose disease and does not replace an ophthalmologist.
-
-### 3. `pages/Settings.tsx`
-
-> Symptom logging is not a substitute for urgent assessment when something is sudden or severe.
-
-### 4. `pages/Settings.tsx`
-
-> If you notice sudden floaters, flashes, a curtain or shadow over your vision, or a sudden drop in vision, contact an ophthalmologist or emergency eye service promptly.
-
-### 5. `lib/models.ts → URGENT_SYMPTOMS`
+### 2. `lib/models.ts → URGENT_SYMPTOMS`
 
 > The symptoms that attach the notice: floaters, flashes, shadow / curtain, reduced vision, visual field loss.
 
@@ -59,35 +47,35 @@ Each of these is the one sentence standing between a feature and a misunderstand
 - Is it plain enough to be understood by someone anxious and tired?
 - Does any of it overclaim, or read as reassurance?
 
-### 6. `lib/selftest.ts → SELF_TEST_BOUNDARY`
+### 3. `lib/selftest.ts → SELF_TEST_BOUNDARY`
 
 > This is a check you do yourself, to compare with your own earlier attempts. It is not a measurement of your vision and it cannot be compared with a test done at a clinic.
 
-### 7. `engine/index.ts → GENERIC_MODEL_BOUNDARY`
+### 4. `engine/index.ts → GENERIC_MODEL_BOUNDARY`
 
 > A generic model of a human eye, tuned to look roughly like yours. It is not your anatomy, not built from your scans, and shows nothing about your own condition.
 
-### 8. `engine/simulate/vision.ts → SIMULATION_BOUNDARY`
+### 5. `engine/simulate/vision.ts → SIMULATION_BOUNDARY`
 
 > An illustration of how this experience is often described. It is not a measurement of anyone's vision, and it cannot show what you or anyone else actually sees.
 
-### 9. `lib/briefpdf.ts → PATIENT_GENERATED_FOOTER`
+### 6. `lib/briefpdf.ts → PATIENT_GENERATED_FOOTER`
 
 > Patient-generated record, produced by Afterlight from this patient's own entries and from documents the patient holds. Patient-reported items are the patient's own descriptions of their experience. This is not a clinical record, not a measurement, and not a diagnosis.
 
-### 10. `lib/briefpdf.ts → HOW_TO_READ`
+### 7. `lib/briefpdf.ts → HOW_TO_READ`
 
 > How to read this: each panel is one eye. Inside a panel, the patient's own reports come first, grouped by what changed and newest first, then anything copied from clinic documents. Everything below the panels is context. Nothing here is interpreted by the app.
 
-### 11. `lib/share.ts → QR_BOUNDARY`
+### 8. `lib/share.ts → QR_BOUNDARY`
 
 > This code is plain text, not encrypted. It is meant to be held up to someone in the room, not sent. Anyone who photographs the screen can read it.
 
-### 12. `lib/ingest.ts → OCR_BOUNDARY`
+### 9. `lib/ingest.ts → OCR_BOUNDARY`
 
 > Anything read out of a document is a suggestion until you confirm it. It is stored as extracted from a document, and unconfirmed, and it stays out of your appointment brief until you have checked it.
 
-### 13. `lib/ingest.ts → OCR_NOT_INSTALLED`
+### 10. `lib/ingest.ts → OCR_NOT_INSTALLED`
 
 > Text recognition is not installed on this device. Afterlight will not download it for you, because that would send a request to someone else's server. You can add it yourself — see docs/ocr.md — or type the details in, which is what most people do.
 
@@ -100,55 +88,55 @@ Thirteen profiles a person may switch on. They reorder the symptom list and offe
 - Does any blurb read as telling the person what they have?
 - Is the description accurate enough to be worth showing at all?
 
-### 14. `lib/conditions.ts → Retinal detachment or tear`
+### 11. `lib/conditions.ts → Retinal detachment or tear`
 
 > You have had a detachment or a tear treated, or are being watched for one.
 
-### 15. `lib/conditions.ts → Floaters and posterior vitreous detachment`
+### 12. `lib/conditions.ts → Floaters and posterior vitreous detachment`
 
 > You are tracking floaters, flashes, or a vitreous detachment.
 
-### 16. `lib/conditions.ts → Glaucoma or raised eye pressure`
+### 13. `lib/conditions.ts → Glaucoma or raised eye pressure`
 
 > You are being treated or monitored for eye pressure or optic nerve changes.
 
-### 17. `lib/conditions.ts → Macular degeneration`
+### 14. `lib/conditions.ts → Macular degeneration`
 
 > You are tracking dry or wet AMD, including any injections you receive.
 
-### 18. `lib/conditions.ts → Diabetic eye disease`
+### 15. `lib/conditions.ts → Diabetic eye disease`
 
 > You are tracking diabetic retinopathy or macular oedema.
 
-### 19. `lib/conditions.ts → Retinal vein occlusion`
+### 16. `lib/conditions.ts → Retinal vein occlusion`
 
 > You are tracking a branch or central vein occlusion.
 
-### 20. `lib/conditions.ts → Uveitis or eye inflammation`
+### 17. `lib/conditions.ts → Uveitis or eye inflammation`
 
 > You are tracking inflammation inside the eye, including flare-ups.
 
-### 21. `lib/conditions.ts → Corneal conditions`
+### 18. `lib/conditions.ts → Corneal conditions`
 
 > Keratoconus, dystrophy, scarring, or another corneal condition.
 
-### 22. `lib/conditions.ts → Dry eye and ocular surface`
+### 19. `lib/conditions.ts → Dry eye and ocular surface`
 
 > You are tracking dryness, grittiness or surface discomfort.
 
-### 23. `lib/conditions.ts → Cataract or lens implant`
+### 20. `lib/conditions.ts → Cataract or lens implant`
 
 > You are tracking a cataract before surgery, or vision after a lens implant.
 
-### 24. `lib/conditions.ts → Epiretinal membrane or macular hole`
+### 21. `lib/conditions.ts → Epiretinal membrane or macular hole`
 
 > You are tracking distortion from a membrane or a hole at the macula.
 
-### 25. `lib/conditions.ts → Inherited retinal conditions`
+### 22. `lib/conditions.ts → Inherited retinal conditions`
 
 > Retinitis pigmentosa or another inherited retinal condition.
 
-### 26. `lib/conditions.ts → Optic nerve conditions`
+### 23. `lib/conditions.ts → Optic nerve conditions`
 
 > Optic neuritis, swelling, or another optic nerve condition.
 
@@ -161,203 +149,203 @@ One line per condition, describing how the experience is commonly reported. This
 - Is any of these descriptions wrong, or misleading by omission?
 - Would any of them cause someone to dismiss something they should report?
 
-### 27. `engine/conditions/anterior.ts → Dry eye disease`
+### 24. `engine/conditions/anterior.ts → Dry eye disease`
 
 > Grittiness, burning, watering, and vision that blurs between blinks and clears when you blink.
 
-### 28. `engine/conditions/anterior.ts → Corneal abrasion`
+### 25. `engine/conditions/anterior.ts → Corneal abrasion`
 
 > Sharp pain, watering, light sensitivity and a feeling that something is in the eye.
 
-### 29. `engine/conditions/anterior.ts → Corneal ulcer`
+### 26. `engine/conditions/anterior.ts → Corneal ulcer`
 
 > Pain, redness, marked light sensitivity and blurred vision.
 
-### 30. `engine/conditions/anterior.ts → Keratoconus`
+### 27. `engine/conditions/anterior.ts → Keratoconus`
 
 > Vision that distorts and ghosts, glare and starbursts at night, and a spectacle prescription that keeps changing.
 
-### 31. `engine/conditions/anterior.ts → Corneal oedema`
+### 28. `engine/conditions/anterior.ts → Corneal oedema`
 
 > Misty vision, worst on waking and clearing through the day, with halos around lights.
 
-### 32. `engine/conditions/anterior.ts → Fuchs' endothelial dystrophy`
+### 29. `engine/conditions/anterior.ts → Fuchs' endothelial dystrophy`
 
 > Vision that is misty in the morning and improves during the day, over years.
 
-### 33. `engine/conditions/anterior.ts → Pterygium`
+### 30. `engine/conditions/anterior.ts → Pterygium`
 
 > Often cosmetic and irritating; vision changes only if it reaches the visual axis.
 
-### 34. `engine/conditions/anterior.ts → Conjunctivitis`
+### 31. `engine/conditions/anterior.ts → Conjunctivitis`
 
 > Redness, discharge, grittiness; vision itself is usually unaffected.
 
-### 35. `engine/conditions/anterior.ts → Subconjunctival haemorrhage`
+### 32. `engine/conditions/anterior.ts → Subconjunctival haemorrhage`
 
 > It looks alarming and feels like nothing. Vision is not affected.
 
-### 36. `engine/conditions/anterior.ts → Episcleritis and scleritis`
+### 33. `engine/conditions/anterior.ts → Episcleritis and scleritis`
 
 > Episcleritis is uncomfortable and localised; scleritis is a deep, boring ache that can wake you at night.
 
-### 37. `engine/conditions/anterior.ts → Blepharitis`
+### 34. `engine/conditions/anterior.ts → Blepharitis`
 
 > Crusting, sore lid margins, and dryness that comes and goes.
 
-### 38. `engine/conditions/anterior.ts → Anterior uveitis`
+### 35. `engine/conditions/anterior.ts → Anterior uveitis`
 
 > Aching, redness around the coloured part, light sensitivity and blurring.
 
-### 39. `engine/conditions/anterior.ts → Hyphaema`
+### 36. `engine/conditions/anterior.ts → Hyphaema`
 
 > Blurring, and a visible level of blood in the eye.
 
-### 40. `engine/conditions/anterior.ts → Cataract`
+### 37. `engine/conditions/anterior.ts → Cataract`
 
 > Glare and starbursts at night, colours looking duller, and vision that dims gradually over years.
 
-### 41. `engine/conditions/anterior.ts → Posterior capsule opacification`
+### 38. `engine/conditions/anterior.ts → Posterior capsule opacification`
 
 > Vision gradually dimming again, with glare — often described as the cataract coming back.
 
-### 42. `engine/conditions/anterior.ts → After cataract surgery`
+### 39. `engine/conditions/anterior.ts → After cataract surgery`
 
 > Brighter, often bluer-looking vision. Some people notice reflections or a temporary crescent of light at the edge.
 
-### 43. `engine/conditions/anterior.ts → Primary open-angle glaucoma`
+### 40. `engine/conditions/anterior.ts → Primary open-angle glaucoma`
 
 > Nothing for a long time. Field loss starts away from the centre and is not noticed until it is substantial, which is why monitoring matters.
 
-### 44. `engine/conditions/anterior.ts → Acute angle closure`
+### 41. `engine/conditions/anterior.ts → Acute angle closure`
 
 > A painful, red eye with blurred vision, haloes around lights, headache and often nausea. This is one of the situations that needs assessment straight away.
 
-### 45. `engine/conditions/anterior.ts → Ocular hypertension`
+### 42. `engine/conditions/anterior.ts → Ocular hypertension`
 
 > Nothing. It is found on examination and monitored.
 
-### 46. `engine/conditions/vitreoretina.ts → Vitreous floaters`
+### 43. `engine/conditions/vitreoretina.ts → Vitreous floaters`
 
 > Drifting dots, threads or cobwebs that move when the eye moves and settle a moment later. Usually clearer against a bright, plain background.
 
-### 47. `engine/conditions/vitreoretina.ts → Posterior vitreous detachment`
+### 44. `engine/conditions/vitreoretina.ts → Posterior vitreous detachment`
 
 > New floaters, sometimes a ring-shaped one, and sometimes brief arcs of light in the periphery as the gel tugs on the retina.
 
-### 48. `engine/conditions/vitreoretina.ts → Retinal tear`
+### 45. `engine/conditions/vitreoretina.ts → Retinal tear`
 
 > Often a sudden increase in floaters, or flashes of light, though a tear can also be found without any symptoms at all.
 
-### 49. `engine/conditions/vitreoretina.ts → Retinal hole`
+### 46. `engine/conditions/vitreoretina.ts → Retinal hole`
 
 > Often nothing at all; holes are frequently found during a routine examination.
 
-### 50. `engine/conditions/vitreoretina.ts → Lattice degeneration`
+### 47. `engine/conditions/vitreoretina.ts → Lattice degeneration`
 
 > Nothing. Lattice is found on examination and is monitored rather than felt.
 
-### 51. `engine/conditions/vitreoretina.ts → Rhegmatogenous retinal detachment`
+### 48. `engine/conditions/vitreoretina.ts → Rhegmatogenous retinal detachment`
 
 > A shadow or curtain that comes across part of the vision, often after a period of new floaters or flashes. The shadow appears on the opposite side from the affected retina.
 
-### 52. `engine/conditions/vitreoretina.ts → Tractional retinal detachment`
+### 49. `engine/conditions/vitreoretina.ts → Tractional retinal detachment`
 
 > Vision changes gradually rather than suddenly, and may distort before it dims.
 
-### 53. `engine/conditions/vitreoretina.ts → Epiretinal membrane`
+### 50. `engine/conditions/vitreoretina.ts → Epiretinal membrane`
 
 > Straight lines looking bent or wavy, and objects sometimes appearing a different size in one eye.
 
-### 54. `engine/conditions/vitreoretina.ts → Macular hole`
+### 51. `engine/conditions/vitreoretina.ts → Macular hole`
 
 > A missing or distorted patch right in the middle of vision, in that eye alone.
 
-### 55. `engine/conditions/vitreoretina.ts → Vitreomacular traction`
+### 52. `engine/conditions/vitreoretina.ts → Vitreomacular traction`
 
 > Distortion, and sometimes a change in the size things appear.
 
-### 56. `engine/conditions/vitreoretina.ts → Central serous chorioretinopathy`
+### 53. `engine/conditions/vitreoretina.ts → Central serous chorioretinopathy`
 
 > A dim or smudged patch in the centre, things looking smaller or further away, and colours looking washed out.
 
-### 57. `engine/conditions/vitreoretina.ts → Dry age-related macular degeneration`
+### 54. `engine/conditions/vitreoretina.ts → Dry age-related macular degeneration`
 
 > Central vision becoming less sharp, needing more light to read, and — where atrophy develops — a missing patch in the middle.
 
-### 58. `engine/conditions/vitreoretina.ts → Neovascular (wet) age-related macular degeneration`
+### 55. `engine/conditions/vitreoretina.ts → Neovascular (wet) age-related macular degeneration`
 
 > Straight lines bending, a dark or empty patch appearing in the centre, and change that can happen over days rather than years.
 
-### 59. `engine/conditions/vitreoretina.ts → Non-proliferative diabetic retinopathy`
+### 56. `engine/conditions/vitreoretina.ts → Non-proliferative diabetic retinopathy`
 
 > Often nothing at all in the early stages, which is why screening exists. Blurring appears if the macula is affected.
 
-### 60. `engine/conditions/vitreoretina.ts → Proliferative diabetic retinopathy`
+### 57. `engine/conditions/vitreoretina.ts → Proliferative diabetic retinopathy`
 
 > A sudden shower of floaters or a red haze if a vessel bleeds; otherwise it can be silent until it is advanced.
 
-### 61. `engine/conditions/vitreoretina.ts → Diabetic macular oedema`
+### 58. `engine/conditions/vitreoretina.ts → Diabetic macular oedema`
 
 > Central blurring and distortion, which can fluctuate.
 
-### 62. `engine/conditions/vitreoretina.ts → After panretinal laser`
+### 59. `engine/conditions/vitreoretina.ts → After panretinal laser`
 
 > Peripheral and night vision are often reduced afterwards; this is the trade the treatment makes.
 
-### 63. `engine/conditions/vitreoretina.ts → Branch retinal vein occlusion`
+### 60. `engine/conditions/vitreoretina.ts → Branch retinal vein occlusion`
 
 > A blurred or missing area in part of the field, often noticed on waking, affecting one eye.
 
-### 64. `engine/conditions/vitreoretina.ts → Central retinal vein occlusion`
+### 61. `engine/conditions/vitreoretina.ts → Central retinal vein occlusion`
 
 > Blurring across the vision of one eye, usually painless and often sudden.
 
-### 65. `engine/conditions/vitreoretina.ts → Central retinal artery occlusion`
+### 62. `engine/conditions/vitreoretina.ts → Central retinal artery occlusion`
 
 > Sudden, painless and profound loss of vision in one eye.
 
-### 66. `engine/conditions/vitreoretina.ts → Retinitis pigmentosa`
+### 63. `engine/conditions/vitreoretina.ts → Retinitis pigmentosa`
 
 > Difficulty seeing in dim light, and a field that narrows over years. Central vision is often preserved until late.
 
-### 67. `engine/conditions/vitreoretina.ts → Myopic degeneration`
+### 64. `engine/conditions/vitreoretina.ts → Myopic degeneration`
 
 > Reduced central sharpness, and sometimes distortion if the macula is involved.
 
-### 68. `engine/conditions/vitreoretina.ts → Retinoschisis`
+### 65. `engine/conditions/vitreoretina.ts → Retinoschisis`
 
 > Usually nothing; it is generally found on examination.
 
-### 69. `engine/conditions/vitreoretina.ts → Commotio retinae`
+### 66. `engine/conditions/vitreoretina.ts → Commotio retinae`
 
 > Blurring after an injury, which often settles over days to weeks.
 
-### 70. `engine/conditions/vitreoretina.ts → Vitreous haemorrhage`
+### 67. `engine/conditions/vitreoretina.ts → Vitreous haemorrhage`
 
 > A sudden shower of floaters, a red or dark haze, or loss of vision if the bleed is dense.
 
-### 71. `engine/conditions/vitreoretina.ts → After laser retinopexy`
+### 68. `engine/conditions/vitreoretina.ts → After laser retinopexy`
 
 > Usually nothing at the treated spot; new floaters or flashes are worth reporting.
 
-### 72. `engine/conditions/optic.ts → Optic neuritis`
+### 69. `engine/conditions/optic.ts → Optic neuritis`
 
 > Vision dimming in one eye over hours to days, ache on moving the eye, and colours — especially red — looking washed out.
 
-### 73. `engine/conditions/optic.ts → Papilloedema`
+### 70. `engine/conditions/optic.ts → Papilloedema`
 
 > Brief greying of vision on standing, headaches, and sometimes double vision. Central vision is often normal at first.
 
-### 74. `engine/conditions/optic.ts → Non-arteritic anterior ischaemic optic neuropathy`
+### 71. `engine/conditions/optic.ts → Non-arteritic anterior ischaemic optic neuropathy`
 
 > Painless loss of part of the vision in one eye, often noticed on waking and typically the upper or lower half.
 
-### 75. `engine/conditions/optic.ts → Optic atrophy`
+### 72. `engine/conditions/optic.ts → Optic atrophy`
 
 > Reduced vision and washed-out colour in the affected eye, usually stable rather than changing.
 
-### 76. `engine/conditions/optic.ts → Glaucomatous rim loss`
+### 73. `engine/conditions/optic.ts → Glaucomatous rim loss`
 
 > Nothing directly. It is what the field test and the OCT are measuring between appointments.
 
@@ -371,74 +359,144 @@ The Amsler grid, the card-calibrated distance check and the contrast check. A re
 - Are the recorded conditions the right ones to demand?
 - Is the framing — a comparison with your own previous attempt, never a measurement of vision — held throughout?
 
-### 77. `lib/selftest.ts`
+### 74. `lib/selftest.ts`
 
 > Taken the same way as the earlier attempt.
 
-### 78. `lib/selftest.ts`
+### 75. `lib/selftest.ts`
 
 > Taken under different conditions from the earlier attempt, so the two cannot be compared.
 
-### 79. `lib/selftest.ts`
+### 76. `lib/selftest.ts`
 
 > The conditions of one of these attempts were not recorded, so they cannot be compared.
 
-### 80. `lib/selftest.ts`
+### 77. `lib/selftest.ts`
 
 > This is a check you do yourself, to compare with your own earlier attempts. It is not a measurement of your vision and it cannot be compared with a test done at a clinic.
 
-### 81. `pages/SelfTests.tsx`
+### 78. `pages/SelfTests.tsx`
 
 > Repeatable checks that give you something concrete to compare between appointments. They are not measurements of your vision.
 
-### 82. `pages/SelfTests.tsx`
+### 79. `pages/SelfTests.tsx`
 
 > A grid of straight lines with a dot in the middle. You mark anywhere the lines look bent, blurred or missing, one eye at a time.
 
-### 83. `pages/SelfTests.tsx`
+### 80. `pages/SelfTests.tsx`
 
 > Rows of letters that get smaller. You note the smallest row you can read, at a distance you record so you can repeat it.
 
-### 84. `pages/SelfTests.tsx`
+### 81. `pages/SelfTests.tsx`
 
 > A shape that gets fainter each step. You note the faintest one you can still see.
 
-### 85. `pages/SelfTests.tsx`
+### 82. `pages/SelfTests.tsx`
 
 > A short colour check, compared only with your own earlier attempts.
 
-### 86. `pages/SelfTests.tsx`
+### 83. `pages/SelfTests.tsx`
 
 > Saved as a check you did yourself, with the conditions you did it under. It will appear on your timeline and can be compared with your next attempt taken the same way.
 
-### 87. `pages/SelfTests.tsx`
+### 84. `pages/SelfTests.tsx`
 
 > Cover the other eye completely. Test one, then the other.
 
-### 88. `pages/SelfTests.tsx`
+### 85. `pages/SelfTests.tsx`
 
 > Fill in all four before starting. Without them this attempt could not be compared with any other, which is the only thing it is for.
 
-### 89. `pages/SelfTests.tsx`
+### 86. `pages/SelfTests.tsx`
 
 > Keeping your eye on the centre dot, mark any area where the lines look wavy, blurred, faded or missing. Draw straight onto the grid.
 
-### 90. `components/tests/AcuityCheck.tsx`
+### 87. `components/tests/AcuityCheck.tsx`
 
 > Cover the other eye. Read the row out loud, then say whether you could read it. Stop when you cannot.
 
-### 91. `components/tests/ContrastCheck.tsx`
+### 88. `components/tests/ContrastCheck.tsx`
 
 > Each step is fainter than the last. Stop when you cannot see it any more.
 
-### 92. `components/tests/ScreenCalibration.tsx`
+### 89. `components/tests/ScreenCalibration.tsx`
 
 > Hold a bank card flat against the screen and drag the slider until the box is exactly the width of the card. Everything after this depends on it, so it is worth doing carefully.
 
-### 93. `components/tests/TestConditionsForm.tsx`
+### 90. `components/tests/TestConditionsForm.tsx`
 
 > These have to match next time, or the two attempts cannot be compared with each other.
 
+## 6. Eye-model structure descriptions (phase 14)
+
+One-sentence descriptions shown when a person selects a part of the 3D eye model. Plain descriptive anatomy: no advice, no diagnosis, no 'normal'. The reviewer should check each for accuracy and for tone at a difficult moment.
+
+**Questions:**
+
+- Is each sentence anatomically accurate?
+- Does any sentence read as reassurance, diagnosis or advice rather than description?
+- Is 'damaged fibres do not grow back' acceptable honesty here, or too blunt?
+
+### 91. `components/EyeStudio.tsx → STRUCTURES.cornea (Cornea)`
+
+> The clear front window. It does most of the eye's focusing and is packed with nerve endings.
+
+### 92. `components/EyeStudio.tsx → STRUCTURES.iris (Iris)`
+
+> The coloured ring. Its muscles change the pupil's size to control how much light gets in.
+
+### 93. `components/EyeStudio.tsx → STRUCTURES.lens (Lens)`
+
+> A clear, flexible oval behind the iris. It changes shape to focus near and far, and stiffens with age.
+
+### 94. `components/EyeStudio.tsx → STRUCTURES.ciliary_body (Ciliary body)`
+
+> The ring of muscle behind the iris. It focuses the lens and makes the fluid that nourishes the front of the eye.
+
+### 95. `components/EyeStudio.tsx → STRUCTURES.zonules (Zonules)`
+
+> Fine fibres holding the lens in place, from the ciliary ring to the lens's edge.
+
+### 96. `components/EyeStudio.tsx → STRUCTURES.sclera (Sclera)`
+
+> The tough white wall of the eye. It holds the eye's shape and gives the eye muscles something to pull on.
+
+### 97. `components/EyeStudio.tsx → STRUCTURES.choroid (Choroid)`
+
+> The dark, blood-rich layer between the white of the eye and the retina. It nourishes the outer retina.
+
+### 98. `components/EyeStudio.tsx → STRUCTURES.retina (Retina)`
+
+> The light-sensing lining at the back of the eye. It turns light into signals that leave through the optic nerve.
+
+### 99. `components/EyeStudio.tsx → STRUCTURES.nerve_head (Optic disc)`
+
+> The spot where the optic nerve leaves the eye, visible as the optic disc.
+
+### 100. `components/EyeStudio.tsx → STRUCTURES.optic_nerve_sheath (Optic nerve sheath)`
+
+> The protective wrapping around the optic nerve, continuous with the coverings of the brain.
+
+### 101. `components/EyeStudio.tsx → STRUCTURES.optic_nerve_core (Optic nerve)`
+
+> The bundle of fibres carrying what the retina sees towards the brain. Damaged fibres do not grow back.
+
+### 102. `components/EyeStudio.tsx → STRUCTURES.muscle_superior (Superior rectus muscle)`
+
+> One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit.
+
+### 103. `components/EyeStudio.tsx → STRUCTURES.muscle_inferior (Inferior rectus muscle)`
+
+> One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit.
+
+### 104. `components/EyeStudio.tsx → STRUCTURES.muscle_medial (Medial rectus muscle)`
+
+> One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit.
+
+### 105. `components/EyeStudio.tsx → STRUCTURES.muscle_lateral (Lateral rectus muscle)`
+
+> One of six strap-like muscles that turn the eye, pulling on the white of the eye from inside the orbit.
+
 ---
 
-93 strings, generated from source.
+105 strings, generated from source.

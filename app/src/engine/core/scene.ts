@@ -303,7 +303,7 @@ export class EyeScene {
       new MeshStandardMaterial({ color: 0x6e3222, roughness: 0.8, side: DoubleSide }),
     );
     const choroidCut = track(
-      new MeshStandardMaterial({ color: 0x9c6047, roughness: 0.85, side: DoubleSide }),
+      new MeshStandardMaterial({ color: 0xb47a60, roughness: 0.8, side: DoubleSide }),
     );
     choroidCut.name = "cut";
     const ciliary = track(
@@ -526,7 +526,7 @@ export class EyeScene {
     );
     this.pupil = new Mesh(pupilGeometry, pupilMaterial);
     this.pupil.name = "pupil";
-    this.pupil.position.z = mm(9.315) - 0.01;
+    this.pupil.position.z = mm(9.315) - 0.04;
     this.eyeGroup?.add(this.pupil);
 
     // Limbus: the transition from clear cornea to sclera as a soft band, not an edge.
@@ -733,7 +733,7 @@ export class EyeScene {
     }
     if (this.pupil) {
       this.pupil.position.z =
-        mm(9.315) - 0.01 + (order.pupil ?? 0) * this.options.separation * mm(EYE.anteriorChamber.depth) * 2;
+        mm(9.315) - 0.04 + (order.pupil ?? 0) * this.options.separation * mm(EYE.anteriorChamber.depth) * 2;
     }
     if (this.limbus) {
       this.limbus.position.z =

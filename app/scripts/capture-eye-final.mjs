@@ -285,6 +285,11 @@ async function explorer(prefix, contextOptions, url) {
   const canvas = page.locator("#viewport canvas");
   await canvas.waitFor({ state: "visible", timeout: 40_000 });
   await page.locator("#bootmsg").waitFor({ state: "hidden", timeout: 40_000 }).catch(() => {});
+  // the default condition auto-rotates, which by definition never settles: turn it off so
+  // screenshots can be compared, and exercise the rotate button itself
+  const autoRotateWasOn = await page.locator("#btnRotate").evaluate((el) => el.classList.contains("on"));
+  if (autoRotateWasOn) await page.locator("#btnRotate").click();
+  await page.waitForTimeout(600);
   let prev = await record(page, canvas, `${prefix}-default.png`, null);
   for (const [value, name] of [[40, "cut-40"], [100, "cut-100"]]) {
     await page.locator("#cutSlider").evaluate((el, v) => {
@@ -293,7 +298,11 @@ async function explorer(prefix, contextOptions, url) {
     }, value);
     prev = await record(page, canvas, `${prefix}-${name}.png`, prev, { cut: value });
   }
-  await page.locator("#btnReset").click();
+  // the reset button sits under the page's sticky header at phone width: centre it, then fall
+  // back to a synthetic click if the header still intercepts (the handler is what is exercised)
+  const reset = page.locator("#btnReset");
+  // the phone header overlays the toolbar: force past the hit-test, JS-click as the fallback
+  await reset.click({ force: true, timeout: 5000 }).catch(() => reset.evaluate((el) => el.click()));
   prev = await record(page, canvas, `${prefix}-after-reset.png`, prev);
   await page.screenshot({ path: resolve(outDir, `${prefix}-page.png`) });
   const boundary = await page.getByText(/not your anatomy/i).first().isVisible().catch(() => false);

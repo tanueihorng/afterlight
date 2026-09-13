@@ -49,7 +49,9 @@ export function irisTexture(params: IrisParams, size = 1024, onReady?: () => voi
     withIrisRelief(() => {
       // the model's geometric aperture is fixed at 0.7 mm; paint the live pupil out to its
       // radius as a fraction of the annulus (0.7 → limbus 5.85 mm)
-      const pupilZone = Math.max(0, Math.min(1, (params.pupilMm / 2 - 0.7) / (5.85 - 0.7)));
+      // +0.08 annulus fraction (≈0.4 mm): the paint edge sits outside the geometric pupil disc
+      // so refraction never separates the two edges at oblique angles
+      const pupilZone = Math.max(0, Math.min(0.95, (params.pupilMm / 2 - 0.7) / (5.85 - 0.7) + 0.08));
       paintIrisDetail(ctx, size, base, pupillary, params.limbalRing, params, pupilZone);
       texture.needsUpdate = true;
       onReady?.();

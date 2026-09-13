@@ -257,6 +257,30 @@ const lines = [
   "",
 ];
 
+// phase 14: the fifteen one-sentence eye-structure descriptions shown under the 3D model.
+// They live in a data table in EyeStudio.tsx; extract the (id, name, description) triples.
+const eyeStudio = read("components/EyeStudio.tsx");
+const structureTable = eyeStudio.match(/const STRUCTURES[^=]*= \[([\s\S]*?)\n\];/)?.[1] ?? "";
+const structureItems = [...structureTable.matchAll(/id: "([^"]+)",\s*name: "([^"]+)",\s*description:\s*"([^"]+)"/g)].map(
+  (m) => ({ id: m[1], name: m[2], text: m[3] }),
+);
+sections.push({
+  title: "6. Eye-model structure descriptions (phase 14)",
+  intro:
+    "One-sentence descriptions shown when a person selects a part of the 3D eye model. Plain " +
+    "descriptive anatomy: no advice, no diagnosis, no 'normal'. The reviewer should check each " +
+    "for accuracy and for tone at a difficult moment.",
+  questions: [
+    "Is each sentence anatomically accurate?",
+    "Does any sentence read as reassurance, diagnosis or advice rather than description?",
+    "Is 'damaged fibres do not grow back' acceptable honesty here, or too blunt?",
+  ],
+  items: structureItems.map((item) => ({
+    where: `components/EyeStudio.tsx → STRUCTURES.${item.id} (${item.name})`,
+    text: item.text,
+  })),
+});
+
 let count = 0;
 for (const section of sections) {
   lines.push(`## ${section.title}`, "");
