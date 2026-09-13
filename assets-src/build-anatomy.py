@@ -563,6 +563,12 @@ def build_nerve_head(rows=10, cols_n=48):
 
 # ------------------------------------------------------------------ nerve & muscles
 
+# The orbital apex sits essentially on the eye's axis; the nerve leaves the disc at ~21 degrees
+# nasal and converges back toward it, which is why it is slightly sinuous.
+APEX = Vector((0.6, 0.05, -float(EYE["muscles"]["apexBehindCentre"])))
+APEX_DIR = APEX.normalized()
+
+
 def build_nerve():
     r_canal = DISC.length
     apex_s = EYE["muscles"]["apexBehindCentre"] + 9.0  # the nerve continues past the annulus
@@ -570,11 +576,14 @@ def build_nerve():
     n = 24
 
     def path(s0, s1):
+        """From the canal exit along the disc direction, converging onto the on-axis apex."""
+        start = DISC_DIR * s0
+        end = APEX + APEX_DIR * max(0.0, s1 - APEX.length)
         pts = []
         for j in range(n + 1):
             t = j / n
-            s = s0 + (s1 - s0) * t
-            pts.append(DISC_DIR * s + perp * (1.1 * math.sin(t * math.pi)))
+            smooth = t * t * (3 - 2 * t)
+            pts.append(start.lerp(end, smooth) + perp * (1.1 * math.sin(t * math.pi)))
         return pts
 
     sheath_r0 = EYE["nerve"]["sheathDiameterAtGlobe"] / 2
@@ -607,7 +616,7 @@ def build_muscles():
     ins = EYE["muscles"]["insertionBehindLimbus"]
     widths = EYE["muscles"]["bellyWidth"]
     tendons = EYE["muscles"]["tendonLength"]
-    apex_c = DISC_DIR * EYE["muscles"]["apexBehindCentre"]
+    apex_c = APEX
     ring_r = EYE["muscles"]["apexRingRadius"]
     th_full = EYE["muscles"]["bellyThickness"]
     solids = []
@@ -616,17 +625,23 @@ def build_muscles():
         centre_ins = Vector((dvec.x * (R_GLOBE * math.sin(theta_ins) + 0.1),
                              dvec.y * (R_GLOBE * math.sin(theta_ins) + 0.1),
                              R_GLOBE * math.cos(theta_ins)))
-        perp = (dvec - DISC_DIR * dvec.dot(DISC_DIR)).normalized()
+        # origins fan from the annulus in the muscle's own direction (perpendicular to the axis)
+        perp = Vector((dvec.x, dvec.y, 0)).normalized()
         origin = apex_c + perp * ring_r
         n = 44
         length = (origin - centre_ins).length
         w = widths[name]
         tendon = tendons[name]
+        # a straight strap from the on-axis apex to the insertion would pass through the globe;
+        # real recti bow around it — a quadratic curve through an equatorial control point
+        control = Vector((dvec.x * (R_GLOBE + 1.5),
+                          dvec.y * (R_GLOBE + 1.5),
+                          centre_ins.z * 0.35))
         pts, widths_at, thick_at = [], [], []
         for j in range(n + 1):
             t = j / n
             s = t * length
-            pts.append(origin.lerp(centre_ins, t))
+            pts.append((origin * (1 - t) ** 2 + control * 2 * (1 - t) * t + centre_ins * t * t))
             if s > length - tendon:
                 f = (s - (length - tendon)) / tendon
                 widths_at.append(w)
