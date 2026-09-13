@@ -19,11 +19,22 @@ marked blocked.
 | 08 | Records intelligence | done | phase-08-records-intelligence | 2026-09-08 | query layer, ask grammar, search v2, descriptive trends, accessible charts |
 | 09 | Clinician handoff & sharing | done, pending clinical review | phase-09-clinician-handoff | 2026-09-09 | deterministic PDF, print, encrypted range shares, QR, ingestion; **`docs/clinician-note.md` and the printed wording need sign-off**; OCR engine not bundled |
 | 10 | Release & clinical review | done, blocked on clinical review | phase-10-release | 2026-09-09 | landing page, guide, backup story, i18n layer, issue templates, versioning; **release script refuses to tag while `docs/clinical-review.md` says NOT REVIEWED** |
+| 11 | Eye reference, baseline and anatomy contract | in progress | phase-11-baseline-contract | 2026-09-13 | [Brief](phase-11-eye-reference-and-contract.md); original eye realism follow-up |
+| 12 | Original Blender anatomy and reproducible assets | not started | — | 2026-09-13 | [Brief](phase-12-original-blender-anatomy.md); original eye realism follow-up |
+| 13 | Browser rendering and solid interactive sections | not started | — | 2026-09-13 | [Brief](phase-13-eye-renderer-and-sections.md); original eye realism follow-up |
+| 14 | Interactive cornea, retina and layer inspection | not started | — | 2026-09-13 | [Brief](phase-14-eye-exploration-controls.md); original eye realism follow-up |
+| 15 | Bring the original explorer to the same model quality | not started | — | 2026-09-13 | [Brief](phase-15-explorer-renderer-parity.md); original eye realism follow-up |
+| 16 | Visual review, performance and offline completion gate | not started | — | 2026-09-13 | [Brief](phase-16-eye-visual-and-offline-gate.md); original eye realism follow-up |
 
 ## Log
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-09-13** — Planned phases 11–16 for an original Blender/Three.js anatomical eye in both
+  Visualize viewers. See [execution handoff](EYE-REALISM-HANDOFF.md). Planning only; implementation
+  has not started. Existing uncommitted iris-bake work is the baseline, not completion of this
+  follow-up. The Phase 06 Blender-installation note describes its historical state.
 
 - **2026-09-09** — **Phase 10 done; the release itself is blocked, deliberately.** Everything a
   first-time visitor needs exists: a static landing page written for a patient rather than a

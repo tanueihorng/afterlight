@@ -6,6 +6,11 @@ retinal or ocular condition."
 Each phase is a **self-contained brief**. An agent can open one file, execute it without reading
 this conversation or any other phase, and stop with a verifiable result.
 
+For the original Blender/Three.js eye realism follow-up, start with the
+[execution handoff for any AI agent](EYE-REALISM-HANDOFF.md). It links phases 11–16,
+their visual acceptance criteria and a ready-to-paste execution prompt. These phases are planned,
+not implemented.
+
 ---
 
 ## The point of all of this
