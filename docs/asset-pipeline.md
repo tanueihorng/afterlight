@@ -13,9 +13,23 @@ From the repository root:
 ```sh
 cd app && node scripts/anatomy/export-anatomy-data.mjs   # params + vessel tree for Blender
 blender --background --python assets-src/build-anatomy.py  # full model, export, renders
-cd app && npm run verify                                  # includes the asset hash checks
-npm run build:standalone
+cd app && npm run assets:embed                            # refresh EyeExplorer.html's blocks
+npm run verify                                            # includes the asset hash checks
+npm run build:standalone                                  # EyeExplorer-engine.html
+node scripts/capture-eye-final.mjs --tag <name>           # comparable browser evidence
 ```
+
+The Blender run takes minutes and is CPU-heavy: run it on its own, never alongside the e2e suite
+or captures, and rebuild (`npm run build`) before testing so no asset hash changes underneath a
+running browser. The capture script needs `npx vite preview --port 4173 --strictPort` already
+running and writes to `docs/eye-realism/captures/<name>/` with a `capture-report.json`.
+
+**Who owns which parameter.** Blender owns static shape only: wall thicknesses, corneal
+asphericity, lens profile, nerve and muscle geometry, all read from `params.json`. The browser
+owns everything that varies — iris colour and pupil, fundus painting and vessel growth, scleral
+redness, light, laterality (a mirror), slice, separation, layer magnification, and every
+condition delta. Changing a measurement means editing `dimensions.ts` and re-running the whole
+chain above; changing a look never needs Blender.
 
 `export-anatomy-data.mjs` bundles `dimensions.ts` and writes `assets-src/generated/params.json`
 plus the seeded vessel tree mapped onto the retina — Blender reads the same numbers the browser

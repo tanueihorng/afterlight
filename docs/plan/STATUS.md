@@ -24,12 +24,33 @@ marked blocked.
 | 13 | Browser rendering and solid interactive sections | done | phase-11-baseline-contract | 2026-09-13 | Scene rebuilt on the model: capped sections, vessel tubes, live appearance; verify clean (570 tests, 7 engine e2e); evidence in docs/eye-realism/phase-13-browser.md |
 | 14 | Interactive cornea, retina and layer inspection | done | phase-11-baseline-contract | 2026-09-13 | Cutaway default, accessible structure list, picking, focus-on-request, labelled layer magnification, in-place reset; copy registered for clinical review; verify clean |
 | 15 | Bring the original explorer to the same model quality | done | phase-11-baseline-contract | 2026-09-13 | Model embedded via generated adapter block; primitives replaced, lids removed, cut caps live; regression matrix in docs/eye-realism/phase-15-explorer.md |
-| 16 | Visual review, performance and offline completion gate | in progress | phase-11-baseline-contract | 2026-09-13 | Paused mid-phase: final captures need a quiet-machine retake (see docs/plan/PHASE-16-HANDOFF.md); verify+standalone clean at phase 15 |
+| 16 | Visual review, performance and offline completion gate | done, one capture-tooling gap | phase-11-baseline-contract | 2026-09-13 | Muscle-cone apex corrected (real defect from phase 12), 12 MB cap enforced, 32 settled final captures, acceptance report at docs/eye-realism/acceptance.md; report JSON incomplete (last phone click intercepted) — recorded |
 
 ## Log
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-09-13** — **Phase 16 done, one capture-tooling gap recorded.** The cutaway defect
+  from the earlier phases was real and is fixed at the source: the muscle cone's annulus sat
+  10 mm nasal (disc direction ≠ orbital apex), so the lateral rectus crossed the vitreous and
+  the cut shredded the straps. The apex is now on the eye's axis, the nerve converges onto it,
+  and the straps bow around the globe through an equatorial control point; model rebuilt,
+  re-validated watertight, re-embedded, and confirmed in the browser and the Blender study
+  (before/after: phase13 vs phase16 captures). The 12 MB lazy-renderer cap is now **enforced**
+  by `check-bundle.mjs` (tested to fail on a lowered budget) — previously it only reported.
+  Final evidence: 32 settled captures across both viewers, desktop and emulated phone, all
+  contract views, slices 0-100, left eye, exploded, after-reset. The acceptance report
+  (docs/eye-realism/acceptance.md) assesses all eight contract items per viewer and records the
+  gaps honestly: sparse macular fronds, dark choroid cut band, pupil double edge through the
+  cornea, explorer lab-ring standoff and label drift, explorer vessels painted rather than
+  extruded. `verify` clean (570 tests, budgets, no network); standalone 2.26 MB / 5 MB rebuilt.
+  Not finished, recorded: the capture run's report JSON is missing because the final
+  explorer-phone reset click was intercepted by a landing-page element (capture-tooling gap —
+  the 32 shots stand as evidence); real-device performance remains unverified (no handset;
+  SwiftShader timings are relative); docs/Afterlight-*.docx, its PDF and root scripts/ remain
+  deliberately untracked. Publishing and `npm run release` untouched — clinical review stays
+  NOT REVIEWED.
 
 - **2026-09-13** — **Phase 15 done.** The legacy explorer renders the same original model from
   the same bytes: a second generated block (adapter bundling the decoder, section maths and the

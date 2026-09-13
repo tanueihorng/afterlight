@@ -69,3 +69,21 @@ phase-13-browser.md, phase-15-explorer.md are the evidence trail.
   (re-run `npm run assets:embed` if `verify:assets` complains about drift).
 - When the machine is loaded (the agent harness itself takes ~70% CPU), SwiftShader screenshots
   starve — captures taken under load show repeated stale frames. Prefer quiet-machine runs.
+
+## Second pause (2026-09-13, 22:0x)
+
+- Added `app/scripts/capture-eye-final.mjs` (uncommitted): settle-checked captures for both
+  viewers on desktop and phone, plus idle/interaction frame timing, reduced motion, standalone
+  files opened offline, and an offline reload of Visualize after installation. Run it with
+  `npx vite preview --port 4173 --strictPort` up; it writes `docs/eye-realism/captures/final/`.
+  It was stopped after 4 of its shots (exterior/cutaway/cornea/retina, desktop app) — rerun
+  it fully; the partial set is not evidence yet.
+- `docs/engine.md` and `docs/asset-pipeline.md` updated (layout, slice modes, rebuild order,
+  parameter ownership); measured-limits section still to add from the capture report.
+- Found while inspecting: the default cutaway still shows the sliced muscle straps as open pink
+  sheets/shards at the cut and a pink cylinder crossing the vitreous — identical in
+  `captures/phase13/app-eye-cross_section.png`, so not a regression, but it bears on contract
+  items 1, 2 and 5 and must be assessed honestly (likely a phase-13-owned fix: cap or hide
+  muscle sections, identify the cylinder).
+- The lazy 12 MB renderer cap is reported but not enforced by `check-bundle.mjs` (Visualize
+  chunk 1.37 MB gzip / 2.41 MB raw). Note it in the acceptance report.

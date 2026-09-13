@@ -9,6 +9,9 @@ import { fileURLToPath } from "node:url";
 const dist = resolve(dirname(fileURLToPath(import.meta.url)), "../dist");
 const BUDGET_KB = 120; // initial JS, gzipped
 const CSS_BUDGET_KB = 20;
+// The lazy renderer chunk carries the whole anatomical model and its baked maps; the 12 MB cap
+// is the phase-06 contract line and is enforced here, not just reported.
+const RENDERER_BUDGET_KB = 12 * 1024;
 
 function gzipKB(path) {
   return gzipSync(readFileSync(path)).length / 1024;
@@ -58,6 +61,15 @@ for (const name of shouldBeLazy) {
     console.error(`✖ ${name} is in the initial download; it must stay lazy`);
     failed = true;
   }
+}
+
+const renderer = lazy.find((chunk) => chunk.file.includes("Visualize")) ?? lazy[0];
+if (renderer && renderer.kb > RENDERER_BUDGET_KB) {
+  console.error(
+    `✖ the lazy renderer chunk is ${renderer.kb.toFixed(1)} KB gzip (${renderer.file}), ` +
+      `over the ${RENDERER_BUDGET_KB / 1024} MB renderer budget`,
+  );
+  failed = true;
 }
 
 if (failed) process.exit(1);

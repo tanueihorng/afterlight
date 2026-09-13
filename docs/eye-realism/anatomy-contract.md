@@ -32,16 +32,23 @@ Recorded so the next phase inherits reality, not the plan's guess:
    projection. The canal, nerve, disc and vessel tree all anchor to `manifest.disc3d`, so every
    part of the model agrees with what the fundus view paints. `discDirection()` (15.5°) remains
    for visual-field math elsewhere and is no longer the model's anchor.
-3. **Conic constants are solved, not assumed.** The cornea's posterior conic (Q ≈ −1.05) is
+3. **The muscle cone's apex is on the eye's axis (phase 16 correction).** The first cut placed
+   the annulus of Zinn at `DISC_DIR × 28 mm` — 10 mm nasal, because the disc direction describes
+   the nerve's intraocular exit, not the orbital apex. That pushed the lateral rectus straight
+   through the vitreous and let the cut shred the superior/inferior straps. The apex now sits at
+   ≈(0.6, 0.05, −28) mm, essentially on-axis, the nerve converges from the disc direction onto
+   it, and the muscle paths bow around the globe through an equatorial control point (a straight
+   strap from an on-axis apex would pass through the eye; real recti hug its wall).
+4. **Conic constants are solved, not assumed.** The cornea's posterior conic (Q ≈ −1.05) is
    bisected at build time until peripheral thickness is the measured 0.67 mm given R 6.5; the
    lens caps' Q values are solved so Ø 9 × 4 mm is met given the measured central radii. Only
    measured numbers enter the code; the solver derives the rest.
-4. **Layer magnification lives in `params.json`** (`model.choroidMagnification = 3`, written by
+5. **Layer magnification lives in `params.json`** (`model.choroidMagnification = 3`, written by
    `export-anatomy-data.mjs`), not in a Blender constant, so the browser and Blender agree by
    construction and the value is changeable in one place.
-5. **`preview-eye.py` is removed** — superseded by `build-anatomy.py`, which runs the preserved
+6. **`preview-eye.py` is removed** — superseded by `build-anatomy.py`, which runs the preserved
    iris bake in-process, authors the whole model, exports browser assets and renders the studies.
-6. **Binary format:** per vertex, 3× int16 position (quantised per structure against one shared
+7. **Binary format:** per vertex, 3× int16 position (quantised per structure against one shared
    bbox so coincident border rows weld) + 2× int16 UV = 10 bytes. No indices ship: the decoder
    regenerates them from `rows × cols` (`wrap`, `rowWrap` flags in the manifest), welds by
    position at 0.01 mm tolerance (seam columns of wrap=False grids differ by one quantum

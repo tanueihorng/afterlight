@@ -8,15 +8,15 @@
     "bytes": 232325
   },
   "anatomy.bin": {
-    "sha256": "ccc1191709aa0167bd7e540ad9f3ed819a23912626d25a5a23d6f2aba4b72f8a",
+    "sha256": "1a46a2a246b75e519e78ef4809ed382daa9b6e2e58db0fd2a035cfffcfdc5e82",
     "bytes": 611320
   },
   "anatomy.json": {
-    "sha256": "f4936851dcc6a9dbca3a8bc07d2626262d6732ae608ba1a1ea6083d6cb6fc526",
-    "bytes": 49901
+    "sha256": "6eb59780e270a2d3d4b402e3dec3835ef8ec9fa2d3822259a263c576e3f5fbfa",
+    "bytes": 49906
   },
   "anatomy-data.ts": {
-    "sha256": "fe9e2cffb3a56944d36bf955d52b96e64b4e28fbd845d072f055d3d758a2c525",
+    "sha256": "97f4a4bd7a2f0fdacf55e24a149a0c2a1fa89957f8358fd8a5ad089aa9c07871",
     "bytes": 815392
   }
 }
