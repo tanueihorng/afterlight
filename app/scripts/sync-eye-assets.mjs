@@ -20,10 +20,24 @@ if (html.includes('/* BEGIN BLENDER IRIS */')) {
 } else {
   html = html.replace('const R_SCLERA =', () => `${block}\nconst R_SCLERA =`);
 }
+
+// the shared anatomical model + its r160 adapter, as a second generated block
+const modelBuild = await build({
+  entryPoints: [resolve(app, 'src/engine/legacy/afterlight-model.ts')],
+  bundle: true, write: false, format: 'iife', globalName: 'AfterlightModel',
+  minify: true,
+});
+const modelBlock = `/* BEGIN AFTERLIGHT MODEL */\n${modelBuild.outputFiles[0].text}\n/* END AFTERLIGHT MODEL */`;
+if (html.includes('/* BEGIN AFTERLIGHT MODEL */')) {
+  html = html.replace(/\/\* BEGIN AFTERLIGHT MODEL \*\/[\s\S]*?\/\* END AFTERLIGHT MODEL \*\//, () => modelBlock);
+} else {
+  html = html.replace('/* BEGIN BLENDER IRIS */', () => `${modelBlock}\n/* BEGIN BLENDER IRIS */`);
+}
+
 if (process.argv.includes('--check')) {
   if (readFileSync(path, 'utf8') !== html) throw new Error('Explorer baked assets have drifted. Run npm run assets:embed.');
   console.log('✓ explorer baked assets match their source');
 } else {
   writeFileSync(path, html);
-  console.log('Embedded Blender iris assets and shared painter in EyeExplorer.html');
+  console.log('Embedded Blender iris assets, shared painter and the anatomical model in EyeExplorer.html');
 }

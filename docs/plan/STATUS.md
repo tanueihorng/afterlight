@@ -23,13 +23,27 @@ marked blocked.
 | 12 | Original Blender anatomy and reproducible assets | done | phase-11-baseline-contract | 2026-09-13 | Full model authored from params.json, watertight, exported (0.6 MB) with 9 geometry tests; 4 studies inspected; `verify` clean (554 tests) |
 | 13 | Browser rendering and solid interactive sections | done | phase-11-baseline-contract | 2026-09-13 | Scene rebuilt on the model: capped sections, vessel tubes, live appearance; verify clean (570 tests, 7 engine e2e); evidence in docs/eye-realism/phase-13-browser.md |
 | 14 | Interactive cornea, retina and layer inspection | done | phase-11-baseline-contract | 2026-09-13 | Cutaway default, accessible structure list, picking, focus-on-request, labelled layer magnification, in-place reset; copy registered for clinical review; verify clean |
-| 15 | Bring the original explorer to the same model quality | not started | — | 2026-09-13 | [Brief](phase-15-explorer-renderer-parity.md); original eye realism follow-up |
+| 15 | Bring the original explorer to the same model quality | done | phase-11-baseline-contract | 2026-09-13 | Model embedded via generated adapter block; primitives replaced, lids removed, cut caps live; regression matrix in docs/eye-realism/phase-15-explorer.md |
 | 16 | Visual review, performance and offline completion gate | not started | — | 2026-09-13 | [Brief](phase-16-eye-visual-and-offline-gate.md); original eye realism follow-up |
 
 ## Log
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-09-13** — **Phase 15 done.** The legacy explorer renders the same original model from
+  the same bytes: a second generated block (adapter bundling the decoder, section maths and the
+  fundus painter) is injected into EyeExplorer.html beside the iris block, and the page's own
+  r160 + material helpers build and dress the meshes — no cross-version objects. Replaced: all
+  primitive globe layers, capsule nerve/sheath/muscles, ciliary torus, sphere lens, sphere-cap
+  cornea, lathe iris; removed: the decorative torus lids/lashes/caruncle (dry-eye label list
+  updated). The model is mirrored so the authored nasal disc sits on the explorer's cut side;
+  the cut slider drives real capped sections with the negated plane; the retina carries the
+  shared painted fundus and the old flat macula/fovea overlays retired. Scenario/tour
+  references survive via the preserved bindings; the dry-eye tear-film material remains as the
+  condition's animation carrier. Stale-public-copy and init-order bugs caught by actually
+  looking at captures. verify clean; explorer offline e2e and mobile journey pass; cosmetic
+  gaps recorded (lab-ring standoff, small label-anchor drift).
 
 - **2026-09-13** — **Phase 14 done.** The cutaway is now the opening presentation with whole-eye
   alternative and a **Reset view** that restores camera, cut, spacing, selection and magnification
