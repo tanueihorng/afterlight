@@ -340,7 +340,7 @@ export default function TimelinePage() {
             {(
               [
                 ["Daily log or symptom", "today", "The form opens directly — set the date to when it happened"],
-                ["Drawing of what you see", "drawing", "Sketch floaters, glare, blind spots"],
+                ["Drawing of what you see", "#/what-i-see", "Sketch floaters, glare, blind spots"],
                 ["Diagnosis", "diagnosis", "Opens right here — dated when first documented"],
                 ["Procedure or surgery", "procedure", "Opens right here — dated to the day it happened"],
                 ["Medication", "medication", "Opens right here — start and stop dates"],

@@ -317,7 +317,7 @@ function BaselineModal({ eye, onClose }: { eye: EyeSide; onClose: () => void }) 
 
 export function DiagnosisModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
-  const [d, setD] = useState({ name: "", eye: "right" as Eye, first_documented: todayLocal(), status: "active", clinician: "", clinic: "", notes: "", confirmed: true, source_type: "clinician_reported" });
+  const [d, setD] = useState({ name: "", eye: "right" as Eye, first_documented: todayLocal(), status: "active", clinician: "", clinic: "", notes: "", confirmed: false, source_type: "clinician_reported" });
   return (
     <Modal title="Add diagnosis" onClose={onClose}>
       <Field label="Diagnosis"><input type="text" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></Field>

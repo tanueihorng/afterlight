@@ -128,3 +128,16 @@ entries on the Timeline fall back to nothing right now — add those via **My Ey
 working, record appears on the timeline spine). Daily log/symptom (sessionStorage flag → Today
 recording form) and the plain routes (drawing, imaging, appointment) work. The chooser's
 labels for the three broken kinds should say "opens in My Eyes" until this is fixed.
+
+**RESOLVED by verification pass, 2026-09-14.** The defect does not reproduce on the current
+HEAD. A full probe (`ProcedureModal`, `DiagnosisModal`, `MedicationModal`, each from the
+Timeline chooser) shows: the record appears immediately (the chooser widens the range to
+"All time"), is present and well-formed in IndexedDB, and survives a full reload and re-render.
+Root cause of the *report*: the chooser's `setRange("all")` (added in abb7f9e) fixed the
+immediate-visibility symptom, and the "absent after a full reload" observation was the
+Timeline's 30-day default range hiding an old-dated record — a range filter doing its job, not
+a lost write. Regression guards added: `src/lib/store.ops.test.tsx` pins put/del → derived
+timeline → IndexedDB through a captured ops object; `e2e/verify/timeline-add.spec.ts` walks all
+seven chooser kinds. One real defect did surface during the probe: `DiagnosisModal` defaulted
+"Confirmed by a clinician" to checked for patient-typed entries — fixed to default unchecked
+(see docs/verification/DEFECTS.md).
