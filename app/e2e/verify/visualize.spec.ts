@@ -97,6 +97,6 @@ test.describe("visualize — understanding, not diagnosing", () => {
     await page.goto("/#/visualize");
     await page.getByRole("button", { name: /3d explorer/i }).click();
     const frame = page.frameLocator("iframe");
-    await expect(frame.locator("body")).toContainText(/afterlight|explorer|eye/i, { timeout: 15_000 });
+    await expect(frame.locator("body")).toContainText(/afterlight|explorer|eye/i, { timeout: 45_000 }); // the 2.8 MB explorer builds its scene from scratch; this is a presence check, not a budget
   });
 });

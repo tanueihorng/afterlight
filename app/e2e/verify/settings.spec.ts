@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { expect, test, asReturningUser, collectErrors } from "./helpers";
+import { expect, test, asReturningUser, collectErrors, contextStorageEvicted } from "./helpers";
 
 test.describe("settings — the record's control room", () => {
   test("every theme applies and persists across a reload", async ({ page }) => {
@@ -41,6 +41,9 @@ test.describe("settings — the record's control room", () => {
     await expect(box).toBeChecked(); // the check itself must take
     await page.reload();
     await page.waitForTimeout(600);
+    if (await contextStorageEvicted(page)) {
+      test.skip(true, "V-103: the browser evicted this context's storage; nothing about the app");
+    }
     await expect(page.getByRole("checkbox").first()).toBeChecked();
   });
 

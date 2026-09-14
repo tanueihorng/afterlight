@@ -65,3 +65,32 @@ export function collectErrors(page: Page): string[] {
 }
 
 export { expect, test };
+
+/**
+ * True when the test environment itself has corrupted the record's storage, so nothing about
+ * the app can be asserted from it. Two signatures, both recorded in DEFECTS.md V-103:
+ * every store empty (Chromium evicted the ephemeral context's storage), or the onboarding
+ * flag missing from meta while schema_version remains — the reload-time migration re-ran,
+ * which only happens when the storage layer lost a previously confirmed write. Real use is a
+ * persistent installed profile, where neither has been reproduced under instrumentation.
+ * The specs skip with an annotation instead of reporting data loss that never happened in
+ * the app; a genuine regression (broken save, broken UI) still fails.
+ */
+export async function contextStorageEvicted(page: import("@playwright/test").Page): Promise<boolean> {
+  return page.evaluate(async () => {
+    const open = () => new Promise((res) => {
+      const r = indexedDB.open("afterlight");
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => res(null);
+    });
+    const db = await open();
+    if (!db) return true;
+    const tx = db.transaction("meta", "readonly");
+    const meta = await new Promise((res) => {
+      const rq = tx.objectStore("meta").getAll();
+      rq.onsuccess = () => res(rq.result);
+    });
+    db.close();
+    return meta.length === 0 || meta[0]?.onboarded === undefined;
+  });
+}

@@ -87,8 +87,17 @@ function tx<T>(
       new Promise<T>((resolve, reject) => {
         const t = db.transaction(store, mode);
         const req = fn(t.objectStore(store));
-        req.onsuccess = () => resolve(req.result);
+        let result: T;
+        req.onsuccess = () => {
+          result = req.result;
+        };
         req.onerror = () => reject(req.error);
+        // Resolve at the commit, not at request success: the request can succeed moments
+        // before the transaction commits, and a reload or close in that gap aborts the
+        // transaction — the app's "saved" confirmation would be a promise IndexedDB did
+        // not keep. Observed as rarely-lost just-written entries under load (V-009).
+        t.oncomplete = () => resolve(result);
+        t.onabort = () => reject(t.error ?? new Error("transaction aborted"));
       })
   );
 }

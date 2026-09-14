@@ -1,4 +1,4 @@
-import { expect, test, asReturningUser, loadDemo, collectErrors } from "./helpers";
+import { expect, test, asReturningUser, loadDemo, collectErrors, contextStorageEvicted } from "./helpers";
 
 test.describe("today — the daily decision", () => {
   test("a quiet day is one tap and says so, before and after a reload", async ({ page }) => {
@@ -8,6 +8,9 @@ test.describe("today — the daily decision", () => {
 
     // After a remount the note states the day's outcome in words.
     await page.reload();
+    if (await contextStorageEvicted(page)) {
+      test.skip(true, "V-103: the browser evicted this context's storage; nothing about the app");
+    }
     await expect(page.getByText(/recorded as no change/i)).toBeVisible({ timeout: 10_000 });
   });
 

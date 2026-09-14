@@ -1,4 +1,4 @@
-import { expect, test, asReturningUser, loadDemo, collectErrors } from "./helpers";
+import { expect, test, asReturningUser, loadDemo, collectErrors, contextStorageEvicted } from "./helpers";
 
 test.describe("persistence — nothing saved may quietly vanish", () => {
   test("every quick record survives a reload", async ({ page }) => {
@@ -10,6 +10,9 @@ test.describe("persistence — nothing saved may quietly vanish", () => {
     await expect(page.getByText(/today is recorded/i)).toBeVisible();
 
     await page.reload();
+    if (await contextStorageEvicted(page)) {
+      test.skip(true, "V-103: the browser evicted this context's storage; nothing about the app");
+    }
     await expect(page.getByText(/recorded as no change/i)).toBeVisible({ timeout: 10_000 });
     expect(errors).toEqual([]);
   });

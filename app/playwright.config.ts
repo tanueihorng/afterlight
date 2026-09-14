@@ -8,11 +8,12 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
-  // Two workers locally: the engine's software GL starves when more contexts render at once
-  // (docs/plan/PHASE-16-HANDOFF.md), and heavy parallel contexts can also trigger the
-  // ephemeral-storage eviction recorded in docs/verification/DEFECTS.md V-103. CI keeps the
-  // default; its runners are small.
-  workers: process.env.CI ? undefined : 2,
+  // One worker locally, deliberately: the engine's software GL starves when more contexts
+  // render at once (docs/plan/PHASE-16-HANDOFF.md), and under parallel load Chromium has
+  // repeatedly discarded recently-written data from ephemeral test contexts — even committed
+  // transactions (docs/verification/DEFECTS.md V-103). The app never runs this way; real use
+  // is a persistent installed profile. Slower, but a red here means the app, not the harness.
+  workers: process.env.CI ? undefined : 1,
   forbidOnly: !!process.env.CI,
   // One retry locally too: under heavy parallel load Chromium can evict an ephemeral test
   // context's storage entirely (every IndexedDB store empty), which reads as data loss but is

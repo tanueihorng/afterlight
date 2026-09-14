@@ -37,6 +37,9 @@ test.describe("the daily loop", () => {
     await page.getByRole("button", { name: /save today's record/i }).click();
 
     await page.goto("/#/timeline");
+    // Symptoms are observation-weight: the story view's clinical spine hides them, so verify
+    // on the Everything view where the whole record is listed.
+    await page.getByRole("button", { name: "Everything" }).click();
     await expect(page.getByText(/glare/i).first()).toBeVisible();
     await expect(page.getByText(/patient reported/i).first()).toBeVisible();
   });

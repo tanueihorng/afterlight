@@ -39,7 +39,8 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   recorded `.last-run.json` said "passed" — from an older build.
 - **Fix** The test now verifies the symptom on the Everything view (and still asserts the
   provenance wording). The full suite must be re-run at the end of any change that touches what
-  pages show; `npm run verify` alone does not catch this.
+  pages show; `npm run verify` alone does not catch this. *(Correction: this fix was first
+  recorded here before it was applied to the spec — found and applied during the final gate.)*
 - **Related (flagged, see below)** whether a just-recorded symptom being invisible on the
   default timeline view is the right design is a product question — V-105.
 
@@ -122,6 +123,20 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
 - **Related (flagged, V-106)** whether saved briefs *should* render on the timeline is a
   product decision — it would add a new event type through the timeline's categories, story
   weights and provenance badges.
+
+### V-009 — Write confirmations could resolve before the IndexedDB transaction committed
+- **Found** 2026-09-14 (persistence spec: a just-confirmed daily log missing after reload,
+  while older stores survived — first read as V-103, then reproduced as partial loss)
+- **Severity** high (the app's "saved" promise was slightly stronger than what it waited for)
+- **Symptom** `db.ts`'s transaction helper resolved on request success, which IndexedDB fires
+  *before* the transaction commits. Every write path in the app awaited that, so a confirmation
+  could render, and a modal could close, microseconds before the write was durable. A reload
+  or close landing in that window aborts the transaction and silently drops the just-written
+  record while older data survives — widening from microseconds to whole seconds under load.
+- **Fix** Write transactions now resolve at `transaction.oncomplete` — the actual commit — and
+  reject on abort. Every `await store.*.put(...)` in the app is now commit-durable.
+- **Tests** the whole suite re-run (582 unit, full e2e); the reload-persistence specs that
+  intermittently lost a just-saved entry under load are the regression guard.
 
 ### V-008 — The eye viewer's fullscreen button threw on iOS
 - **Found** 2026-09-14 (controls sweep, mobile project)
