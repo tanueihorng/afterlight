@@ -20,21 +20,26 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Sheet from "./components/Sheet";
 import { formatLongDate, todayLocal } from "./lib/util";
 import { applyPrefs, prefsFromMeta } from "./lib/prefs";
+import { BrandMark, Icon, type IconName } from "./components/Icon";
+import { AppearancePanel, Dock, Popover, useFluidSurfaces } from "./components/Chrome";
 
 /** The four destinations that fit the thumb zone; everything else lives behind "More". */
 const PRIMARY: Route[] = ["today", "what-i-see", "timeline", "appointments"];
 
+/** The desktop dock has room for one more; the rest sit behind its "More" menu. */
+const DOCK: Route[] = ["today", "what-i-see", "timeline", "my-eyes", "appointments"];
+
 /** Labels are looked up per render, so switching language does not need a reload. */
-const NAV: { route: Route; key: MessageKey; icon: string }[] = [
-  { route: "today", key: "nav.today", icon: "◐" },
-  { route: "what-i-see", key: "nav.what_i_see", icon: "✧" },
-  { route: "timeline", key: "nav.timeline", icon: "⌁" },
-  { route: "my-eyes", key: "nav.my_eyes", icon: "◉" },
-  { route: "self-tests", key: "nav.self_tests", icon: "◎" },
-  { route: "imaging", key: "nav.imaging", icon: "▣" },
-  { route: "appointments", key: "nav.appointments", icon: "✚" },
-  { route: "visualize", key: "nav.visualize", icon: "◍" },
-  { route: "settings", key: "nav.settings", icon: "⚙" },
+const NAV: { route: Route; key: MessageKey; icon: IconName }[] = [
+  { route: "today", key: "nav.today", icon: "today" },
+  { route: "what-i-see", key: "nav.what_i_see", icon: "see" },
+  { route: "timeline", key: "nav.timeline", icon: "timeline" },
+  { route: "my-eyes", key: "nav.my_eyes", icon: "eyes" },
+  { route: "self-tests", key: "nav.self_tests", icon: "checks" },
+  { route: "imaging", key: "nav.imaging", icon: "imaging" },
+  { route: "appointments", key: "nav.appointments", icon: "calendar" },
+  { route: "visualize", key: "nav.visualize", icon: "visualize" },
+  { route: "settings", key: "nav.settings", icon: "settings" },
 ];
 
 export default function App() {
@@ -42,6 +47,7 @@ export default function App() {
   const store = useStore();
   const [palette, setPalette] = useState<null | "search" | "ask">(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  useFluidSurfaces();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -94,54 +100,93 @@ export default function App() {
       <a className="skip-link" href="#main">
         {t("app.skip_to_content")}
       </a>
+      <div className="aura" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
       <div className="shell" aria-hidden={!onboarded}>
-        <aside className="sidebar" aria-label="Afterlight">
+        <header className="app-header">
           <div className="brand">
-            <div className="brand-name">{t("app.name")}</div>
-            <div className="brand-tag">{t("app.tagline")}</div>
+            <BrandMark />
+            <span className="brand-name">{t("app.name")}</span>
           </div>
-          <button className="sidebar-search" onClick={() => setPalette("search")}>
-            <span aria-hidden>⌕</span>
-            <span>{t("app.search")}</span>
-            <kbd>⌘K</kbd>
-          </button>
-          <nav aria-label="Main navigation">
-            {NAV.map((item) => (
+          <Dock label="Main navigation">
+            {NAV.filter((n) => DOCK.includes(n.route)).map((item) => (
               <button
                 key={item.route}
-                className={`nav-item ${route === item.route ? "active" : ""}`}
+                className="dock-item"
                 onClick={() => nav(item.route)}
                 aria-current={route === item.route ? "page" : undefined}
               >
-                <span className="nav-icon" aria-hidden>
-                  {item.icon}
-                </span>
-                <span className="nav-label">{t(item.key)}</span>
+                <Icon name={item.icon} />
+                <span className="dock-label">{t(item.key)}</span>
               </button>
             ))}
-          </nav>
-          <button className="nav-item" onClick={() => setPalette("ask")}>
-            <span className="nav-icon" aria-hidden>
-              ?
-            </span>
-            <span className="nav-label">{t("app.ask")}</span>
-          </button>
-          <button
-            className="nav-item"
-            onClick={() =>
-              store.setMeta({ theme: (store.meta?.theme ?? "light") === "dark" ? "light" : "dark" })
-            }
-          >
-            <span className="nav-icon" aria-hidden>
-              ◑
-            </span>
-            <span className="nav-label">
-              {(store.meta?.theme ?? "light") === "dark" ? t("app.light_mode") : t("app.dark_mode")}
-            </span>
-          </button>
-          <div className="sidebar-footer">{t("app.local_only")}</div>
-        </aside>
-        <nav className="tabbar" aria-label="Main">
+            <Popover
+              label={t("app.more")}
+              icon="more"
+              buttonClass={`dock-item ${DOCK.includes(route) ? "" : "is-elsewhere"}`}
+              panelClass="center"
+              showLabel
+            >
+              {(close) => (
+                <>
+                  {NAV.filter((n) => !DOCK.includes(n.route)).map((item) => (
+                    <button
+                      key={item.route}
+                      className="menu-item"
+                      aria-current={route === item.route ? "page" : undefined}
+                      onClick={() => {
+                        nav(item.route);
+                        close();
+                      }}
+                    >
+                      <Icon name={item.icon} />
+                      {t(item.key)}
+                    </button>
+                  ))}
+                  <p className="menu-foot">{t("app.local_only")}</p>
+                </>
+              )}
+            </Popover>
+          </Dock>
+          <div className="header-actions">
+            <button
+              className="icon-btn glass"
+              onClick={() => setPalette("search")}
+              aria-label={t("app.search")}
+              title={`${t("app.search")} (⌘K)`}
+            >
+              <Icon name="search" />
+            </button>
+            <button
+              className="icon-btn glass"
+              onClick={() => setPalette("ask")}
+              aria-label={t("app.ask")}
+              title={`${t("app.ask")} (?)`}
+            >
+              <Icon name="ask" />
+            </button>
+            <Popover
+              label="Appearance"
+              icon="palette"
+              buttonClass="icon-btn glass"
+              panelClass="appearance"
+            >
+              {(close) => (
+                <AppearancePanel
+                  onMore={() => {
+                    close();
+                    nav("settings");
+                  }}
+                />
+              )}
+            </Popover>
+          </div>
+        </header>
+        <nav className="tabbar glass" aria-label="Main">
           {NAV.filter((n) => PRIMARY.includes(n.route)).map((item) => (
             <button
               key={item.route}
@@ -150,7 +195,7 @@ export default function App() {
               aria-current={route === item.route ? "page" : undefined}
             >
               <span className="tab-icon" aria-hidden>
-                {item.icon}
+                <Icon name={item.icon} />
               </span>
               <span className="tab-label">{t(item.key)}</span>
             </button>
@@ -161,16 +206,19 @@ export default function App() {
             aria-haspopup="dialog"
           >
             <span className="tab-icon" aria-hidden>
-              ⋯
+              <Icon name="more" />
             </span>
             <span className="tab-label">{t("app.more")}</span>
           </button>
         </nav>
 
         <main className="main" id="main" tabIndex={-1}>
-          <div className="topbar-date" style={{ marginBottom: 10 }}>
-            {formatLongDate(todayLocal())}
-          </div>
+          {/* Today opens with its own greeting and date; every other page gets the date here. */}
+          {route !== "today" && (
+            <div className="topbar-date" style={{ marginBottom: 10 }}>
+              {formatLongDate(todayLocal())}
+            </div>
+          )}
           <ErrorBoundary
             key={route}
             where={
@@ -211,7 +259,7 @@ export default function App() {
                   setMoreOpen(false);
                 }}
               >
-                <span aria-hidden>{item.icon}</span>
+                <Icon name={item.icon} />
                 <span>{t(item.key)}</span>
               </button>
             ))}
@@ -222,7 +270,7 @@ export default function App() {
                 setPalette("search");
               }}
             >
-              <span aria-hidden>⌕</span>
+              <Icon name="search" />
               <span>{t("app.search")}</span>
             </button>
             <button
@@ -232,8 +280,8 @@ export default function App() {
                 setPalette("ask");
               }}
             >
-              <span aria-hidden>?</span>
-              <span>Ask my records</span>
+              <Icon name="ask" />
+              <span>{t("app.ask")}</span>
             </button>
           </div>
         </Sheet>

@@ -9,10 +9,36 @@ import type { AppMeta } from "./models";
 export type ThemeId = "dark" | "light" | "hc-dark" | "hc-light";
 
 export const THEMES: { id: ThemeId; label: string; description: string }[] = [
-  { id: "light", label: "Light", description: "Warm paper, gentle contrast." },
-  { id: "dark", label: "Dark", description: "Warm charcoal, low light." },
-  { id: "hc-dark", label: "High contrast dark", description: "White on black, maximum separation." },
-  { id: "hc-light", label: "High contrast light", description: "Black on white, maximum separation." },
+  { id: "light", label: "Light", description: "Soft daylight glass, gentle contrast." },
+  { id: "dark", label: "Dark", description: "Night glass, low light." },
+  {
+    id: "hc-dark",
+    label: "High contrast dark",
+    description: "White on black, maximum separation.",
+  },
+  {
+    id: "hc-light",
+    label: "High contrast light",
+    description: "Black on white, maximum separation.",
+  },
+];
+
+export type AccentId =
+  "dusk" | "ocean" | "blossom" | "sunrise" | "lagoon" | "aurora" | "sorbet" | "moonstone";
+
+/**
+ * Colour themes, three colours each. Purely a matter of taste: none of them means anything, none
+ * is used for eyes or provenance, and the high-contrast themes ignore them so their ratios never move.
+ */
+export const ACCENTS: { id: AccentId; label: string; description: string }[] = [
+  { id: "dusk", label: "Dusk", description: "Periwinkle, lilac and peach." },
+  { id: "ocean", label: "Ocean", description: "Sky blue, iris and sea glass." },
+  { id: "blossom", label: "Blossom", description: "Pink, lilac and apricot." },
+  { id: "sunrise", label: "Sunrise", description: "Peach, gold and rose." },
+  { id: "lagoon", label: "Lagoon", description: "Aqua, blue and mint." },
+  { id: "aurora", label: "Aurora", description: "Mint, violet and pink." },
+  { id: "sorbet", label: "Sorbet", description: "Coral, pink and lavender." },
+  { id: "moonstone", label: "Moonstone", description: "Silver, slate and heather." },
 ];
 
 export const TYPE_SCALES = [
@@ -30,6 +56,8 @@ export interface DisplayPrefs {
   reducedMotion: boolean;
   glareComfort: boolean;
   dimImagery: boolean;
+  accent: AccentId;
+  solidSurfaces: boolean;
 }
 
 export const DEFAULT_PREFS: DisplayPrefs = {
@@ -38,6 +66,8 @@ export const DEFAULT_PREFS: DisplayPrefs = {
   reducedMotion: false,
   glareComfort: false,
   dimImagery: false,
+  accent: "dusk",
+  solidSurfaces: false,
 };
 
 export function prefsFromMeta(meta?: AppMeta): DisplayPrefs {
@@ -47,6 +77,10 @@ export function prefsFromMeta(meta?: AppMeta): DisplayPrefs {
     reducedMotion: meta?.reduced_motion ?? DEFAULT_PREFS.reducedMotion,
     glareComfort: meta?.glare_comfort ?? DEFAULT_PREFS.glareComfort,
     dimImagery: meta?.dim_imagery ?? DEFAULT_PREFS.dimImagery,
+    accent: ACCENTS.some((a) => a.id === meta?.accent)
+      ? (meta!.accent as AccentId)
+      : DEFAULT_PREFS.accent,
+    solidSurfaces: meta?.solid_surfaces ?? DEFAULT_PREFS.solidSurfaces,
   };
 }
 
@@ -60,6 +94,9 @@ export function applyPrefs(prefs: DisplayPrefs, root: HTMLElement): void {
   else root.removeAttribute("data-glare");
   if (prefs.dimImagery) root.setAttribute("data-imagery", "dimmed");
   else root.removeAttribute("data-imagery");
+  root.setAttribute("data-accent", prefs.accent);
+  if (prefs.solidSurfaces) root.setAttribute("data-surfaces", "solid");
+  else root.removeAttribute("data-surfaces");
 }
 
 export function isHighContrast(theme: ThemeId): boolean {

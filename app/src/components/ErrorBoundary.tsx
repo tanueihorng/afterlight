@@ -83,7 +83,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
         <div className="btn-row" style={{ marginTop: 14 }}>
           <button className="btn primary" onClick={this.exportRecords} disabled={exported === "working"}>
-            {exported === "working" ? "Exporting…" : "⭳ Export my records"}
+            {exported === "working" ? "Exporting…" : "↓ Export my records"}
           </button>
           <button className="btn" onClick={() => window.location.reload()}>
             Reload the app

@@ -621,6 +621,10 @@ export interface AppMeta {
   };
   glare_comfort?: boolean;
   dim_imagery?: boolean;
+  /** The three-colour theme for buttons and background light. Cosmetic; never carries meaning. */
+  accent?: "dusk" | "ocean" | "blossom" | "sunrise" | "lagoon" | "aurora" | "sorbet" | "moonstone";
+  /** Solid surfaces instead of frosted glass, for anyone who finds transparency hard to read. */
+  solid_surfaces?: boolean;
   demo_seeded: boolean;
   /** Schema the stored records conform to; absent means version 1. */
   schema_version?: number;

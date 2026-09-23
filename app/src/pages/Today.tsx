@@ -10,12 +10,25 @@ import {
   type FloaterObject,
   type SymptomEntry,
 } from "../lib/models";
-import { PageHeader, SafetyNotice } from "../components/ui";
+import { DemoBadge, EyeBadge, ProvenanceBadge, SafetyNotice } from "../components/ui";
+import { Icon, type IconName } from "../components/Icon";
+import Lumi from "../components/Lumi";
+import {
+  greeting,
+  latestAcuity,
+  nextAppointment,
+  recentDays,
+  recentEntries,
+  type DayState,
+} from "../lib/dashboard";
 import { t } from "../lib/i18n";
 import BackupNudge from "../components/BackupNudge";
 import {
   addDays,
   formatDate,
+  formatLongDate,
+  formatShortDate,
+  formatTime,
   isoToDateOnly,
   nowISO,
   todayLocal,
@@ -103,6 +116,17 @@ export default function Today() {
     return [...prompted, ...SYMPTOM_TYPES.filter((t) => !prompted.includes(t))];
   }, [profileIds]);
   const profileTests = useMemo(() => suggestedSelfTests(profileIds), [profileIds]);
+
+  const dash = useMemo(() => {
+    const data = toAllData(store);
+    return {
+      days: recentDays(data, date),
+      right: latestAcuity(data, "right"),
+      left: latestAcuity(data, "left"),
+      visit: nextAppointment(data, date),
+      recent: recentEntries(data, 4),
+    };
+  }, [store, date]);
 
   const baseline = (eye: "right" | "left") => store.baselines.list.find((b) => b.id === eye)?.text;
 
@@ -348,11 +372,213 @@ export default function Today() {
     );
   };
 
+  const DAY_LABEL: Record<DayState, string> = {
+    no_change: "no change recorded",
+    changed: "change recorded",
+    missing: "not recorded",
+  };
+
+  const QUICK: { route: Parameters<typeof nav>[0]; icon: IconName; title: string; hint: string }[] =
+    [
+      {
+        route: "what-i-see",
+        icon: "pen",
+        title: "Draw what I see",
+        hint: "Sketch floaters, shadows or gaps",
+      },
+      {
+        route: "self-tests",
+        icon: "checks",
+        title: "Do a check",
+        hint: "Amsler grid and home checks",
+      },
+      {
+        route: "imaging",
+        icon: "imaging",
+        title: "Add a document",
+        hint: "Letters, scans and results",
+      },
+      {
+        route: "visualize",
+        icon: "visualize",
+        title: "Model eye",
+        hint: "A generic model, not your eye",
+      },
+    ];
+
+  const acuityCell = (eye: "right" | "left") => {
+    const m = eye === "right" ? dash.right : dash.left;
+    return (
+      <div className={`meas ${m ? "" : "missing"}`}>
+        <EyeBadge eye={eye} />
+        {m ? (
+          <>
+            <span className="meas-value">{m.value}</span>
+            <span className="meas-meta">
+              {formatShortDate(m.date)} · <ProvenanceBadge source={m.source_type} />{" "}
+              <DemoBadge demo={m.demo} />
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="meas-value">Not recorded</span>
+            <span className="meas-meta">No acuity in the record yet</span>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const shortcuts = (
+    <nav className="quick" aria-label="Shortcuts">
+      {QUICK.map((q) => (
+        <button key={q.route} className="quick-btn" onClick={() => nav(q.route)} title={q.hint}>
+          <span className="quick-icon">
+            <Icon name={q.icon} size={18} />
+          </span>
+          <span className="quick-text">
+            <span className="quick-title">{q.title}</span>
+            <span className="quick-hint">{q.hint}</span>
+          </span>
+        </button>
+      ))}
+    </nav>
+  );
+
+  const dashboard = (
+    <div className="dash">
+      <section className="card dash-days" aria-labelledby="dash-days-title">
+        <div className="dash-head">
+          <h2 id="dash-days-title" className="card-title">
+            Last 14 days
+          </h2>
+          <button className="btn subtle" onClick={() => nav("timeline")}>
+            Timeline <Icon name="arrow" size={16} />
+          </button>
+        </div>
+        <ol className="days">
+          {dash.days.map((d) => (
+            <li key={d.date} className="day">
+              <span
+                className={`day-cell ${d.state} ${d.date === date ? "today" : ""}`}
+                role="img"
+                aria-label={`${formatDate(d.date)}: ${DAY_LABEL[d.state]}`}
+              />
+              <span className="day-num" aria-hidden="true">
+                {Number(d.date.slice(8))}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div className="legend" aria-hidden="true">
+          <span>
+            <i className="day-cell no_change" /> No change
+          </span>
+          <span>
+            <i className="day-cell changed" /> Change recorded
+          </span>
+          <span>
+            <i className="day-cell missing" /> Not recorded
+          </span>
+        </div>
+        {streak && <p className="muted dash-note">{streak}</p>}
+      </section>
+
+      <section className="card dash-eyes" aria-labelledby="dash-eyes-title">
+        <div className="dash-head">
+          <h2 id="dash-eyes-title" className="card-title">
+            Last visual acuity
+          </h2>
+          <button className="btn subtle" onClick={() => nav("my-eyes")}>
+            My eyes <Icon name="arrow" size={16} />
+          </button>
+        </div>
+        <div className="meas-pair">
+          {acuityCell("right")}
+          {acuityCell("left")}
+        </div>
+      </section>
+
+      <section className="card dash-recent" aria-labelledby="dash-recent-title">
+        <div className="dash-head">
+          <h2 id="dash-recent-title" className="card-title">
+            Recently written down
+          </h2>
+        </div>
+        {dash.recent.length === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>
+            Nothing yet. Entries you add appear here with the eye and who recorded them.
+          </p>
+        ) : (
+          <ul className="recent">
+            {dash.recent.map((e) => (
+              <li key={e.id}>
+                <span className="recent-when">{formatShortDate(isoToDateOnly(e.when))}</span>
+                <span className="recent-what">
+                  <span className="recent-title">{e.title}</span>
+                  {e.detail && <span className="recent-detail">{e.detail}</span>}
+                </span>
+                <span className="recent-tags">
+                  <EyeBadge eye={e.eye} />
+                  <ProvenanceBadge source={e.source} />
+                  <DemoBadge demo={e.demo} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card dash-visit" aria-labelledby="dash-visit-title">
+        <div className="dash-head">
+          <h2 id="dash-visit-title" className="card-title">
+            Next visit
+          </h2>
+        </div>
+        {dash.visit ? (
+          <div className="visit">
+            <div className="date-tile" aria-hidden="true">
+              <small>{formatShortDate(dash.visit.date_time).split(" ")[1]}</small>
+              <b>{formatShortDate(dash.visit.date_time).split(" ")[0]}</b>
+            </div>
+            <div>
+              <div className="recent-title">
+                {dash.visit.clinic || dash.visit.specialty || "Appointment"}
+              </div>
+              <div className="recent-detail">
+                {formatDate(isoToDateOnly(dash.visit.date_time))},{" "}
+                {formatTime(dash.visit.date_time)}
+                {dash.visit.clinician ? ` · ${dash.visit.clinician}` : ""}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 0 }}>
+            No visit booked in the record.
+          </p>
+        )}
+        <button className="btn primary" onClick={() => nav("appointments")}>
+          <Icon name="brief" size={18} />
+          {dash.visit ? "Prepare for this visit" : "Add a visit"}
+        </button>
+      </section>
+    </div>
+  );
+
   return (
     <>
-      {/* No kicker: the shell already prints today's date above every page, and having it
-          twice on the one screen people open daily was just noise. */}
-      <PageHeader title={t("today.title")} sub={t("today.sub")} />
+      {/* The shell leaves the date off this page; the greeting carries it instead. */}
+      <header className="page-header greet">
+        <div>
+          <div className="topbar-date">
+            {greeting(new Date().getHours())} · {formatLongDate(date)}
+          </div>
+          <h1>{t("today.title")}</h1>
+          <p className="page-sub">{t("today.sub")}</p>
+        </div>
+        <Lumi resting={alreadyRecorded || justSaved} />
+      </header>
+      {mode === "asking" && shortcuts}
       <BackupNudge />
 
       {alreadyRecorded && !justSaved && mode === "asking" && (
@@ -386,7 +612,7 @@ export default function Today() {
             <button
               className="btn subtle"
               style={{ minHeight: "var(--target)", padding: "2px 8px" }}
-              onClick={() => nav("timeline")}
+              onClick={() => nav("timeline", "recorded")}
             >
               {t("today.view_timeline")}
             </button>
@@ -405,14 +631,14 @@ export default function Today() {
           <div className="decision">
             <button className="decision-btn" onClick={saveNoChange}>
               <span className="decision-icon" aria-hidden>
-                ◐
+                <Icon name="check" />
               </span>
               <span className="decision-label">{t("today.nothing_different")}</span>
               <span className="decision-hint">{t("today.nothing_different_hint")}</span>
             </button>
             <button className="decision-btn secondary" onClick={() => setMode("recording")}>
               <span className="decision-icon" aria-hidden>
-                ✎
+                <Icon name="plus" />
               </span>
               <span className="decision-label">{t("today.something_changed")}</span>
               <span className="decision-hint">{t("today.something_changed_hint")}</span>
@@ -454,11 +680,7 @@ export default function Today() {
             </div>
           )}
 
-          {streak && (
-            <p className="muted" style={{ marginTop: 18 }}>
-              {streak}
-            </p>
-          )}
+          {dashboard}
         </>
       ) : (
         <>

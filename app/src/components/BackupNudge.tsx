@@ -59,7 +59,7 @@ export default function BackupNudge() {
             setStatus("done");
           }}
         >
-          {status === "working" ? "Exporting…" : "⭳ Export now"}
+          {status === "working" ? "Exporting…" : "↓ Export now"}
         </button>
         <button className="btn subtle" onClick={dismiss}>
           Not now

@@ -221,10 +221,10 @@ export default function Settings() {
 
         <div className="btn-row" style={{ marginTop: 12 }}>
           <button className="btn primary" onClick={exportAll}>
-            ⭳ Export everything
+            ↓ Export everything
           </button>
           <button className="btn" onClick={() => fileRef.current?.click()}>
-            ⭱ Import from an export
+            ↑ Import from an export
           </button>
           <button className="btn subtle" onClick={() => checkRef.current?.click()}>
             Test my backup
