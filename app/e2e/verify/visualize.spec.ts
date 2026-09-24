@@ -99,4 +99,22 @@ test.describe("visualize — understanding, not diagnosing", () => {
     const frame = page.frameLocator("iframe");
     await expect(frame.locator("body")).toContainText(/afterlight|explorer|eye/i, { timeout: 45_000 }); // the 2.8 MB explorer builds its scene from scratch; this is a presence check, not a budget
   });
+
+  test("inside the app the explorer has no Diagnose tab; the standalone file keeps it", async ({
+    page,
+  }) => {
+    await asReturningUser(page);
+    await page.goto("/#/visualize");
+    await page.getByRole("button", { name: /3d explorer/i }).click();
+    const frame = page.frameLocator("iframe");
+    // The tab is in the file's markup until the explorer's script runs, so wait for it to boot.
+    await expect(frame.locator("#viewport canvas")).toBeVisible({ timeout: 45_000 });
+    await expect(frame.locator("#bootmsg")).not.toBeVisible();
+    await expect(frame.getByRole("button", { name: /diagnose/i })).toHaveCount(0);
+    await expect(frame.locator("#tabDx")).toBeHidden();
+
+    // The same file opened on its own is the clinician-led teaching tool, and is unchanged.
+    await page.goto("/EyeExplorer.html");
+    await expect(page.locator("#gtabs button", { hasText: "Diagnose" })).toHaveCount(1);
+  });
 });

@@ -417,8 +417,21 @@ button {
 }
 
 [data-theme^="hc"] .aura,
-[data-surfaces="solid"] .aura {
+[data-surfaces="solid"] .aura,
+[data-scene="3d"] .aura {
   display: none;
+}
+
+/* While a live 3-D scene is on screen, the glass stops blurring what is behind it. Re-blurring a
+   WebGL canvas every frame starved slower devices (and software-rendered browsers) of frames. */
+:root[data-scene="3d"] {
+  --blur: none;
+}
+
+:root[data-scene="3d"] .app-header::before {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
 }
 
 .shell {
@@ -473,6 +486,10 @@ button {
 }
 
 .brand .brand-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-display);
   font-size: var(--fs-lg);
   font-weight: 650;
@@ -2063,7 +2080,7 @@ input[type="range"] {
 
 @media (max-width: 760px) {
   .app-header {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     padding: 12px 16px 8px;
     top: env(safe-area-inset-top, 0px);
   }
@@ -2083,15 +2100,17 @@ input[type="range"] {
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     z-index: 50;
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 1fr;
+    /* Tabs share the width by content but may all shrink: a long label can never push one
+       off-screen, whatever the text size. */
+    display: flex;
     gap: 2px;
     padding: 6px;
     border-radius: 999px;
   }
 
   .tab {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2124,8 +2143,35 @@ input[type="range"] {
   }
 
   .tab-label {
+    max-width: 100%;
     line-height: 1.1;
     text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Large text: the tab bar keeps its icons at a bigger size and the words move to the
+     accessibility tree, where they stay the button names. The words are one tap away in More. */
+  :root[data-text="large"] .tab-label,
+  :root[data-text="large"] .app-header .brand-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  :root[data-text="large"] .tab {
+    min-height: 60px;
+  }
+
+  :root[data-text="large"] .tab-icon svg {
+    width: 28px;
+    height: 28px;
   }
 
   /* Dialogs become sheets: anchored to the bottom, within thumb reach. */

@@ -125,12 +125,16 @@ test.describe("the eye engine", () => {
 
     // Navigate within the app rather than reloading, so this is a genuine mount/unmount cycle
     // of the WebGL scene rather than a fresh page each time.
-    const today = page.getByRole("button", { name: "Today", exact: true });
-    const visualize = page.getByRole("button", { name: "Visualize", exact: true });
+    const today = page.getByRole("button", { name: "Today", exact: true }).filter({ visible: true });
+    // Visualize lives behind the dock's More menu on desktop.
+    const openVisualize = async () => {
+      await page.getByRole("button", { name: "More", exact: true }).filter({ visible: true }).click();
+      await page.getByRole("button", { name: "Visualize", exact: true }).filter({ visible: true }).click();
+    };
     for (let i = 0; i < 8; i++) {
       await today.click();
       await page.waitForTimeout(80);
-      await visualize.click();
+      await openVisualize();
       await page.waitForTimeout(250);
     }
     await page.waitForTimeout(1500);

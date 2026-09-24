@@ -191,16 +191,24 @@ details.clin li::before{background:var(--amber)}
 ::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-thumb{background:rgba(120,170,230,.25); border-radius:8px}
 
 @media (max-width:1020px){
-  #app{grid-template-columns:1fr; grid-template-rows:54px auto 1fr}
-  #topbar{grid-column:1}
+  /* minmax(0,1fr): the column is the screen's width, not the width of its widest row. Without it
+     the condition rail (which never wraps) set the column — and the 3-D canvas — to ~1200px. */
+  #app{grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto 1fr}
+  #topbar{grid-column:1; flex-wrap:wrap; row-gap:6px; min-width:0}
+  #rail{min-width:0}
   #rail{display:flex; overflow-x:auto; padding:8px 10px; border-right:0; border-bottom:1px solid var(--panel-brd)}
   #rail h4,#rail .rail-note{display:none}
   .cbtn{width:auto; white-space:nowrap; margin:0 4px 0 0}
-  #guide{position:absolute; right:0; top:0; bottom:0; width:min(340px,88vw); transform:translateX(105%); transition:.25s; box-shadow:-10px 0 40px rgba(0,0,0,.5)}
-  #guide.open{transform:none}
+  /* The closed guide fades in place rather than waiting off the right edge, which widened the page. */
+  #guide{position:absolute; right:0; top:0; bottom:0; width:min(340px,88vw); opacity:0; visibility:hidden; transform:translateY(8px); transition:.25s; box-shadow:-10px 0 40px rgba(0,0,0,.5)}
+  #guide.open{opacity:1; visibility:visible; transform:none}
   #guideToggle{display:inline-block !important}
   .chip{max-width:150px}
   #gtabs .kbpop{left:6px; right:6px}
+}
+@media (max-width:640px){
+  #topbar .sub{display:none}
+  #dock{flex-wrap:wrap; justify-content:center; row-gap:8px; gap:10px; width:94%}
 }
 #guideToggle{display:none}
 
@@ -1417,6 +1425,14 @@ railEl.appendChild(note);
 
 /* ============================== GUIDE + DIAGNOSE TABS ============================== */
 const guideEl=$('#guide'), tabGuide=$('#tabGuide'), tabDx=$('#tabDx');
+/* Inside Afterlight (a patient's own record) there is no Diagnose tab: the app never ranks
+   conditions from symptoms. The standalone, clinician-led file keeps it. */
+const EMBEDDED = window.self !== window.top;
+if (EMBEDDED) {
+  document.querySelector('#gtabs button[data-t="dx"]')?.remove();
+  tabDx.hidden = true;
+  $('#guideToggle').textContent = '📖 Guide';
+}
 document.querySelectorAll('#gtabs button[data-t]').forEach(b=>{
   b.setAttribute('aria-pressed',String(b.classList.contains('on')));
   b.onclick=()=>showTab(b.dataset.t);
@@ -1426,7 +1442,7 @@ const kbpop=document.createElement('div'); kbpop.className='kbpop'; kbpop.id='kb
 const KBD_HELP=[
   ['1 – 9, 0','Load condition by number'], ['L','Toggle labels'], ['R','Auto-rotate'],
   ['T','Guided tour'], ['F','Fullscreen'], ['G','Guide tab'], ['D','Diagnose tab'],
-  ['?','Toggle this help'], ['Esc','Close card · stop tour']];
+  ['?','Toggle this help'], ['Esc','Close card · stop tour']].filter(([k])=>!(EMBEDDED&&k==='D'));
 kbpop.innerHTML='<h5>Keyboard shortcuts</h5>'+KBD_HELP.map(([k,d])=>
   '<div class="krow"><span>'+d+'</span><span><kbd>'+k+'</kbd></span></div>').join('');
 $('#gtabs').appendChild(kbpop);
@@ -1442,6 +1458,7 @@ document.addEventListener('click',e=>{
   if(kbpop.classList.contains('open')&&!kbpop.contains(e.target)&&e.target!==kbtn) toggleKb(false);
 });
 function showTab(name){
+  if(EMBEDDED && name==='dx') name='guide';
   document.querySelectorAll('#gtabs button[data-t]').forEach(x=>{
     const on=x.dataset.t===name; x.classList.toggle('on',on); x.setAttribute('aria-pressed',String(on));
   });
@@ -1496,7 +1513,7 @@ function runDiagnose(){
   }));
   let urgent=sel.some(s=>s.urgent)||(sel.some(s=>s.id==='float_shower')&&sel.some(s=>s.id==='flashes'))||
     sel.some(s=>s.urgentNote);
-  $('#dxUrgent').classList.toggle('show',!!urgent);
+  $('#dxUrgent')?.classList.toggle('show',!!urgent);
   /* per-group tick counters on the mini-headings */
   const tally={}, tot={};
   SYMPTOMS.forEach(s=>tot[s.grp]=(tot[s.grp]||0)+1);
@@ -1689,7 +1706,7 @@ addEventListener('keydown',e=>{
   else if(k==='t') $('#btnTour').click();
   else if(k==='f') $('#btnFull').click();
   else if(k==='g') showTab('guide');
-  else if(k==='d') showTab('dx');
+  else if(k==='d' && !EMBEDDED) showTab('dx');
   else if(e.key==='?'){ toggleKb(); }
   else if(k==='escape'){ closeCard(); stopTour(); toggleKb(false); }
 });
@@ -1825,7 +1842,7 @@ function animate(){
 }
 
 /* boot */
-buildDiagnose();
+if(!EMBEDDED) buildDiagnose();
 setCondition('normal');
 animate();
 window.__EYE_BOOTED__=true;

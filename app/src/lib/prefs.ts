@@ -88,6 +88,9 @@ export function prefsFromMeta(meta?: AppMeta): DisplayPrefs {
 export function applyPrefs(prefs: DisplayPrefs, root: HTMLElement): void {
   root.setAttribute("data-theme", prefs.theme);
   root.style.setProperty("--type-scale", String(prefs.typeScale));
+  // CSS cannot compare a custom property, so the compact layouts key off this instead.
+  if (prefs.typeScale >= 1.25) root.setAttribute("data-text", "large");
+  else root.removeAttribute("data-text");
   if (prefs.reducedMotion) root.setAttribute("data-motion", "reduced");
   else root.removeAttribute("data-motion");
   if (prefs.glareComfort) root.setAttribute("data-glare", "comfort");

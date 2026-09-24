@@ -77,6 +77,13 @@ export default function App() {
     applyPrefs(prefsFromMeta(store.meta), document.documentElement);
   }, [store.meta]);
 
+  // The Visualize page runs live 3-D scenes; the aura and the glass blur step aside there.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (route === "visualize") root.setAttribute("data-scene", "3d");
+    else root.removeAttribute("data-scene");
+  }, [route]);
+
   if (!store.ready) {
     return (
       <div

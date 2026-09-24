@@ -62,4 +62,48 @@ test.describe("on a phone", () => {
 
     await expect(page.getByText(/today is recorded/i)).toBeVisible();
   });
+
+  test("keeps every tab on screen at every text size", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /skip setup/i }).click();
+    const viewport = page.viewportSize()!;
+
+    for (const size of ["Normal", "Large", "Larger", "Largest"]) {
+      await page.goto("/#/settings");
+      await page.getByRole("button", { name: size, exact: true }).click();
+      await page.goto("/#/today");
+      const tabbar = page.getByRole("navigation", { name: "Main" });
+      for (const label of ["Today", "What I See", "Timeline", "Appointments", "More"]) {
+        const tab = tabbar.getByRole("button", { name: new RegExp(`^${label}`) });
+        const box = (await tab.boundingBox())!;
+        expect(box.x, `${label} at ${size}`).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width, `${label} at ${size}`).toBeLessThanOrEqual(viewport.width);
+      }
+    }
+    // More still opens at the largest size, so every destination stays reachable.
+    await page.getByRole("navigation", { name: "Main" }).getByRole("button", { name: /more/i }).click();
+    await expect(page.getByRole("dialog", { name: /go to/i })).toBeVisible();
+  });
+
+  test("fits the 3D explorer to the screen, with no Diagnose tab", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: /skip setup/i }).click();
+    await page.goto("/#/visualize");
+    await page.getByRole("button", { name: /3d explorer/i }).click();
+    const frame = page.frameLocator("iframe");
+    await expect(frame.locator("#viewport canvas")).toBeVisible({ timeout: 45_000 });
+    await expect(frame.locator("#bootmsg")).not.toBeVisible();
+
+    const widths = await page
+      .frames()
+      .find((f) => f.url().includes("EyeExplorer"))!
+      .evaluate(() => ({
+        page: document.documentElement.scrollWidth,
+        view: document.documentElement.clientWidth,
+        canvas: document.querySelector("#viewport canvas")!.getBoundingClientRect().width,
+      }));
+    expect(widths.page).toBeLessThanOrEqual(widths.view + 1);
+    expect(widths.canvas).toBeLessThanOrEqual(widths.view + 1);
+    await expect(frame.getByRole("button", { name: /diagnose/i })).toHaveCount(0);
+  });
 });
