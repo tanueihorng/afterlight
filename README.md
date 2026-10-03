@@ -248,6 +248,12 @@ through to the daily loop.
 
 ## Quick start
 
+On macOS, double-click `launch.command` in the project folder. Finder does not run `launch.sh`
+by double-click; that file is for running from a terminal. The launcher installs missing app
+dependencies, starts the local development server, and opens the browser.
+
+Or use a terminal:
+
 ```bash
 git clone https://github.com/tanueihorng/afterlight.git
 cd afterlight/app

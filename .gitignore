@@ -23,3 +23,11 @@ app/blob-report/
 # Assembled for publishing; built from app/dist by scripts/build-site.mjs
 site/app/
 site/EyeExplorer*.html
+
+# local-only: agent plans, manual GUI screenshots, debug probes
+.zcode/
+gui-test-screenshots/
+app/scripts/debug-*.mjs
+
+# promo master (72 MB); the compressed promo/afterlight-intro-web.mp4 is committed
+promo/afterlight-intro.mp4
