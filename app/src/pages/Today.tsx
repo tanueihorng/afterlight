@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useHashRoute } from "../lib/router";
 import { useStore } from "../lib/store";
 import {
@@ -10,12 +10,25 @@ import {
   type FloaterObject,
   type SymptomEntry,
 } from "../lib/models";
-import { PageHeader, SafetyNotice } from "../components/ui";
+import { DemoBadge, EyeBadge, ProvenanceBadge, SafetyNotice } from "../components/ui";
+import { Icon, type IconName } from "../components/Icon";
+import Lumi from "../components/Lumi";
+import {
+  greeting,
+  latestAcuity,
+  nextAppointment,
+  recentDays,
+  recentEntries,
+  type DayState,
+} from "../lib/dashboard";
 import { t } from "../lib/i18n";
 import BackupNudge from "../components/BackupNudge";
 import {
   addDays,
   formatDate,
+  formatLongDate,
+  formatShortDate,
+  formatTime,
   isoToDateOnly,
   nowISO,
   todayLocal,
@@ -27,7 +40,8 @@ import { toAllData } from "../lib/store";
 
 interface Row {
   key: string;
-  eye: "right" | "left";
+  // "both" only ever comes from an existing record; the form adds rows per eye.
+  eye: "right" | "left" | "both";
   symptom_type: string;
   comparison: BaselineComparison | "";
   severity: number;
@@ -35,6 +49,13 @@ interface Row {
   floaterShape?: string;
   existingId?: string;
 }
+
+const EYE_WORDS: Record<SymptomEntry["eye"], string> = {
+  right: "right eye",
+  left: "left eye",
+  both: "both eyes",
+  not_applicable: "no eye given",
+};
 
 /** When the change started, which is not always today. */
 type WhenOption = "today" | "yesterday" | "custom";
@@ -59,7 +80,7 @@ export default function Today() {
   const [rows, setRows] = useState<Row[]>(() =>
     todaysSymptoms.map((s) => ({
       key: s.id,
-      eye: (s.eye === "both" ? "right" : s.eye) as "right" | "left",
+      eye: s.eye === "left" || s.eye === "both" ? s.eye : "right",
       symptom_type: s.symptom_type,
       comparison: s.baseline_comparison ?? "",
       severity: s.severity ?? 0,
@@ -69,12 +90,22 @@ export default function Today() {
   );
   const [note, setNote] = useState(existingLog?.note ?? "");
   const [justSaved, setJustSaved] = useState(false);
+  // What the last save took out of today's record, so it can be put back in one tap.
+  const [removed, setRemoved] = useState<SymptomEntry[]>([]);
   const alreadyRecorded = !!existingLog;
   // The daily loop is a decision before it is a form: answer the question, then only fill in what
   // the answer requires.
   const [mode, setMode] = useState<"asking" | "recording">(() =>
-    todaysSymptoms.length > 0 ? "recording" : "asking",
+    // arriving from a timeline "Add event" jumps straight to recording — the two-target
+    // question is for the daily habit, not for someone backdating history. The flag rides in
+    // sessionStorage: query strings in the hash fall foul of the router's fallback.
+    sessionStorage.getItem("today-add") === "1" || todaysSymptoms.length > 0
+      ? "recording"
+      : "asking",
   );
+  useEffect(() => {
+    sessionStorage.removeItem("today-add");
+  }, []);
   const [when, setWhen] = useState<WhenOption>("today");
   const [customDate, setCustomDate] = useState(addDays(date, -1));
 
@@ -95,6 +126,17 @@ export default function Today() {
     return [...prompted, ...SYMPTOM_TYPES.filter((t) => !prompted.includes(t))];
   }, [profileIds]);
   const profileTests = useMemo(() => suggestedSelfTests(profileIds), [profileIds]);
+
+  const dash = useMemo(() => {
+    const data = toAllData(store);
+    return {
+      days: recentDays(data, date),
+      right: latestAcuity(data, "right"),
+      left: latestAcuity(data, "left"),
+      visit: nextAppointment(data, date),
+      recent: recentEntries(data, 4),
+    };
+  }, [store, date]);
 
   const baseline = (eye: "right" | "left") => store.baselines.list.find((b) => b.id === eye)?.text;
 
@@ -128,7 +170,8 @@ export default function Today() {
     const log = {
       id: existingLog?.id ?? crypto.randomUUID(),
       date,
-      overall: "no_change" as const,
+      // Symptoms already saved today stay, so the day cannot also read as "no change".
+      overall: todaysSymptoms.length > 0 ? ("recorded" as const) : ("no_change" as const),
       note: note || undefined,
       source_type: "patient_reported" as const,
       demo: undefined,
@@ -136,18 +179,19 @@ export default function Today() {
       updated_at: nowISO(),
     };
     await store.dailyLogs.put(log);
-    setRows([]);
+    // Only unsaved rows go; rows for saved symptoms must stay, or the next save would delete them.
+    setRows((r) => r.filter((row) => row.existingId));
+    setRemoved([]);
     setJustSaved(true);
   };
 
   const save = async () => {
-    const rowsToSave = rows.filter((r) => r.symptom_type && r.comparison);
-    // remove entries that were deleted in this edit session
-    for (const s of todaysSymptoms) {
-      if (!rowsToSave.some((r) => r.existingId === s.id)) {
-        await store.symptoms.del(s.id);
-      }
-    }
+    // A new row needs a comparison to mean anything; a row for a saved symptom is kept whatever
+    // its fields say — an incomplete form must never be the reason a record disappears.
+    const rowsToSave = rows.filter((r) => r.existingId || (r.symptom_type && r.comparison));
+    // Only the rows the person removed with ✕ are deleted, and they can be put back.
+    const gone = todaysSymptoms.filter((s) => !rowsToSave.some((r) => r.existingId === s.id));
+    for (const s of gone) await store.symptoms.del(s.id);
     for (const r of rowsToSave) {
       let floaterId: string | undefined;
       const existingEntry = r.existingId
@@ -175,6 +219,8 @@ export default function Today() {
         floaterId = floater.id;
       }
       const entry: SymptomEntry = {
+        // Anything the form does not show is carried over from the saved record untouched.
+        ...existingEntry,
         id: r.existingId ?? crypto.randomUUID(),
         // Dated by when it started, which is not always when it was written down. Recording last
         // night's change this morning must not move its onset a day later, or the brief is wrong.
@@ -182,20 +228,21 @@ export default function Today() {
           existingEntry?.date_time ?? (entryDate === date ? nowISO() : `${entryDate}T12:00:00`),
         eye: r.eye,
         symptom_type: r.symptom_type,
-        status:
-          r.comparison === "new"
+        status: !r.comparison
+          ? (existingEntry?.status ?? "same")
+          : r.comparison === "new"
             ? "new"
             : r.comparison === "fewer"
               ? "better"
               : r.comparison === "slightly_more" || r.comparison === "much_more"
                 ? "worse"
                 : "same",
-        baseline_comparison: r.comparison || undefined,
+        baseline_comparison: r.comparison || existingEntry?.baseline_comparison,
         severity: r.severity > 0 ? r.severity : undefined,
         description: r.description || undefined,
         floater_object_id: floaterId ?? existingEntry?.floater_object_id,
         drawing_id: existingEntry?.drawing_id,
-        source_type: "patient_reported",
+        source_type: existingEntry?.source_type ?? "patient_reported",
         created_at: existingEntry?.created_at ?? nowISO(),
         updated_at: nowISO(),
       };
@@ -211,11 +258,32 @@ export default function Today() {
       updated_at: nowISO(),
     };
     await store.dailyLogs.put(log);
+    setRemoved(gone);
     setJustSaved(true);
   };
 
+  /** Undo the removals of the last save: the same records, ids and dates, back in the day. */
+  const restoreRemoved = async () => {
+    for (const s of removed) await store.symptoms.put(s);
+    if (existingLog) await store.dailyLogs.put({ ...existingLog, overall: "recorded", updated_at: nowISO() });
+    setRows((r) => [
+      ...r,
+      ...removed.map((s) => ({
+        key: s.id,
+        eye: s.eye === "left" || s.eye === "both" ? s.eye : ("right" as const),
+        symptom_type: s.symptom_type,
+        comparison: s.baseline_comparison ?? ("" as const),
+        severity: s.severity ?? 0,
+        description: s.description ?? "",
+        existingId: s.id,
+      })),
+    ]);
+    setRemoved([]);
+  };
+
   const eyePanel = (eye: "right" | "left") => {
-    const rowsForEye = rows.filter((r) => r.eye === eye);
+    // A both-eyes record (only ever an existing one) is shown, and kept, under the right eye.
+    const rowsForEye = rows.filter((r) => r.eye === eye || (eye === "right" && r.eye === "both"));
     return (
       <section
         className={`card eye-panel ${eye}`}
@@ -322,6 +390,7 @@ export default function Today() {
                 type="text"
                 value={r.description}
                 placeholder={t("today.describe_placeholder")}
+                aria-label={t("today.describe")}
                 onChange={(e) => updateRow(r.key, { description: e.target.value })}
               />
             </div>
@@ -339,11 +408,213 @@ export default function Today() {
     );
   };
 
+  const DAY_LABEL: Record<DayState, string> = {
+    no_change: "no change recorded",
+    changed: "change recorded",
+    missing: "not recorded",
+  };
+
+  const QUICK: { route: Parameters<typeof nav>[0]; icon: IconName; title: string; hint: string }[] =
+    [
+      {
+        route: "what-i-see",
+        icon: "pen",
+        title: "Draw what I see",
+        hint: "Sketch floaters, shadows or gaps",
+      },
+      {
+        route: "self-tests",
+        icon: "checks",
+        title: "Do a check",
+        hint: "Amsler grid and home checks",
+      },
+      {
+        route: "imaging",
+        icon: "imaging",
+        title: "Add a document",
+        hint: "Letters, scans and results",
+      },
+      {
+        route: "visualize",
+        icon: "visualize",
+        title: "Model eye",
+        hint: "A generic model, not your eye",
+      },
+    ];
+
+  const acuityCell = (eye: "right" | "left") => {
+    const m = eye === "right" ? dash.right : dash.left;
+    return (
+      <div className={`meas ${m ? "" : "missing"}`}>
+        <EyeBadge eye={eye} />
+        {m ? (
+          <>
+            <span className="meas-value">{m.value}</span>
+            <span className="meas-meta">
+              {formatShortDate(m.date)} · <ProvenanceBadge source={m.source_type} />{" "}
+              <DemoBadge demo={m.demo} />
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="meas-value">Not recorded</span>
+            <span className="meas-meta">No acuity in the record yet</span>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const shortcuts = (
+    <nav className="quick" aria-label="Shortcuts">
+      {QUICK.map((q) => (
+        <button key={q.route} className="quick-btn" onClick={() => nav(q.route)} title={q.hint}>
+          <span className="quick-icon">
+            <Icon name={q.icon} size={18} />
+          </span>
+          <span className="quick-text">
+            <span className="quick-title">{q.title}</span>
+            <span className="quick-hint">{q.hint}</span>
+          </span>
+        </button>
+      ))}
+    </nav>
+  );
+
+  const dashboard = (
+    <div className="dash">
+      <section className="card dash-days" aria-labelledby="dash-days-title">
+        <div className="dash-head">
+          <h2 id="dash-days-title" className="card-title">
+            Last 14 days
+          </h2>
+          <button className="btn subtle" onClick={() => nav("timeline")}>
+            Timeline <Icon name="arrow" size={16} />
+          </button>
+        </div>
+        <ol className="days">
+          {dash.days.map((d) => (
+            <li key={d.date} className="day">
+              <span
+                className={`day-cell ${d.state} ${d.date === date ? "today" : ""}`}
+                role="img"
+                aria-label={`${formatDate(d.date)}: ${DAY_LABEL[d.state]}`}
+              />
+              <span className="day-num" aria-hidden="true">
+                {Number(d.date.slice(8))}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div className="legend" aria-hidden="true">
+          <span>
+            <i className="day-cell no_change" /> No change
+          </span>
+          <span>
+            <i className="day-cell changed" /> Change recorded
+          </span>
+          <span>
+            <i className="day-cell missing" /> Not recorded
+          </span>
+        </div>
+        {streak && <p className="muted dash-note">{streak}</p>}
+      </section>
+
+      <section className="card dash-eyes" aria-labelledby="dash-eyes-title">
+        <div className="dash-head">
+          <h2 id="dash-eyes-title" className="card-title">
+            Last visual acuity
+          </h2>
+          <button className="btn subtle" onClick={() => nav("my-eyes")}>
+            My eyes <Icon name="arrow" size={16} />
+          </button>
+        </div>
+        <div className="meas-pair">
+          {acuityCell("right")}
+          {acuityCell("left")}
+        </div>
+      </section>
+
+      <section className="card dash-recent" aria-labelledby="dash-recent-title">
+        <div className="dash-head">
+          <h2 id="dash-recent-title" className="card-title">
+            Recently written down
+          </h2>
+        </div>
+        {dash.recent.length === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>
+            Nothing yet. Entries you add appear here with the eye and who recorded them.
+          </p>
+        ) : (
+          <ul className="recent">
+            {dash.recent.map((e) => (
+              <li key={e.id}>
+                <span className="recent-when">{formatShortDate(isoToDateOnly(e.when))}</span>
+                <span className="recent-what">
+                  <span className="recent-title">{e.title}</span>
+                  {e.detail && <span className="recent-detail">{e.detail}</span>}
+                </span>
+                <span className="recent-tags">
+                  <EyeBadge eye={e.eye} />
+                  <ProvenanceBadge source={e.source} />
+                  <DemoBadge demo={e.demo} />
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card dash-visit" aria-labelledby="dash-visit-title">
+        <div className="dash-head">
+          <h2 id="dash-visit-title" className="card-title">
+            Next visit
+          </h2>
+        </div>
+        {dash.visit ? (
+          <div className="visit">
+            <div className="date-tile" aria-hidden="true">
+              <small>{formatShortDate(dash.visit.date_time).split(" ")[1]}</small>
+              <b>{formatShortDate(dash.visit.date_time).split(" ")[0]}</b>
+            </div>
+            <div>
+              <div className="recent-title">
+                {dash.visit.clinic || dash.visit.specialty || "Appointment"}
+              </div>
+              <div className="recent-detail">
+                {formatDate(isoToDateOnly(dash.visit.date_time))},{" "}
+                {formatTime(dash.visit.date_time)}
+                {dash.visit.clinician ? ` · ${dash.visit.clinician}` : ""}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 0 }}>
+            No visit booked in the record.
+          </p>
+        )}
+        <button className="btn primary" onClick={() => nav("appointments")}>
+          <Icon name="brief" size={18} />
+          {dash.visit ? "Prepare for this visit" : "Add a visit"}
+        </button>
+      </section>
+    </div>
+  );
+
   return (
     <>
-      {/* No kicker: the shell already prints today's date above every page, and having it
-          twice on the one screen people open daily was just noise. */}
-      <PageHeader title={t("today.title")} sub={t("today.sub")} />
+      {/* The shell leaves the date off this page; the greeting carries it instead. */}
+      <header className="page-header greet">
+        <div>
+          <div className="topbar-date">
+            {greeting(new Date().getHours())} · {formatLongDate(date)}
+          </div>
+          <h1>{t("today.title")}</h1>
+          <p className="page-sub">{t("today.sub")}</p>
+        </div>
+        <Lumi resting={alreadyRecorded || justSaved} />
+      </header>
+      {mode === "asking" && shortcuts}
       <BackupNudge />
 
       {alreadyRecorded && !justSaved && mode === "asking" && (
@@ -377,9 +648,31 @@ export default function Today() {
             <button
               className="btn subtle"
               style={{ minHeight: "var(--target)", padding: "2px 8px" }}
-              onClick={() => nav("timeline")}
+              onClick={() => nav("timeline", "recorded")}
             >
               {t("today.view_timeline")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {justSaved && removed.length > 0 && (
+        <div className="safety" style={{ marginBottom: 16 }} role="status">
+          <span className="safety-icon" aria-hidden>
+            ↺
+          </span>
+          <div>
+            Removed from today:{" "}
+            {removed
+              .map((s) => `${s.symptom_type}, ${EYE_WORDS[s.eye]}`)
+              .join(", ")}
+            .{" "}
+            <button
+              className="btn subtle"
+              style={{ minHeight: "var(--target)", padding: "2px 8px" }}
+              onClick={restoreRemoved}
+            >
+              Put {removed.length === 1 ? "it" : "them"} back
             </button>
           </div>
         </div>
@@ -396,14 +689,14 @@ export default function Today() {
           <div className="decision">
             <button className="decision-btn" onClick={saveNoChange}>
               <span className="decision-icon" aria-hidden>
-                ◐
+                <Icon name="check" />
               </span>
               <span className="decision-label">{t("today.nothing_different")}</span>
               <span className="decision-hint">{t("today.nothing_different_hint")}</span>
             </button>
             <button className="decision-btn secondary" onClick={() => setMode("recording")}>
               <span className="decision-icon" aria-hidden>
-                ✎
+                <Icon name="plus" />
               </span>
               <span className="decision-label">{t("today.something_changed")}</span>
               <span className="decision-hint">{t("today.something_changed_hint")}</span>
@@ -445,11 +738,7 @@ export default function Today() {
             </div>
           )}
 
-          {streak && (
-            <p className="muted" style={{ marginTop: 18 }}>
-              {streak}
-            </p>
-          )}
+          {dashboard}
         </>
       ) : (
         <>

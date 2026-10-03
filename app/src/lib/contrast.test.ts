@@ -103,3 +103,48 @@ describe.each(THEMES)("$name theme", ({ selector, textMin, uiMin }) => {
     expect(contrastRatio(ink, fill)).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+// Every accent colour, in both glass themes. The accent is a matter of taste, but the text and
+// buttons drawn in it still have to be readable, whichever one someone picks.
+const ACCENT_IDS = ["ocean", "blossom", "sunrise", "lagoon", "aurora", "sorbet", "moonstone"];
+
+const ACCENT_CASES = ACCENT_IDS.flatMap((id) => [
+  {
+    name: `${id} on dark`,
+    base: ":root",
+    accent: `:root:not([data-theme^="hc"])[data-accent="${id}"]`,
+  },
+  {
+    name: `${id} on light`,
+    base: '[data-theme="light"]',
+    accent: `:root[data-theme="light"][data-accent="${id}"]`,
+  },
+]);
+
+describe.each([
+  { name: "dusk on dark", base: ":root", accent: "" },
+  { name: "dusk on light", base: '[data-theme="light"]', accent: "" },
+  ...ACCENT_CASES,
+])("$name accent", ({ base: baseSelector, accent }) => {
+  const overrides = accent ? parseTokens(css, accent) : {};
+  if (accent) {
+    it("is defined", () => expect(overrides["--accent-strong"]).toBeTruthy());
+  }
+  const tokens = { ...tokensFor(baseSelector), ...overrides };
+
+  it("reads as text on a card", () => {
+    // Only the main colour is ever used for text.
+    const card = colour(tokens, "--bg-elev", { r: 0, g: 0, b: 0 });
+    expect(contrastRatio(colour(tokens, "--accent-strong", card), card)).toBeGreaterThanOrEqual(
+      4.5,
+    );
+  });
+
+  it("keeps button text readable across the whole gradient", () => {
+    for (const stop of ["--accent-strong", "--accent-2", "--accent-3"]) {
+      const fill = colour(tokens, stop, { r: 0, g: 0, b: 0 });
+      const ink = colour(tokens, "--accent-ink", fill);
+      expect(contrastRatio(ink, fill), `ink on ${stop}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});

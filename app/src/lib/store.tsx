@@ -11,7 +11,7 @@ import {
 import { EMPTY_DATA, dbDelete, dbPatch, dbPut, loadMigrated, type AllData } from "./db";
 import { indexesOf, type RecordIndexes } from "./indexes";
 import type { AppMeta, EyeBaseline, StoredFile, SymptomEntry, TimelineEvent } from "./models";
-import { SELF_TEST_LABELS } from "./models";
+import { MEASUREMENT_LABELS, MODALITY_LABELS, SELF_TEST_LABELS } from "./models";
 import { isoToDateOnly, nowISO, todayLocal } from "./util";
 
 export type EntityLists = AllData;
@@ -52,35 +52,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const metaWrites = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
+    let live = true;
     loadMigrated().then(({ meta: m, migrated, ...lists }) => {
+      // An unmount before the load settles (a test ending, a StrictMode remount) must not write
+      // into a provider that no longer exists.
+      if (!live) return;
       setData(lists as EntityLists);
       metaRef.current = m;
       setMetaState(m);
       setMigrationNotes(migrated ?? []);
       setReady(true);
     });
+    return () => {
+      live = false;
+    };
   }, []);
 
   const put = useCallback((key: EntityKey, value: unknown) => {
-    setData((d) => {
-      const list = d[key] as unknown[];
-      const idx = list.findIndex(
-        (x) => (x as { id: string }).id === (value as { id: string }).id
-      );
-      const next = [...list];
-      if (idx >= 0) next[idx] = value;
-      else next.push(value);
-      return { ...d, [key]: next };
+    return dbPut(key, value).then(() => {
+      setData((d) => {
+        const list = d[key] as unknown[];
+        const idx = list.findIndex(
+          (x) => (x as { id: string }).id === (value as { id: string }).id,
+        );
+        const next = [...list];
+        if (idx >= 0) next[idx] = value;
+        else next.push(value);
+        return { ...d, [key]: next };
+      });
     });
-    return dbPut(key, value).then(() => undefined);
   }, []);
 
   const remove = useCallback((key: EntityKey, id: string) => {
-    setData((d) => ({
-      ...d,
-      [key]: (d[key] as unknown[]).filter((x) => (x as { id: string }).id !== id),
-    }));
-    return dbDelete(key, id).then(() => undefined);
+    return dbDelete(key, id).then(() => {
+      setData((d) => ({
+        ...d,
+        [key]: (d[key] as unknown[]).filter((x) => (x as { id: string }).id !== id),
+      }));
+    });
   }, []);
 
   const store = useMemo<StoreShape>(() => {
@@ -120,7 +129,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const next = {
           id: "meta" as const,
           onboarded: false,
-          theme: "dark" as const,
+          theme: "light" as const,
           demo_seeded: false,
           ...metaRef.current,
           ...patch,
@@ -152,7 +161,7 @@ export function useStore(): StoreShape {
 
 /** Factory for new records: id + timestamps first, caller patches the rest. */
 export function newRecord<T extends object>(
-  patch: T
+  patch: T,
 ): T & { id: string; created_at: string; updated_at: string } {
   return {
     id: crypto.randomUUID(),
@@ -313,7 +322,7 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       entity_id: m.id,
       date_time: m.date,
       eye: m.eye,
-      title: `Measurement — ${m.kind}: ${m.value}${m.unit ?? ""}`,
+      title: `${MEASUREMENT_LABELS[m.kind] ?? m.kind}: ${m.value}${m.unit ? ` ${m.unit}` : ""}`,
       summary: m.note,
       source_type: m.source_type,
       demo: m.demo,
@@ -327,7 +336,7 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       entity_id: i.id,
       date_time: i.date,
       eye: i.eye,
-      title: `${i.modality.toUpperCase()} imaging`,
+      title: MODALITY_LABELS[i.modality] ?? `${i.modality} imaging`,
       summary: i.clinic || i.findings,
       source_type: i.source_type,
       demo: i.demo,

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { backupState, shouldNudge } from "../lib/backup";
 import { downloadArchive } from "../lib/archive";
 import { toAllData, useStore } from "../lib/store";
-import { formatDate, todayLocal } from "../lib/util";
+import { formatDate, isoToDateOnly, todayLocal } from "../lib/util";
 
 const LAST_NUDGE_KEY = "afterlight.last-backup-nudge";
 
@@ -45,7 +45,7 @@ export default function BackupNudge() {
       <p style={{ margin: 0, color: "var(--text-2)", fontSize: "var(--fs-base)" }}>
         {state.neverExported
           ? `Your record holds ${state.totalRecords} entries and has never been exported. If this browser's data is cleared, they are gone.`
-          : `${state.unsavedChanges} ${state.unsavedChanges === 1 ? "entry has" : "entries have"} changed since your last export on ${formatDate(state.lastExportAt!.slice(0, 10))}.`}
+          : `${state.unsavedChanges} ${state.unsavedChanges === 1 ? "entry has" : "entries have"} changed since your last export on ${formatDate(isoToDateOnly(state.lastExportAt!))}.`}
       </p>
       <div className="btn-row" style={{ marginTop: 10 }}>
         <button
@@ -59,7 +59,7 @@ export default function BackupNudge() {
             setStatus("done");
           }}
         >
-          {status === "working" ? "Exporting…" : "⭳ Export now"}
+          {status === "working" ? "Exporting…" : "↓ Export now"}
         </button>
         <button className="btn subtle" onClick={dismiss}>
           Not now

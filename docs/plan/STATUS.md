@@ -19,11 +19,150 @@ marked blocked.
 | 08 | Records intelligence | done | phase-08-records-intelligence | 2026-09-08 | query layer, ask grammar, search v2, descriptive trends, accessible charts |
 | 09 | Clinician handoff & sharing | done, pending clinical review | phase-09-clinician-handoff | 2026-09-09 | deterministic PDF, print, encrypted range shares, QR, ingestion; **`docs/clinician-note.md` and the printed wording need sign-off**; OCR engine not bundled |
 | 10 | Release & clinical review | done, blocked on clinical review | phase-10-release | 2026-09-09 | landing page, guide, backup story, i18n layer, issue templates, versioning; **release script refuses to tag while `docs/clinical-review.md` says NOT REVIEWED** |
+| 11 | Eye reference, baseline and anatomy contract | done | phase-11-baseline-contract | 2026-09-13 | Baseline recorded with captures of both viewers; contract at docs/eye-realism/anatomy-contract.md. Reference confirmed commercial (not downloaded). `verify` clean |
+| 12 | Original Blender anatomy and reproducible assets | done | phase-11-baseline-contract | 2026-09-13 | Full model authored from params.json, watertight, exported (0.6 MB) with 9 geometry tests; 4 studies inspected; `verify` clean (554 tests) |
+| 13 | Browser rendering and solid interactive sections | done | phase-11-baseline-contract | 2026-09-13 | Scene rebuilt on the model: capped sections, vessel tubes, live appearance; verify clean (570 tests, 7 engine e2e); evidence in docs/eye-realism/phase-13-browser.md |
+| 14 | Interactive cornea, retina and layer inspection | done | phase-11-baseline-contract | 2026-09-13 | Cutaway default, accessible structure list, picking, focus-on-request, labelled layer magnification, in-place reset; copy registered for clinical review; verify clean |
+| 15 | Bring the original explorer to the same model quality | done | phase-11-baseline-contract | 2026-09-13 | Model embedded via generated adapter block; primitives replaced, lids removed, cut caps live; regression matrix in docs/eye-realism/phase-15-explorer.md |
+| 16 | Visual review, performance and offline completion gate | done, one capture-tooling gap | phase-11-baseline-contract | 2026-09-13 | Muscle-cone apex corrected (real defect from phase 12), 12 MB cap enforced, 32 settled final captures, acceptance report at docs/eye-realism/acceptance.md; report JSON incomplete (last phone click intercepted) — recorded |
 
 ## Log
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-09-23** — Existing-feature reliability and usability pass finished. Fixed committed-write
+  visibility and reload behavior, made Today’s timeline action show the saved observations (including
+  older entries), prevented 3D drag/cancel from selecting anatomy, hid fullscreen where unsupported,
+  and raised form inputs to the 44px target. `npm run verify`: 591 tests passed; focused desktop and
+  mobile journeys: 82 passed, 2 expected skips; the My Eyes, checks, imaging, palette and Visualize
+  run recorded 41 passes and 7 skips. Its two initial failures were the Amsler test clicking below
+  the viewport instead of drawing; after fixing the test to scroll and drag, all 6 self-check runs
+  passed across desktop and mobile. Handoff, phone-shell, offline, release, onboarding and drawing
+  journeys recorded 49 passes and 5 expected skips; PDF/share/print assertions passed on both
+  projects. The complete isolated desktop 3D engine file passed 8/8 in 5.3 minutes, including the
+  standalone explorer offline check. All nine desktop route-control sweeps and the mobile shell
+  sweep later passed when run separately. The combined 224-test run was interrupted after 10.8
+  minutes, and physical-device, full screen-reader and print review remain open. No new feature,
+  release, or clinical-review change.
+
+- **2026-09-23** — Existing-feature reliability and usability pass started at the user’s request. No new features. Preserve current uncommitted persistence and verification work; rerun the gate and browser journeys, fix observed interaction defects, and record remaining limits.
+
+- **2026-09-17** — Isolated desktop `e2e/engine.spec.ts` test “inspects structures from the accessible list and resets” passed (1 test, 36.8s) with `--output=/tmp/verified-out --trace=retain-on-failure`; `.last-run.json` records success and no trace ZIP is retained on a pass by design; the prior trace-archive ENOENT is consistent with a harness file-race during overlapping runs, not an app assertion failure, but the precise cause is not proven; the full-suite rerun was stopped and whole-app verification remains partial.
+
+- **2026-09-13** — **Phase 16 done, one capture-tooling gap recorded.** The cutaway defect
+  from the earlier phases was real and is fixed at the source: the muscle cone's annulus sat
+  10 mm nasal (disc direction ≠ orbital apex), so the lateral rectus crossed the vitreous and
+  the cut shredded the straps. The apex is now on the eye's axis, the nerve converges onto it,
+  and the straps bow around the globe through an equatorial control point; model rebuilt,
+  re-validated watertight, re-embedded, and confirmed in the browser and the Blender study
+  (before/after: phase13 vs phase16 captures). The 12 MB lazy-renderer cap is now **enforced**
+  by `check-bundle.mjs` (tested to fail on a lowered budget) — previously it only reported.
+  Final evidence: 32 settled captures across both viewers, desktop and emulated phone, all
+  contract views, slices 0-100, left eye, exploded, after-reset. The acceptance report
+  (docs/eye-realism/acceptance.md) assesses all eight contract items per viewer and records the
+  gaps honestly: sparse macular fronds, dark choroid cut band, pupil double edge through the
+  cornea, explorer lab-ring standoff and label drift, explorer vessels painted rather than
+  extruded. `verify` clean (570 tests, budgets, no network); standalone 2.26 MB / 5 MB rebuilt.
+  Not finished, recorded: the capture run's report JSON is missing because the final
+  explorer-phone reset click was intercepted by a landing-page element (capture-tooling gap —
+  the 32 shots stand as evidence); real-device performance remains unverified (no handset;
+  SwiftShader timings are relative); docs/Afterlight-*.docx, its PDF and root scripts/ remain
+  deliberately untracked. Publishing and `npm run release` untouched — clinical review stays
+  NOT REVIEWED.
+
+- **2026-09-13** — **Phase 15 done.** The legacy explorer renders the same original model from
+  the same bytes: a second generated block (adapter bundling the decoder, section maths and the
+  fundus painter) is injected into EyeExplorer.html beside the iris block, and the page's own
+  r160 + material helpers build and dress the meshes — no cross-version objects. Replaced: all
+  primitive globe layers, capsule nerve/sheath/muscles, ciliary torus, sphere lens, sphere-cap
+  cornea, lathe iris; removed: the decorative torus lids/lashes/caruncle (dry-eye label list
+  updated). The model is mirrored so the authored nasal disc sits on the explorer's cut side;
+  the cut slider drives real capped sections with the negated plane; the retina carries the
+  shared painted fundus and the old flat macula/fovea overlays retired. Scenario/tour
+  references survive via the preserved bindings; the dry-eye tear-film material remains as the
+  condition's animation carrier. Stale-public-copy and init-order bugs caught by actually
+  looking at captures. verify clean; explorer offline e2e and mobile journey pass; cosmetic
+  gaps recorded (lab-ring standoff, small label-anchor drift).
+
+- **2026-09-13** — **Phase 14 done.** The cutaway is now the opening presentation with whole-eye
+  alternative and a **Reset view** that restores camera, cut, spacing, selection and magnification
+  on the mounted scene (no remount). Fifteen structures are selectable two ways that always
+  agree — click the model (pick) or the accessible list — with the selection described in an
+  `aria-live` status line, never colour alone; a per-structure Focus button moves the camera only
+  on explicit request. Layer thickness ×1–×4 is a labelled illustrative control that rescales the
+  retina/choroid shells in the scene's own model copy, so caps and walls stay consistent; ×1 is
+  true scale. Keyboard: arrows orbit, `+`/`-` zoom, the list is fully keyboard-reachable, reduced
+  motion applies changes directly. The fifteen one-sentence structure descriptions are new
+  patient-readable anatomy copy — registered in `docs/atlas-review.md` for human sign-off per
+  AGENTS.md §5, not self-approved. Guide updated. `verify` clean (570 tests, budgets hold); the
+  phase-14 e2e journey (list selection → status → focus → reset) passes. Honest note: the engine
+  e2e file, run end-to-end repeatedly on SwiftShader, shows run-to-run flake under memory
+  pressure (different test each time; every test passes solo; two full green runs recorded) —
+  an environment limitation, recorded rather than papered over.
+
+- **2026-09-13** — **Phase 13 done.** The app's eye view renders the original anatomical model:
+  structures decode from the committed binary into typed arrays and adapt to Three r180;
+  laterality is a mirror transform; iris/pupil/fundus/vessels stay live parameters with
+  `setAppearance()` retuning materials in place (sliders no longer remount the scene). Sections
+  are real: the plane section of each sliced solid is computed by edge-keyed triangle walking,
+  chains close exactly, loops fill as flat caps or wall bands reusing the structure's pale cut
+  material — `section.test.ts` pins topology, tangent/extreme cuts, immutability and repeat
+  sweeps, and an e2e test asserts no renderer-resource growth across sweeps. Vessels are smoothed
+  tubes on the inner retina split by artery/vein, tied to the geometric disc; the FAV steering
+  now arcs around the macula progressively. Tear-film sphere dropped for the cornea's clearcoat.
+  Four debugging rounds that cost real time: a stale-`matrix_world` camera roll pointed the
+  study camera at the floor; the iris bake sculpt occluded every Blender study until hidden;
+  `?inline` on a `.bin` cannot be served by vitest's node pipeline (the model now ships as a
+  generated data-URL module `anatomy-data.ts`, hashed like the rest); and parallel SwiftShader
+  e2e contexts starve each other past canvas waits (engine suite now serial — an accommodation,
+  not weaker assertions). Budgets: Visualize 1.37 MB / 12 MB, standalone 2.25 MB / 5 MB,
+  initial JS 81 KB unchanged. Known gaps recorded: sparse macular branch fronds in the fundus
+  close-up, dark choroid cut-band, faint pupil double edge through the cornea.
+
+- **2026-09-13** — **Phase 12 done.** The original anatomical eye exists in Blender and in the
+  repo's browser assets. `build-anatomy.py` runs the preserved iris bake in-process, then authors
+  sclera, cornea (posterior conic solved to the measured 0.67 mm peripheral thickness), iris,
+  lens (caps solved to Ø9 × 4), ciliary body, 36 zonules, retina with fundus-painter UVs,
+  choroid at the labelled ×3 magnification, nerve core+sheath with a cupped nerve head, and four
+  tapered rectus muscles with tendon slots — every solid validated watertight with outward
+  winding. It took four real debugging rounds to get honest geometry: polar caps that swept
+  across occupied surface made the render-only boolean collapse the shells to nothing (now a
+  per-column slerp loft that meets the main grid exactly), revolve profiles double-closed into
+  degenerate rings, the render camera sat inside an unhidden boolean cutter (the mysterious
+  black/grey frames), and the browser's exact weld missed seam columns that differ by one int16
+  quantum (now a 0.01 mm tolerance). The exporter writes quantised regular grids (0.6 MB) that
+  `model.ts` decodes to plain typed arrays for both Three versions; 9 CI tests pin topology,
+  bounds, disc laterality, the iris UV convention and the budget. Four inspected Cycles studies
+  satisfy the structural contract items; dark choroid cut-band and polar-cap normal seams are
+  recorded as phase-13 material work. `verify` clean: 554 tests. Not done here: no browser
+  rendering changes (phase 13), no slice caps yet, study iris intentionally unpainted.
+
+- **2026-09-13** — **Phase 11 done.** The baseline is real images, not memory: both viewers
+  captured in every mode at a fixed viewport by a reusable `capture-eye-views.mjs` (GPU
+  draw-call/triangle sampling via a WebGL wrapper; the demand renderer's idle zero-frame is
+  itself recorded). Honest scorecard: contract items 1, 2, 4, 5 fail in both viewers — the
+  explorer's cut reveals hollow sliced capsules, a rod nerve and a zero-thickness shell; the app
+  has no nerve or muscles at all. The reference was confirmed as a commercial MotionCow licence
+  (the thing the user declined to buy); its viewer is not reachable from here, so the handoff's
+  written target plus its ~65k-triangle complexity reference stand in — gap recorded. The
+  contract fixes what phases 12–15 build: stable structure IDs, mm units, +Z-anterior axes with
+  laterality as a mirror transform, verified sources for every new dimension (classic spiral of
+  Tillaux, 25 mm intraorbital nerve, ONSD-scaled sheath, cited), labelled illustrative
+  magnification for the two sub-millimetre walls, the section-cap design that keeps cut edges
+  closed (analytic caps for surfaces of revolution, planar-loop caps for tubes), parameter
+  ownership so no condition can freeze geometry, the full legacy-hook mapping, and the shared
+  path: Blender authors statics → quantised regular grids + manifest → plain typed arrays →
+  thin adapters per Three version (r180 app, r160 embedded), no cross-version objects, no
+  network. Prior session's uncommitted iris-bake work committed first as the recorded baseline.
+  Not done here, deliberately: no source files changed (read-only phase); exact
+  `renderer.info` numbers wait for phase 13's diagnostics accessor; phone captures wait for
+  phase 16.
+
+- **2026-09-13** — Planned phases 11–16 for an original Blender/Three.js anatomical eye in both
+  Visualize viewers. See [execution handoff](EYE-REALISM-HANDOFF.md). Planning only; implementation
+  has not started. Existing uncommitted iris-bake work is the baseline, not completion of this
+  follow-up. The Phase 06 Blender-installation note describes its historical state.
 
 - **2026-09-09** — **Phase 10 done; the release itself is blocked, deliberately.** Everything a
   first-time visitor needs exists: a static landing page written for a patient rather than a

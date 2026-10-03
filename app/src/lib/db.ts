@@ -87,8 +87,14 @@ function tx<T>(
       new Promise<T>((resolve, reject) => {
         const t = db.transaction(store, mode);
         const req = fn(t.objectStore(store));
-        req.onsuccess = () => resolve(req.result);
+        let result: T;
+        req.onsuccess = () => {
+          result = req.result;
+        };
         req.onerror = () => reject(req.error);
+        // A successful request can still be rolled back by a transaction abort.
+        t.oncomplete = () => resolve(result);
+        t.onabort = () => reject(t.error ?? new Error("transaction aborted"));
       })
   );
 }
@@ -118,14 +124,19 @@ export async function dbPatch<T extends { id: string }>(
   return new Promise<T>((resolve, reject) => {
     const t = db.transaction(store, "readwrite");
     const objectStore = t.objectStore(store);
+    let merged: T;
     const read = objectStore.get(id);
     read.onerror = () => reject(read.error);
     read.onsuccess = () => {
-      const merged = { ...(read.result ?? {}), ...patch, id } as T;
+      merged = { ...(read.result ?? {}), ...patch, id } as T;
       const write = objectStore.put(merged);
       write.onerror = () => reject(write.error);
-      write.onsuccess = () => resolve(merged);
     };
+    // Resolve at the commit, as tx() does (V-009): every meta write — onboarding finished,
+    // display preferences, profiles — goes through here, and a request success is not yet a
+    // write IndexedDB has kept.
+    t.oncomplete = () => resolve(merged);
+    t.onabort = () => reject(t.error ?? new Error("transaction aborted"));
   });
 }
 
@@ -331,6 +342,7 @@ export async function loadMigrated(): Promise<AllData & { meta?: AppMeta; migrat
 
   await dbWriteSnapshot([
     { store: "floaters", values: result.snapshot.data.floaters, clearFirst: true },
+    { store: "measurements", values: result.snapshot.data.measurements, clearFirst: true },
     { store: "files", values: materialised, clearFirst: true },
   ]);
   // Patch rather than overwrite: a migration only owns the schema version. Writing the whole

@@ -8,7 +8,7 @@
 import type { BriefItem, BriefPayload, SourceType } from "./models";
 import { SOURCE_LABELS } from "./models";
 import type { Block, PageSize, PdfDocument, PdfImage } from "./pdf";
-import { formatDate } from "./util";
+import { formatDate, isoToDateOnly } from "./util";
 
 export const PATIENT_GENERATED_FOOTER =
   "Patient-generated record, produced by Afterlight from this patient's own entries and from " +
@@ -128,7 +128,7 @@ export function briefToPdfDocument(payload: BriefPayload, opts: BriefPdfOptions)
   blocks.push({ kind: "text", text: opts.title, size: 10, font: "bold" });
   blocks.push({
     kind: "text",
-    text: `Period ${formatDate(payload.range_start)} – ${formatDate(payload.range_end)}  ·  prepared ${formatDate(payload.generated_at.slice(0, 10))}`,
+    text: `Period ${formatDate(payload.range_start)} – ${formatDate(payload.range_end)}  ·  prepared ${formatDate(isoToDateOnly(payload.generated_at))}`,
     size: 8,
     grey: 0.35,
   });
@@ -177,7 +177,7 @@ export function briefToPdfDocument(payload: BriefPayload, opts: BriefPdfOptions)
           heightPt: opts.figureSizePt ?? 96,
           figures: figures.map((d) => ({
             imageId: d.id,
-            caption: `${formatDate(d.date_time.slice(0, 10))} ${d.eye === "right" ? "OD" : d.eye === "left" ? "OS" : "OU"}`,
+            caption: `${formatDate(isoToDateOnly(d.date_time))} ${d.eye === "right" ? "OD" : d.eye === "left" ? "OS" : "OU"}`,
           })),
         },
         {

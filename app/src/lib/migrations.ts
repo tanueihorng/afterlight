@@ -9,7 +9,7 @@ import type { AllData } from "./db";
 import type { AppMeta, FloaterObject, StoredFile } from "./models";
 
 /** Bump this whenever a migration is added. */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export interface Snapshot {
   data: AllData;
@@ -82,6 +82,21 @@ export const MIGRATIONS: Migration[] = [
       // Nothing to rewrite: the new store starts empty and profiles default to none, which means
       // the generic prompt set — exactly what everyone had before.
       data: { ...s.data, selfTests: s.data.selfTests ?? [] },
+    }),
+  },
+  {
+    from: 4,
+    to: 5,
+    describe: "Mark existing measurements as checked unless they came from an unchecked document.",
+    migrate: (s) => ({
+      ...s,
+      data: {
+        ...s.data,
+        measurements: s.data.measurements.map((m) => ({
+          ...m,
+          confirmed: m.confirmed ?? m.source_type !== "document_extracted",
+        })),
+      },
     }),
   },
 ];

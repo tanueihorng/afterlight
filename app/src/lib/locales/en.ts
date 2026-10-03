@@ -20,6 +20,29 @@
 import { EYE_LABELS, EYE_SHORT, SOURCE_LABELS } from "../models";
 
 export const EN = {
+  "eye.view.exterior": "Whole eye",
+  "eye.view.cross_section": "Cross-section",
+  "eye.view.cornea": "Cornea",
+  "eye.view.fundus": "Retina",
+  "eye.slice": "Slice position",
+  "eye.separation": "Separate parts (illustrative spacing)",
+  "eye.zoom": "Zoom",
+  "eye.reset": "Reset view",
+  "eye.selection.empty":
+    "Nothing selected. Choose a part from the list, or click it on the model.",
+  "eye.status": "Cut at {slice} · layer thickness {magnification} (illustrative, not measured)",
+  "eye.magnification": "Layer thickness (illustrative)",
+  "eye.structures.title": "Parts of the eye",
+  "eye.structures.hint":
+    "Choose a part to highlight it on the model. The magnifier button moves the camera there.",
+  "eye.structures.focus": "Move the camera to the {name}",
+  "eye.structures.focusShort": "Focus",
+  "app.dark_mode": "Dark mode",
+  "app.light_mode": "Light mode",
+  "eye.fullscreen": "Fullscreen",
+  "eye.fullscreen.exit": "Exit fullscreen",
+  "eye.controls":
+    "Drag or use the arrow keys to turn the model. Use the sliders to explore the view.",
   /* ------------------------------------------------------------- app shell */
 
   "app.name": "Afterlight",
@@ -51,6 +74,11 @@ export const EN = {
   "source.document_extracted": SOURCE_LABELS.document_extracted,
   "source.ai_generated": SOURCE_LABELS.ai_generated,
   "source.not_checked": "Not checked yet",
+  "eyes.unchecked_values": "Values transcribed from a document",
+  "eyes.source_document": "Source: {title}",
+  "eyes.document_source": "Extracted from document",
+  "eyes.source_record": "Source document",
+  "eyes.select_document": "Select a document",
 
   "eye.right": EYE_LABELS.right,
   "eye.left": EYE_LABELS.left,

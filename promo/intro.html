@@ -1,0 +1,684 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Afterlight Intro</title>
+<style>
+@font-face{font-family:"Bric";src:url("fonts/bricolage-grotesque.woff2") format("woff2");font-weight:200 800}
+@font-face{font-family:"DMS";src:url("fonts/dm-sans.woff2") format("woff2");font-weight:100 1000}
+:root{--bg:#0b0c16;--ink:#15163a;--peri:#AEB8FF;--lilac:#CFB0F4;--peach:#FFC6AE;--re:#f5b79f;--le:#86d4e0;--text:#eef0f8;--text2:#bcc0d6;--text3:#979cb8}
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg);font-family:DMS,sans-serif;color:var(--text)}
+.abs{position:absolute}
+.full{position:absolute;left:0;top:0;width:1920px;height:1080px}
+.center{display:flex;align-items:center;justify-content:center}
+.bric{font-family:Bric,sans-serif}
+.blob{position:absolute;border-radius:50%;width:1400px;height:1400px;margin:-700px 0 0 -700px}
+.lt{display:inline-block;white-space:pre}
+.ring{position:absolute;border-radius:50%;left:0;top:0;box-sizing:border-box}
+.slam{font-family:Bric;font-weight:800;letter-spacing:-0.045em;line-height:.9;white-space:nowrap}
+.gdot{position:absolute;left:0;top:0;border-radius:50%;box-sizing:border-box;overflow:hidden}
+.gdot .fill{position:absolute;inset:0;border-radius:50%;background:linear-gradient(90deg,var(--re) 50%,var(--le) 50%)}
+.card{position:absolute;left:0;top:0;width:640px;height:420px;margin:-210px 0 0 -320px;border-radius:34px;
+  background:linear-gradient(150deg,rgba(255,255,255,.16),rgba(255,255,255,.045) 60%,rgba(255,255,255,.08));
+  border:1.5px solid rgba(255,255,255,.22);box-shadow:0 40px 90px rgba(0,0,0,.45),inset 0 1.5px 0 rgba(255,255,255,.4);
+  padding:38px 42px;box-sizing:border-box;color:var(--text);backface-visibility:hidden}
+.card .lab{font:600 21px DMS;letter-spacing:.16em;text-transform:uppercase;color:var(--text2)}
+.card h3{font:700 46px Bric;letter-spacing:-.02em;margin:8px 0 24px}
+.pill{border-radius:999px;padding:13px 24px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);font:500 25px DMS;display:inline-flex;align-items:center;gap:12px;white-space:nowrap}
+.pill i{width:16px;height:16px;border-radius:50%;display:inline-block}
+.row{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.chip{border-radius:999px;padding:13px 22px;font:500 24px DMS;background:rgba(174,184,255,.16);color:#d6dbff;white-space:nowrap}
+.cap{font-family:Bric;font-weight:800;font-size:112px;line-height:.98;letter-spacing:-.04em;position:absolute;top:0;white-space:nowrap}
+.mask{display:block;overflow:hidden;padding:0 .08em .12em}
+.mask>span{display:inline-block}
+.stripe{position:absolute;top:0;height:1080px;background:var(--peach)}
+.grad{background:linear-gradient(90deg,var(--peri),var(--lilac) 55%,var(--peach));-webkit-background-clip:text;background-clip:text;color:transparent}
+.spark{position:absolute;left:0;top:0;width:0;height:0}
+.spark svg{position:absolute;left:-30px;top:-30px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bgcol" class="full"></div>
+  <div id="blobs" class="full"></div>
+  <div id="world" class="full"></div>
+  <div id="flash" class="full" style="background:#fff;opacity:0"></div>
+  <div id="grain" class="full" style="opacity:.07;mix-blend-mode:overlay"></div>
+  <div id="vig" class="full" style="background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.45) 100%)"></div>
+</div>
+<script>
+// ───────────────────────── utilities ─────────────────────────
+const BEAT = 0.5, b = n => n * BEAT, DUR = 22;
+const clamp = (x, a = 0, c = 1) => Math.min(c, Math.max(a, x));
+const P = (t, s, d) => clamp((t - s) / d);
+const lerp = (a, c, p) => a + (c - a) * p;
+const E = {
+  lin: x => x,
+  outCubic: x => 1 - Math.pow(1 - x, 3),
+  inCubic: x => x * x * x,
+  inOutCubic: x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2,
+  outQuint: x => 1 - Math.pow(1 - x, 5),
+  outExpo: x => x >= 1 ? 1 : 1 - Math.pow(2, -10 * x),
+  inExpo: x => x <= 0 ? 0 : Math.pow(2, 10 * x - 10),
+  inOutExpo: x => x <= 0 ? 0 : x >= 1 ? 1 : x < .5 ? Math.pow(2, 20 * x - 10) / 2 : (2 - Math.pow(2, -20 * x + 10)) / 2,
+  outBack: x => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); },
+  outElastic: x => x <= 0 ? 0 : x >= 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - .75) * (2 * Math.PI) / 3) + 1,
+};
+const bump = (t, s, d) => { const p = P(t, s, d); return p <= 0 || p >= 1 ? 0 : Math.sin(Math.PI * p); };
+// damped spring after an impact at s (returns 0 before)
+const spring = (t, s, amp = 1, k = 7, w = 22) => t < s ? 0 : amp * Math.exp(-k * (t - s)) * Math.cos(w * (t - s));
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+const R = rng(7);
+const UNITLESS = new Set(['fontWeight', 'lineHeight', 'opacity', 'zIndex']);
+function el(tag, cls, parent, style = {}, html) {
+  const e = document.createElement(tag); if (cls) e.className = cls;
+  for (const k in style) e.style[k] = typeof style[k] === 'number' && !UNITLESS.has(k) ? style[k] + 'px' : style[k];
+  if (html !== undefined) e.innerHTML = html; if (parent) parent.appendChild(e); return e;
+}
+function letters(parent, text, cls = 'lt') {
+  return [...text].map(ch => el('span', cls, parent, {}, ch === ' ' ? '&nbsp;' : ch));
+}
+const vis = (e, on) => { e.style.display = on ? '' : 'none'; };
+const tf = (e, s) => { e.style.transform = s; };
+const op = (e, o) => { e.style.opacity = o; };
+
+const stage = document.getElementById('stage'), world = document.getElementById('world');
+const flash = document.getElementById('flash'), bgcol = document.getElementById('bgcol');
+
+// ───────────────────────── Lumi (with an optional vector iris for extreme zooms) ─────────────────────────
+// iris centre measured on the 320px source at (167.5,139.5); Lumi is drawn at 480px → ×1.5 about the centre
+const IX = 11.25, IY = -30.75, PX = 7.5, PY = 0.75;
+let lumiN = 0;
+function irisSVG(id) {
+  const r = rng(99); let fib = '';
+  for (let i = 0; i < 140; i++) {
+    const a = i / 140 * Math.PI * 2 + r() * .03, r1 = 40 + r() * 10, r2 = 62 + r() * 26;
+    const c = i % 3 ? 'rgba(255,255,255,.16)' : 'rgba(6,20,90,.38)';
+    fib += `<line x1="${Math.cos(a) * r1}" y1="${Math.sin(a) * r1}" x2="${Math.cos(a) * r2}" y2="${Math.sin(a) * r2}" stroke="${c}" stroke-width="${.6 + r() * 1.1}" stroke-linecap="round"/>`;
+  }
+  return `<svg viewBox="-200 -200 400 400" width="400" height="400" style="overflow:visible;position:absolute;left:0;top:0">
+  <defs>
+   <radialGradient id="scl${id}" cx="0" cy="0" r="240" gradientUnits="userSpaceOnUse"><stop offset=".35" stop-color="#ffffff"/><stop offset="1" stop-color="#d9e0f6"/></radialGradient>
+   <linearGradient id="irg${id}" x1="0" y1="-90" x2="0" y2="90" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0a2585"/><stop offset=".42" stop-color="#1b5fd9"/><stop offset=".74" stop-color="#27a3ea"/><stop offset="1" stop-color="#63e6f4"/></linearGradient>
+   <radialGradient id="rim${id}" cx="0" cy="0" r="90" gradientUnits="userSpaceOnUse"><stop offset=".74" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#061446" stop-opacity=".8"/></radialGradient>
+   <radialGradient id="pup${id}" cx="0" cy="0" r="44" gradientUnits="userSpaceOnUse"><stop offset=".72" stop-color="#040716"/><stop offset="1" stop-color="#15245e"/></radialGradient>
+   <clipPath id="clp${id}"><ellipse rx="82.5" ry="90"/></clipPath>
+  </defs>
+  <circle r="260" fill="url(#scl${id})"/>
+  <ellipse rx="92" ry="100" fill="#8fb6f0" opacity=".35"/>
+  <ellipse rx="82.5" ry="90" fill="url(#irg${id})"/>
+  <g clip-path="url(#clp${id})"><g class="fib">${fib}</g></g>
+  <ellipse rx="82.5" ry="90" fill="url(#rim${id})"/>
+  <g transform="translate(${PX},${PY})"><g class="pup"><circle r="43.5" fill="url(#pup${id})"/></g></g>
+  <circle cx="-33.75" cy="-44.25" r="18" fill="#fff"/>
+  <circle cx="-12.75" cy="-20.25" r="7.5" fill="#fff"/>
+  <circle cx="-53.25" cy="-14.25" r="4.5" fill="#fff" opacity=".9"/>
+  </svg>`;
+}
+function makeLumi(parent, withIris) {
+  const id = lumiN++;
+  const wrap = el('div', 'abs', parent, { left: 0, top: 0, width: 0, height: 0 });
+  const body = el('div', 'abs', wrap, { left: -240, top: -240, width: 480, height: 480, transformOrigin: '50% 92%' });
+  const im = el('img', '', body, { position: 'absolute', left: 0, top: 0, width: 480, height: 480 }); im.src = 'mascot.png';
+  const L = { wrap, body, im };
+  if (withIris) {
+    L.iris = el('div', 'abs', body, { left: 240 + IX - 200, top: 240 + IY - 200, width: 400, height: 400 }, irisSVG(id));
+    L.fib = L.iris.querySelector('.fib'); L.pup = L.iris.querySelector('.pup');
+  }
+  return L;
+}
+// camera onto a Lumi: screen pos (x,y), zoom z, focus point (fx,fy) in Lumi-local px
+function lumiCam(L, x, y, z, fx = 0, fy = 0, extra = '') {
+  tf(L.wrap, `translate(${x}px,${y}px) scale(${z}) translate(${-fx}px,${-fy}px) ${extra}`);
+}
+function squash(L, amt) { tf(L.body, `scale(${1 + amt},${1 - amt})`); }
+
+function sparkle(parent, color) {
+  const s = el('div', 'spark', parent, {}, `<svg width="60" height="60" viewBox="-30 -30 60 60"><path d="M0-28C3-6 6-3 28 0 6 3 3 6 0 28-3 6-6 3-28 0-6-3-3-6 0-28Z" fill="${color}"/></svg>`);
+  return s;
+}
+function drawSpark(s, t, t0, x, y, size = 1) {
+  const p = P(t, t0, .6); vis(s, p > 0 && p < 1);
+  const sc = size * Math.sin(Math.PI * p) * (1 + .2 * Math.sin(p * 20));
+  tf(s, `translate(${x}px,${y}px) rotate(${p * 90}deg) scale(${sc})`);
+}
+
+// ───────────────────────── background aura ─────────────────────────
+const blobs = document.getElementById('blobs');
+const blobCols = ['rgba(108,118,255,.55)', 'rgba(188,138,240,.45)', 'rgba(255,168,140,.32)'];
+const blobEls = blobCols.map(c => el('div', 'blob', blobs, { background: `radial-gradient(circle,${c} 0%,rgba(0,0,0,0) 62%)` }));
+function drawBlobs(t, amt) {
+  blobEls.forEach((e, i) => {
+    const x = 960 + Math.sin(t * .35 + i * 2.1) * 620, y = 540 + Math.cos(t * .28 + i * 1.7) * 330;
+    tf(e, `translate(${x}px,${y}px) scale(${1 + .15 * Math.sin(t * .5 + i)})`); op(e, amt);
+  });
+}
+
+// grain tile
+(function () {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+  const d = x.createImageData(256, 256), r = rng(3);
+  for (let i = 0; i < d.data.length; i += 4) { const v = r() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+  x.putImageData(d, 0, 0);
+  document.getElementById('grain').style.backgroundImage = `url(${c.toDataURL()})`;
+})();
+
+// ───────────────────────── Scene 1 · hook: out of Lumi's eye (0 – 2s) ─────────────────────────
+const s1 = el('div', 'full', world);
+const s1rings = el('div', 'full', s1);
+const L1 = makeLumi(s1, true);
+const lidT = el('div', 'abs', s1, { left: -240, width: 2400, height: 800, background: '#05060c', borderRadius: '0 0 50% 50%' });
+const lidB = el('div', 'abs', s1, { left: -240, width: 2400, height: 800, background: '#05060c', borderRadius: '50% 50% 0 0' });
+const hiPill = el('div', 'abs', s1, { left: 0, top: 0, padding: '22px 38px', borderRadius: '999px', background: 'rgba(255,255,255,.1)', border: '1.5px solid rgba(255,255,255,.25)', boxShadow: 'inset 0 1.5px 0 rgba(255,255,255,.35), 0 20px 50px rgba(0,0,0,.35)', font: '600 44px DMS', whiteSpace: 'nowrap', transformOrigin: '100% 100%' }, 'Hi, I’m Lumi.');
+const s1sparks = ['#AEB8FF', '#FFC6AE', '#CFB0F4', '#fff'].map(c => sparkle(s1, c));
+
+function makeRings(parent, cols) { return cols.map(c => el('div', 'ring', parent, { border: `solid ${c}` })); }
+function drawRings(rs, t, t0, cx, cy, maxR = 1300, dur = .9) {
+  rs.forEach((r, i) => {
+    const p = P(t, t0 + i * .06, dur); vis(r, p > 0 && p < 1);
+    const rad = E.outExpo(p) * maxR, w = lerp(38, 2, p);
+    Object.assign(r.style, { width: rad * 2 + 'px', height: rad * 2 + 'px', borderWidth: w + 'px' });
+    tf(r, `translate(${cx - rad}px,${cy - rad}px)`); op(r, 1 - p);
+  });
+}
+const s1ringA = makeRings(s1rings, ['#AEB8FF', '#CFB0F4', '#FFC6AE']);
+const s1ringB = makeRings(s1rings, ['#AEB8FF', '#CFB0F4', '#FFC6AE']);
+
+function drawS1(t) {
+  const zp = E.outExpo(P(t, 1.0, .5));
+  const zStart = lerp(9.5, 7.0, E.outCubic(P(t, 0, 1)));
+  const z = Math.exp(lerp(Math.log(zStart), 0, zp));
+  const f = clamp((z - 1) / (zStart - 1));
+  const land = spring(t, 1.5, .14, 6, 20);
+  const bob = t > 1.5 ? Math.sin((t - 1.5) * 5) * 7 : 0;
+  lumiCam(L1, 960, 560 + bob, z, IX * f, IY * f);
+  squash(L1, land);
+  op(L1.iris, clamp((z - 1.5) / 1.4));
+  L1.fib.setAttribute('transform', `rotate(${t * 14})`);
+  const pup = 1.12 - .34 * bump(t, .5, .4) + .1 * bump(t, 0, .3);
+  L1.pup.setAttribute('transform', `scale(${pup})`);
+  L1.im.style.filter = zp > 0 && zp < .98 ? `blur(${(1 - zp) * 3}px)` : 'none';
+  // blink cut
+  const close = t < .72 ? 0 : t < .84 ? E.inCubic(P(t, .72, .12)) : t < .9 ? 1 : 1 - E.outCubic(P(t, .9, .14));
+  tf(lidT, `translateY(${lerp(-820, -262, close)}px)`);
+  tf(lidB, `translateY(${lerp(1100, 540, close)}px)`);
+  drawRings(s1ringA, t, .02, 960 + 7 * 7, 540, 1300, .8);
+  drawRings(s1ringB, t, 1.5, 960, 540, 1150, .9);
+  const hp = P(t, 1.66, .3);
+  vis(hiPill, hp > 0);
+  tf(hiPill, `translate(${430 - 40}px,${260}px) scale(${E.outBack(hp)}) rotate(${-4 + 4 * E.outCubic(hp)}deg)`);
+  drawSpark(s1sparks[0], t, 1.52, 1260, 300, 1.2);
+  drawSpark(s1sparks[1], t, 1.6, 650, 720, .9);
+  drawSpark(s1sparks[2], t, 1.7, 1320, 760, .8);
+  drawSpark(s1sparks[3], t, 1.78, 1180, 180, .6);
+}
+
+// ───────────────────────── Scene 2 · kinetic type (2 – 6s) ─────────────────────────
+const s2 = el('div', 'full', world);
+const s2bg = el('div', 'full', s2);
+const s2acc = el('div', 'full', s2);
+// accent: streak lines for YOUR
+const streaks = Array.from({ length: 14 }, (_, i) => el('div', 'abs', s2acc, { left: 0, top: 80 + i * 70, height: 6, width: 900, borderRadius: 6, background: i % 2 ? 'rgba(174,184,255,.5)' : 'rgba(255,198,174,.4)' }));
+// accent: eye ring for VISION
+const visRing = el('div', 'abs', s2acc, {}, `<svg width="1920" height="1080"><ellipse cx="960" cy="540" rx="700" ry="330" fill="none" stroke="#15163a" stroke-width="10" stroke-dasharray="3300" stroke-dashoffset="3300" class="vr"/><circle cx="960" cy="540" r="250" fill="none" stroke="#15163a" stroke-width="10" stroke-dasharray="1580" stroke-dashoffset="1580" class="vc"/></svg>`);
+const vr = visRing.querySelector('.vr'), vc = visRing.querySelector('.vc');
+const wYour = el('div', 'full center slam', s2, { fontSize: '330px' }, 'YOUR');
+const wVision = el('div', 'full center slam', s2, { fontSize: '330px', color: 'var(--ink)' }, 'VISION');
+const wChangesWrap = el('div', 'full center', s2);
+const chLayers = ['#86d4e0', '#FFC6AE', null].map(c => {
+  const w = el('div', 'abs slam', wChangesWrap, { fontSize: '300px', left: 0, top: 0, width: '1920px', height: '1080px', display: 'flex', alignItems: 'center', justifyContent: 'center', mixBlendMode: c ? 'screen' : 'normal' });
+  const ls = letters(w, 'CHANGES');
+  ls.forEach(l => { l.style.color = c || '#eef0f8'; });
+  return ls;
+});
+const chRand = [...'CHANGES'].map(() => [R() * 2 - 1, R() * 2 - 1]);
+const wEvery = el('div', 'full center slam', s2, { fontSize: '270px', color: 'var(--ink)', gap: '60px' });
+const eA = el('span', '', wEvery, {}, 'EVERY'), eB = el('span', '', wEvery, {}, 'DAY.');
+
+// "Your medical record usually doesn't."
+const s2rec = el('div', 'full', s2);
+const recL1 = el('div', 'abs bric', s2rec, { left: 0, width: '1920px', top: 250, textAlign: 'center', fontSize: '128px', fontWeight: 700, letterSpacing: '-.035em', whiteSpace: 'nowrap' });
+const rw = ['Your', 'medical', 'record'].map((w, i) => { const s = el('span', '', recL1, { display: 'inline-block', marginRight: i < 2 ? '34px' : 0 }); return { s, ls: letters(s, w) }; });
+const recL2 = el('div', 'abs bric', s2rec, { left: 0, width: '1920px', top: 470, display: 'flex', justifyContent: 'center', alignItems: 'baseline', whiteSpace: 'nowrap', letterSpacing: '-.04em' });
+const uw = el('span', '', recL2, { fontSize: '120px', fontWeight: 500, color: 'var(--text3)', marginRight: '40px' }); const uls = letters(uw, 'usually');
+const dw = el('span', '', recL2, { fontSize: '230px', fontWeight: 800, color: 'var(--peach)' }); const dls = letters(dw, 'doesn’t');
+const recDot = el('span', '', recL2, { display: 'inline-block', width: '46px', height: '46px', borderRadius: '50%', background: 'var(--peach)', marginLeft: '8px' });
+const allFall = [...rw.flatMap(w => w.ls), ...uls, ...dls].map(l => ({ l, vx: (R() * 2 - 1) * 300, vr: (R() * 2 - 1) * 260, d: R() * .12, up: 300 + R() * 500 }));
+let DOT = { x: 1500, y: 700 };
+
+function slamIn(e, t, t0, from = 1.9) {
+  const p = E.outExpo(P(t, t0, .22));
+  return `scale(${lerp(from, 1, p)})`;
+}
+function drawS2(t) {
+  // background colour per beat
+  const cols = [[b(4), '#0b0c16'], [b(5), '#AEB8FF'], [b(6), '#0b0c16'], [b(7), '#FFC6AE'], [b(8), 'transparent']];
+  let bg = 'transparent'; for (const [s, c] of cols) if (t >= s) bg = c; s2bg.style.background = bg;
+  // YOUR
+  vis(wYour, t >= b(4) && t < b(5));
+  if (t < b(5)) {
+    tf(wYour, slamIn(wYour, t, b(4), 2.4) + ` skewX(${-12 * (1 - E.outExpo(P(t, b(4), .3)))}deg)`);
+    wYour.style.letterSpacing = lerp(.25, -.045, E.outExpo(P(t, b(4), .3))) + 'em';
+  }
+  streaks.forEach((s, i) => {
+    const on = t >= b(4) && t < b(5); vis(s, on);
+    const p = P(t, b(4) + (i % 5) * .02, .4); tf(s, `translateX(${lerp(i % 2 ? 2000 : -1000, i % 2 ? -1000 : 2000, E.outCubic(p))}px) scaleX(${.4 + (i % 3) * .3})`);
+  });
+  // VISION
+  vis(wVision, t >= b(5) && t < b(6)); vis(visRing, t >= b(5) && t < b(6));
+  if (t >= b(5) && t < b(6)) {
+    const p = P(t, b(5), .28);
+    tf(wVision, `scaleX(${E.outBack(p)}) scaleY(${lerp(1.4, 1, E.outExpo(p))})`);
+    vr.setAttribute('stroke-dashoffset', 3300 * (1 - E.outCubic(P(t, b(5), .45))));
+    vc.setAttribute('stroke-dashoffset', 1580 * (1 - E.outCubic(P(t, b(5) + .05, .4))));
+    tf(visRing, `rotate(${-6 + 6 * E.outCubic(P(t, b(5), .5))}deg)`);
+  }
+  // CHANGES — letters jolt, chromatic split, fill on the off-beat
+  vis(wChangesWrap, t >= b(6) && t < b(7));
+  if (t >= b(6) && t < b(7)) {
+    const settle = 1 - E.outElastic(P(t, b(6), .45));
+    const split = 1 - E.outExpo(P(t, b(6) + .02, .3));
+    chLayers.forEach((ls, li) => ls.forEach((l, i) => {
+      const [rx, ry] = chRand[i];
+      const off = li === 0 ? -1 : li === 1 ? 1 : 0;
+      tf(l, `translate(${rx * 40 * settle + off * (26 * split + 6)}px,${ry * 160 * settle}px) rotate(${rx * 25 * settle}deg)`);
+      if (li === 2) l.style.color = t > b(6.5) ? '#CFB0F4' : '#eef0f8';
+    }));
+    chLayers[0].concat(chLayers[1]).forEach(l => op(l, t > b(6.5) ? .55 * (1 - P(t, b(6.5), .2)) + .0 : .9));
+    if (t > b(6.5)) chLayers.forEach((ls, li) => li < 2 && ls.forEach((l, i) => { const off = li ? 1 : -1; l.style.transform += ` translateX(${off * 30 * (1 - E.outExpo(P(t, b(6.5), .25)))}px)`; }));
+    tf(wChangesWrap, `scale(${1 + .06 * bump(t, b(6.5), .2)})`);
+  }
+  // EVERY DAY.
+  vis(wEvery, t >= b(7) && t < b(8));
+  if (t >= b(7) && t < b(8)) {
+    tf(eA, `translateX(${lerp(-1500, 0, E.outExpo(P(t, b(7), .2)))}px)`);
+    const pb = P(t, b(7.5), .18); op(eB, pb > 0 ? 1 : 0);
+    tf(eB, `translateX(${lerp(1500, 0, E.outExpo(pb))}px)`);
+    tf(wEvery, `scale(${1 + .05 * bump(t, b(7.5) + .05, .25)})`);
+  }
+  // record … doesn't.
+  vis(s2rec, t >= b(8) && t < b(12));
+  if (t >= b(8) && t < b(12)) {
+    rw.forEach((w, i) => { const p = E.outExpo(P(t, b(8) + i * .125, .3)); op(w.s, p > 0 ? 1 : 0); w.s.style.transform = `translateY(${lerp(120, 0, p)}px)`; });
+    const pu = E.outExpo(P(t, b(9.5), .3)); op(uw, pu > 0 ? 1 : 0); tf(uw, `translateY(${lerp(80, 0, pu)}px)`);
+    const pd = P(t, b(10), .25); op(dw, pd > 0 ? 1 : 0);
+    tf(dw, `scale(${lerp(2.2, 1, E.outExpo(pd))})`); dw.style.transformOrigin = '50% 70%';
+    // fall away on b11
+    allFall.forEach(f => {
+      const dt = Math.max(0, t - b(11) - f.d);
+      const y = -f.up * dt + .5 * 7000 * dt * dt;
+      f.l.style.transform = dt > 0 ? `translate(${f.vx * dt}px,${y}px) rotate(${f.vr * dt}deg)` : '';
+    });
+    // the full stop survives and becomes the dot
+    const pm = E.inOutCubic(P(t, b(11.2), b(.8) - .1));
+    const pd2 = P(t, b(10) + .08, .2); op(recDot, pd2 > 0 ? 1 : 0);
+    const dx = lerp(0, 960 - DOT.x, pm), dy = lerp(0, 540 - DOT.y, pm) - Math.sin(Math.PI * pm) * 140;
+    const ds = lerp(1, 90 / 46, pm) * (1 + .6 * bump(t, b(11), .25)) * lerp(2.2, 1, E.outExpo(pd2));
+    tf(recDot, `translate(${dx}px,${dy}px) scale(${ds})`);
+    recDot.style.boxShadow = `0 0 ${40 * pm}px ${12 * pm}px rgba(255,198,174,.45)`;
+  }
+}
+
+// ───────────────────────── Scene 3 · shape play: a dot becomes a month, a month becomes a timeline (6 – 10s) ─────────────────────────
+const s3 = el('div', 'full', world);
+const s3txt = el('div', 'full', s3);
+const s3pan = el('div', 'full', s3, { transformOrigin: '0 0' });
+const s3line = el('div', 'abs', s3pan, { left: 0, top: 0 });
+const dots = [], N = 35;
+for (let i = 0; i < N; i++) {
+  const d = el('div', 'gdot', s3pan, { width: 64, height: 64, marginLeft: '-32px', marginTop: '-32px' });
+  const f = el('div', 'fill', d);
+  dots.push({ d, f });
+}
+const s3ring = makeRings(s3, ['#FFC6AE', '#AEB8FF']);
+const dayL = [...'MTWTFSS'].map(c => el('div', 'abs', s3, { font: '600 26px DMS', color: 'var(--text3)', width: 40, textAlign: 'center', marginLeft: '-20px', top: 0, left: 0 }, c));
+const t30a = el('div', 'abs bric', s3txt, { left: 1060, top: 330, fontSize: '150px', fontWeight: 800, letterSpacing: '-.045em', lineHeight: .95 }, '<span class="mask"><span>30 seconds</span></span>');
+const t30b = el('div', 'abs bric', s3txt, { left: 1060, top: 480, fontSize: '150px', fontWeight: 800, letterSpacing: '-.045em', lineHeight: .95 }, '<span class="mask"><span class="grad">a day.</span></span>');
+const tb1 = el('div', 'abs bric', s3txt, { left: 150, top: 150, fontSize: '112px', fontWeight: 700, letterSpacing: '-.04em' }, '<span class="mask"><span>builds the record</span></span>');
+const tb2 = el('div', 'abs bric', s3txt, { left: 150, top: 275, fontSize: '112px', fontWeight: 800, letterSpacing: '-.04em' }, '<span class="mask"><span class="grad">nobody was keeping.</span></span>');
+const L3 = makeLumi(s3pan, false);
+const tlPts = Array.from({ length: N }, (_, k) => ({ x: 220 + k * 96, y: 770 + 70 * Math.sin(k * .42) + 18 * Math.sin(k * 1.7) }));
+s3line.innerHTML = `<svg width="4000" height="1080" style="position:absolute;left:0;top:0;overflow:visible"><defs><linearGradient id="tlg" x1="0" x2="1"><stop offset="0" stop-color="#AEB8FF"/><stop offset=".5" stop-color="#CFB0F4"/><stop offset="1" stop-color="#FFC6AE"/></linearGradient></defs>
+<path class="tl" d="M${tlPts.map(p => p.x + ' ' + p.y).join(' L')}" fill="none" stroke="url(#tlg)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3600" stroke-dashoffset="3600"/></svg>`;
+const tlPath = s3line.querySelector('.tl');
+const HOPS = [12, 14, 16, 18, 20];
+const ZD = 20; // the dot we dive into
+const maskIn = (e, t, t0) => { const p = E.outExpo(P(t, t0, .4)); const s = e.querySelector('.mask>span'); s.style.transform = `translateY(${lerp(110, 0, p)}%)`; };
+const maskOut = (e, t, t0) => { const p = E.inCubic(P(t, t0, .25)); if (p > 0) e.querySelector('.mask>span').style.transform = `translateY(${lerp(0, -110, p)}%)`; };
+
+function panAt(t) { return -1500 * E.inOutCubic(P(t, b(16.5), b(20) - b(16.5))); }
+function drawS3(t) {
+  // positions
+  const pWeek = P(t, b(13), .3), pMorph = t >= b(16);
+  dots.forEach((o, i) => {
+    const row = Math.floor(i / 7), col = i % 7;
+    const weekIdx = row === 2 ? col : -1;
+    let x, y, s = 1, show = true;
+    const gx = 620 + (col - 3) * 106, gy = 560 + (row - 2) * 106;
+    if (t < b(14)) {
+      if (weekIdx < 0) show = false;
+      const p = E.outBack(P(t, b(13) + Math.abs(col - 3) * .03, .3));
+      x = lerp(960, 960 + (col - 3) * 132, p); y = 540;
+      s = col === 3 ? 90 / 64 * (1 - p) + 1.1 * p : lerp(.2, 1.1, p);
+      if (col !== 3 && P(t, b(13), 1) <= 0) show = false;
+      if (t < b(13) && col !== 3) show = false;
+      if (t < b(13)) s = 90 / 64 * (1 + .25 * spring(t, b(12), 1, 6, 26));
+    } else {
+      const delay = Math.abs(row - 2) * .07 + Math.abs(col - 3) * .02;
+      const p = E.outBack(P(t, b(14) + delay, .32));
+      if (row === 2) { const q = E.inOutCubic(P(t, b(14), .3)); x = lerp(960 + (col - 3) * 132, gx, q); y = lerp(540, gy, q); s = lerp(1.1, 1, q); }
+      else { x = gx; y = gy; s = p; show = p > 0; }
+      if (pMorph) {
+        const q = E.inOutCubic(P(t, b(16) + i * .012, .55));
+        x = lerp(gx, tlPts[i].x, q); y = lerp(gy, tlPts[i].y, q); s = lerp(1, .62, q);
+      }
+    }
+    // fill: days get written in, one after another
+    const fp = P(t, b(14.4) + i * .03, .12);
+    o.f.style.transform = `scale(${E.outBack(fp)})`;
+    o.d.style.border = fp >= 1 ? '0' : '3px solid rgba(188,192,214,.55)';
+    if (t < b(14)) { o.f.style.transform = 'scale(1)'; o.d.style.border = '0'; }
+    // hop pulse
+    const hop = HOPS.indexOf(i); let hs = 0; if (hop >= 0) hs = spring(t, b(18 + hop * .5) + .3, .35, 9, 26);
+    vis(o.d, show); tf(o.d, `translate(${x}px,${y}px) scale(${s * (1 + hs)})`);
+    o.d.style.boxShadow = i === ZD && t > b(19) ? '0 0 40px rgba(255,255,255,.35)' : '';
+  });
+  // single dot = the full stop, before the split
+  // day letters
+  dayL.forEach((d, i) => {
+    const p = E.outExpo(P(t, b(13) + i * .03, .3)), q = E.inOutCubic(P(t, b(14), .3));
+    const x = lerp(960 + (i - 3) * 132, 620 + (i - 3) * 106, q), y = lerp(460, 290, q);
+    vis(d, t >= b(13) && t < b(16.3)); op(d, p * (1 - P(t, b(16), .2))); tf(d, `translate(${x}px,${y + (1 - p) * 30}px)`);
+  });
+  drawRings(s3ring, t, b(12), 960, 540, 700, .7);
+  // texts
+  vis(t30a, t >= b(14.5) && t < b(16.6)); vis(t30b, t >= b(15) && t < b(16.6));
+  maskIn(t30a, t, b(14.5)); maskIn(t30b, t, b(15));
+  maskOut(t30a, t, b(16)); maskOut(t30b, t, b(16.1));
+  vis(tb1, t >= b(16.5) && t < b(19.6)); vis(tb2, t >= b(17.5) && t < b(19.6));
+  maskIn(tb1, t, b(16.5)); maskIn(tb2, t, b(17.5)); maskOut(tb1, t, b(19.1)); maskOut(tb2, t, b(19.2));
+  tlPath.setAttribute('stroke-dashoffset', 3600 * (1 - E.inOutCubic(P(t, b(16.3), b(19) - b(16.3)))));
+  // camera: pan along the timeline, then dive into one day
+  const pan = panAt(t);
+  const zp = E.inExpo(P(t, b(19.4), b(20) - b(19.4)));
+  const dx = tlPts[ZD].x + pan, dy = tlPts[ZD].y;
+  const z = Math.exp(lerp(0, Math.log(95), zp));
+  const cx = lerp(dx, 960, E.inOutCubic(zp)), cy = lerp(dy, 540, E.inOutCubic(zp));
+  // scale about the dot, then move the dot to the target point
+  tf(s3pan, `translate(${cx}px,${cy}px) scale(${z}) translate(${-dx}px,${-dy}px) translateX(${pan}px)`);
+  // Lumi hops the days
+  const ht = t - b(18);
+  vis(L3.wrap, t >= b(17.6) && t < b(19.9));
+  if (t >= b(17.6)) {
+    let k = Math.floor(ht / BEAT), frac = (ht - k * BEAT) / .32;
+    let from, to;
+    if (ht < 0) { from = { x: tlPts[HOPS[0]].x + 400, y: tlPts[HOPS[0]].y - 900 }; to = tlPts[HOPS[0]]; frac = E.inCubic(P(t, b(17.6), b(18) - b(17.6))) ; k = -1; }
+    else if (k < HOPS.length - 1) { from = tlPts[HOPS[k]]; to = tlPts[HOPS[k + 1]]; }
+    else { from = tlPts[HOPS[HOPS.length - 1]]; to = { x: from.x + 300, y: from.y - 1300 }; }
+    const f = clamp(frac), e = E.inOutCubic(f);
+    const x = lerp(from.x, to.x, e), y = lerp(from.y, to.y, e) - (k >= 0 ? Math.sin(Math.PI * f) * 130 : 0);
+    const landAt = ht < 0 ? b(18) : b(18) + (k + 1) * BEAT - .18;
+    const sq = f >= 1 ? spring(t, b(18) + Math.max(k, 0) * BEAT + .32, .18, 8, 24) : (ht < 0 ? 0 : -.08 * Math.sin(Math.PI * f));
+    lumiCam(L3, x, y - 84, .42, 0, 0, `rotate(${(to.x - from.x) > 0 ? 8 * Math.sin(Math.PI * f) : 0}deg)`);
+    squash(L3, ht < 0 && frac >= 1 ? spring(t, b(18), .2, 8, 24) : sq);
+  }
+}
+
+// ───────────────────────── Scene 4 · camera flies through the app (10 – 14s) ─────────────────────────
+const s4 = el('div', 'full', world);
+const s4persp = el('div', 'full', s4, { perspective: '1600px', perspectiveOrigin: '960px 540px' });
+const s4cam = el('div', 'abs', s4persp, { left: 960, top: 540, transformStyle: 'preserve-3d' });
+const cardDefs = [
+  { x: -400, y: -30, z: 0, ry: 14, html: `<div class="lab">Today</div><h3>How does it look today?</h3>
+    <div class="row"><span class="pill"><i style="background:var(--re)"></i>Right eye</span><span class="chip">Same as yesterday</span></div>
+    <div class="row"><span class="pill"><i style="background:var(--le)"></i>Left eye</span><span class="chip" style="background:rgba(255,198,174,.18);color:#ffd9c9">A little different</span></div>
+    <div class="row" style="margin-top:4px"><span class="pill" style="background:var(--peri);color:var(--ink);font-weight:700;border:0">Save today</span></div>` },
+  { x: 400, y: 40, z: -1500, ry: -14, html: `<div class="lab">What I see · Left eye</div>
+    <div style="display:flex;gap:30px;margin-top:22px;align-items:center">
+    <svg width="280" height="280" viewBox="0 0 280 280"><defs><radialGradient id="vg"><stop offset="0" stop-color="#2a2f55"/><stop offset="1" stop-color="#12142a"/></radialGradient></defs>
+    <circle cx="140" cy="140" r="132" fill="url(#vg)" stroke="rgba(255,255,255,.25)" stroke-width="2"/>
+    <path d="M80 110c20-18 30 14 50-4s24-20 40 2" fill="none" stroke="#86d4e0" stroke-width="5" stroke-linecap="round" opacity=".85"/>
+    <path d="M150 170c14 10 26-8 40 4" fill="none" stroke="#86d4e0" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+    <circle cx="108" cy="180" r="6" fill="#86d4e0" opacity=".7"/><circle cx="190" cy="92" r="4" fill="#86d4e0" opacity=".6"/>
+    <path d="M200 60l6 -18M214 70l16 -10" stroke="#FFC6AE" stroke-width="5" stroke-linecap="round"/></svg>
+    <div style="display:flex;flex-direction:column;gap:14px"><span class="pill"><i style="background:var(--le)"></i>Floaters</span><span class="pill"><i style="background:var(--peach)"></i>Flashes</span><span class="pill"><i style="background:var(--lilac)"></i>Shadow</span></div></div>` },
+  { x: -400, y: -40, z: -3000, ry: 12, html: `<div class="lab">Timeline · 30 days</div><h3>Your last month</h3>
+    <svg width="556" height="200" viewBox="0 0 556 200">
+    ${[40, 90, 140, 190].map(y => `<line x1="0" x2="556" y1="${y - 20}" y2="${y - 20}" stroke="rgba(255,255,255,.08)" stroke-width="2"/>`).join('')}
+    <line x1="400" x2="400" y1="0" y2="190" stroke="rgba(207,176,244,.7)" stroke-width="3" stroke-dasharray="8 8"/>
+    <polyline points="${Array.from({ length: 30 }, (_, i) => `${i * 19},${100 + 26 * Math.sin(i * .5) + 12 * Math.sin(i * 1.9)}`).join(' ')}" fill="none" stroke="#f5b79f" stroke-width="5" stroke-linejoin="round"/>
+    <polyline points="${Array.from({ length: 30 }, (_, i) => `${i * 19},${70 + 20 * Math.cos(i * .4) + 10 * Math.sin(i * 1.3)}`).join(' ')}" fill="none" stroke="#86d4e0" stroke-width="5" stroke-linejoin="round"/>
+    </svg>` },
+  { x: 400, y: 30, z: -4500, ry: -12, html: `<div class="lab">Appointment · Thursday</div><h3>Questions to bring</h3>
+    ${['The new floaters, left eye', 'When the flashes started', 'What I should keep noting'].map((q, i) => `<div class="row" style="font:500 27px DMS;gap:18px;margin-bottom:18px"><span style="width:34px;height:34px;border-radius:11px;border:2.5px solid ${i < 2 ? 'var(--peri)' : 'rgba(255,255,255,.4)'};background:${i < 2 ? 'var(--peri)' : 'transparent'};display:inline-flex;align-items:center;justify-content:center;color:var(--ink);font-weight:800;font-size:22px">${i < 2 ? '✓' : ''}</span>${q}</div>`).join('')}` },
+];
+const cards = cardDefs.map(c => ({ ...c, e: el('div', 'card', s4cam, {}, c.html) }));
+const caps = [
+  { l: ['Log both', 'eyes.'], side: 'r' },
+  { l: ['Sketch what', 'you see.'], side: 'l' },
+  { l: ['Watch it', 'over time.'], side: 'r' },
+  { l: ['Walk in', 'prepared.'], side: 'l' },
+].map((c, i) => {
+  const e = el('div', 'cap', s4, { left: c.side === 'r' ? 1060 : 150, top: 350 });
+  c.spans = c.l.map((ln, j) => { const m = el('span', 'mask', e); return el('span', j ? 'grad' : '', m, {}, ln); });
+  c.e = e; return c;
+});
+const doorL = el('div', 'abs', s4, { left: 0, top: 0, width: 960, height: 1080, background: 'var(--re)' });
+const doorR = el('div', 'abs', s4, { left: 960, top: 0, width: 960, height: 1080, background: 'var(--le)' });
+const L4 = makeLumi(s4, true);
+
+function camZAt(t) {
+  const zs = cards.map(c => 150 - c.z);
+  let z = -900 + (zs[0] + 900) * E.outExpo(P(t, b(20), .7));
+  for (let k = 1; k < 4; k++) z += (zs[k] - zs[k - 1]) * E.inOutExpo(P(t, b(20 + 2 * k) - .22, .5));
+  return z + 60 * (t - b(20));
+}
+function drawS4(t) {
+  const cz = camZAt(t);
+  const roll = Math.sin(t * 1.1) * 1.6;
+  let swing = 0; for (let k = 1; k < 4; k++) swing += (k % 2 ? 1 : -1) * 9 * bump(t, b(20 + 2 * k) - .22, .5);
+  tf(s4cam, `rotateZ(${roll}deg) rotateY(${swing}deg) translate3d(${Math.sin(t * .9) * 30}px,${Math.cos(t * .7) * 16}px,${cz}px)`);
+  const fadeAll = 1 - P(t, b(27), .25);
+  cards.forEach(c => {
+    const az = c.z + cz;
+    const o = clamp((1300 - az) / 300) * clamp((az + 1900) / 1600) * fadeAll;
+    c.e.style.filter = az < -300 ? `blur(${clamp((-300 - az) / 1200) * 6}px)` : 'none';
+    vis(c.e, o > .01); op(c.e, o);
+    tf(c.e, `translate3d(${c.x}px,${c.y}px,${c.z}px) rotateY(${c.ry}deg)`);
+  });
+  caps.forEach((c, i) => {
+    const t0 = b(20 + 2 * i) + .12, t1 = b(22 + 2 * i) - .25;
+    vis(c.e, t >= t0 - .01 && t < t1 + .3);
+    c.spans.forEach((s, j) => {
+      const pin = E.outExpo(P(t, t0 + j * .09, .45)), pout = E.inCubic(P(t, t1, .22));
+      s.style.transform = `translateY(${lerp(110, 0, pin) - 110 * pout}%)`;
+    });
+  });
+  // the split screen opens like doors
+  const dp = E.inOutExpo(P(t, b(20), .5));
+  vis(doorL, dp < 1); vis(doorR, dp < 1);
+  tf(doorL, `translateX(${-980 * dp}px)`); tf(doorR, `translateX(${980 * dp}px)`);
+  // Lumi pops in, then we dive into its pupil
+  vis(L4.wrap, t >= b(27));
+  if (t >= b(27)) {
+    const pop = E.outBack(P(t, b(27), .3));
+    const zp = E.inExpo(P(t, b(27.4), b(28) - b(27.4)));
+    const z = .62 * pop * Math.exp(lerp(0, Math.log(60 / .62), zp));
+    const fx = lerp(0, IX + PX, clamp(zp * 1.6)), fy = lerp(0, IY + PY, clamp(zp * 1.6));
+    lumiCam(L4, 960, 560, z, fx, fy, `rotate(${lerp(-12, 0, pop)}deg)`);
+    op(L4.iris, clamp((z - 1.4) / 1.2));
+    L4.fib.setAttribute('transform', `rotate(${t * 30})`);
+    L4.pup.setAttribute('transform', `scale(${1 + .15 * zp})`);
+  }
+}
+
+// ───────────────────────── Scene 5 · three promises (14 – 17s) ─────────────────────────
+const s5 = el('div', 'full', world);
+// LOCAL-FIRST
+const s5a = el('div', 'full', s5, { background: '#07080f' });
+const lfRing = el('div', 'abs', s5a, {}, `<svg width="1920" height="1080"><circle cx="960" cy="540" r="430" fill="none" stroke="url(#lfg)" stroke-width="10" stroke-dasharray="2702" stroke-dashoffset="2702" class="lr"/><defs><linearGradient id="lfg"><stop offset="0" stop-color="#AEB8FF"/><stop offset="1" stop-color="#FFC6AE"/></linearGradient></defs></svg>`);
+const lr = lfRing.querySelector('.lr');
+const lfTop = el('div', 'full center slam', s5a, { fontSize: '236px', clipPath: 'inset(0 0 50% 0)' }, 'LOCAL-FIRST');
+const lfBot = el('div', 'full center slam grad', s5a, { fontSize: '236px', clipPath: 'inset(50% 0 0 0)' }, 'LOCAL-FIRST');
+const lfSub = el('div', 'abs', s5a, { left: 0, width: '1920px', top: 720, textAlign: 'center', font: '500 46px DMS', color: 'var(--text2)' }, 'Your record lives on your device.');
+// NO ACCOUNT
+const s5b = el('div', 'full', s5);
+const s5bBg = el('div', 'full', s5b, { background: 'var(--lilac)' });
+const ringTxt = el('div', 'abs', s5b, { left: 0, top: 0, width: '1920px', height: '1080px' }, `<svg width="1920" height="1080" viewBox="-960 -540 1920 1080"><defs><path id="cp" d="M0,-345 a345,345 0 1,1 -0.1,0"/></defs>
+<g class="rt"><text font-family="Bric" font-weight="800" font-size="78" fill="#15163a" letter-spacing="2"><textPath href="#cp" textLength="2160" lengthAdjust="spacing">NO ACCOUNT • NO SIGN-UP • NO ACCOUNT • NO SIGN-UP •</textPath></text></g></svg>`);
+const rt = ringTxt.querySelector('.rt');
+const L5 = makeLumi(s5b, false);
+// WORKS OFFLINE
+const s5c = el('div', 'full', s5);
+const stripes = Array.from({ length: 12 }, (_, i) => el('div', 'stripe', s5c, { left: i * 160, width: 162 }));
+const woT = el('div', 'abs', s5c, { left: 0, top: 200, width: '1920px', textAlign: 'center' });
+const wo1 = el('span', 'mask slam', woT, { fontSize: '250px', color: 'var(--ink)' }); const wo1s = el('span', '', wo1, {}, 'WORKS');
+const wo2 = el('span', 'mask slam', woT, { fontSize: '250px', color: 'var(--ink)' }); const wo2s = el('span', '', wo2, {}, 'OFFLINE');
+const woSub = el('div', 'abs', s5c, { left: 0, width: '1920px', top: 790, textAlign: 'center', font: '600 44px DMS', color: 'rgba(21,22,58,.75)' }, 'Airplane mode? Still there.');
+
+function drawS5(t) {
+  // A
+  vis(s5a, t >= b(28) && t < b(30));
+  if (t < b(30)) {
+    const p = E.outExpo(P(t, b(28), .25));
+    tf(lfTop, `translateX(${lerp(-1900, 0, p)}px)`); tf(lfBot, `translateX(${lerp(1900, 0, p)}px)`);
+    const sq = 1 + .05 * bump(t, b(29), .2);
+    lfTop.style.fontSize = lfBot.style.fontSize = 236 + 'px';
+    tf(s5a.querySelector('.center'), '');
+    lr.setAttribute('stroke-dashoffset', 2702 * (1 - E.outCubic(P(t, b(28) + .05, .6))));
+    tf(lfRing, `rotate(${-90 + 40 * P(t, b(28), 1)}deg) scale(${sq})`); lfRing.style.transformOrigin = '960px 540px';
+    const ps = E.outExpo(P(t, b(29), .4)); op(lfSub, ps); tf(lfSub, `translateY(${lerp(40, 0, ps)}px)`);
+  }
+  // B — diagonal wipe in, spinning ring of words around a bouncing Lumi
+  vis(s5b, t >= b(30) && t < b(32));
+  if (t >= b(30) && t < b(32)) {
+    const w = E.outExpo(P(t, b(30), .22));
+    const d = lerp(-600, 2600, w);
+    s5bBg.style.clipPath = `polygon(0 0, ${d}px 0, ${d - 700}px 1080px, 0 1080px)`;
+    const rp = P(t, b(30) + .03, .6);
+    rt.setAttribute('transform', `rotate(${lerp(-220, 0, E.outExpo(rp)) + (t - b(30)) * 26}) scale(${lerp(.4, 1, E.outBack(rp))})`);
+    const bt = (t - b(30)) % BEAT, hop = Math.sin(Math.PI * clamp(bt / .34)) * 50;
+    const land = spring(t, b(30) + Math.floor((t - b(30)) / BEAT) * BEAT + .34, .12, 9, 26);
+    const pop = E.outBack(P(t, b(30), .3));
+    lumiCam(L5, 960, 560 - hop, .78 * pop); squash(L5, bt > .34 ? land : -.05 * Math.sin(Math.PI * bt / .34));
+  }
+  // C — stripes drop, words rise, stripes leave
+  vis(s5c, t >= b(32) && t < b(34));
+  if (t >= b(32) && t < b(34)) {
+    stripes.forEach((s, i) => {
+      const pin = E.outExpo(P(t, b(32) + i * .018, .28)), pout = E.inExpo(P(t, b(33.5) + (11 - i) * .012, .2));
+      tf(s, `translateY(${lerp(-1100, 0, pin) + 1100 * pout}px)`);
+    });
+    const pw = P(t, b(33.5), .15);
+    wo1s.style.transform = `translateY(${lerp(110, 0, E.outExpo(P(t, b(32) + .12, .35)))}%)`;
+    wo2s.style.transform = `translateY(${lerp(110, 0, E.outExpo(P(t, b(32) + .2, .35)))}%)`;
+    op(woT, 1 - pw); op(woSub, E.outExpo(P(t, b(33), .3)) * (1 - pw));
+    tf(woSub, `translateY(${lerp(30, 0, E.outExpo(P(t, b(33), .3)))}px)`);
+  }
+}
+
+// ───────────────────────── Scene 6 · breakdown (17 – 20s) ─────────────────────────
+const s6 = el('div', 'full', world);
+const dawn = el('div', 'full', s6, { background: 'radial-gradient(ellipse 120% 70% at 50% 115%, rgba(255,198,174,.55), rgba(207,176,244,.28) 40%, rgba(0,0,0,0) 70%)' });
+const q1 = el('div', 'abs', s6, { left: 0, width: '1920px', top: 290, textAlign: 'center', font: '500 66px DMS', color: 'var(--text2)', whiteSpace: 'nowrap' });
+const q1w = 'When someone asks what changed,'.split(' ').map(w => el('span', '', q1, { display: 'inline-block', marginRight: '.28em' }, w));
+const q2 = el('div', 'abs bric', s6, { left: 0, width: '1920px', top: 430, textAlign: 'center', fontSize: '150px', fontWeight: 800, letterSpacing: '-.045em', whiteSpace: 'nowrap' });
+const q2l = letters(q2, 'answer with a record,');
+q2l.forEach(l => l.classList.add('grad'));
+const q3 = el('div', 'abs bric', s6, { left: 0, width: '1920px', top: 610, textAlign: 'center', fontSize: '150px', fontWeight: 800, letterSpacing: '-.045em', whiteSpace: 'nowrap', color: 'var(--text)' });
+const q3a = el('span', '', q3, { display: 'inline-block' }, 'not a&nbsp;');
+const q3b = el('span', '', q3, { display: 'inline-block', position: 'relative' }, 'guess.');
+
+function drawS6(t) {
+  op(dawn, E.inOutCubic(P(t, b(34), b(40) - b(34))));
+  const out = E.inCubic(P(t, b(39.2), b(40) - b(39.2)));
+  tf(s6, `scale(${1 + .06 * out})`); s6.style.filter = out > 0 ? `blur(${out * 14}px)` : 'none';
+  q1w.forEach((w, i) => { const p = E.outCubic(P(t, b(34) + i * .22, .6)); op(w, p * (1 - out)); w.style.transform = `translateY(${lerp(30, 0, p)}px)`; w.style.filter = `blur(${(1 - p) * 8}px)`; });
+  q2l.forEach((l, i) => { const p = E.outExpo(P(t, b(36) + i * .022, .55)); op(l, p); l.style.transform = `translateY(${lerp(90, 0, p)}px) rotate(${lerp(8, 0, p)}deg)`; });
+  const pa = E.outExpo(P(t, b(38), .4)), pb = E.outExpo(P(t, b(38.5), .35));
+  op(q3a, pa); tf(q3a, `translateY(${lerp(80, 0, pa)}px)`);
+  op(q3b, pb); tf(q3b, `scale(${lerp(1.7, 1, pb)})`);
+}
+
+// ───────────────────────── Scene 7 · end card (20 – 22s) ─────────────────────────
+const s7 = el('div', 'full', world);
+const s7glow = el('div', 'full', s7, { background: 'radial-gradient(ellipse 110% 65% at 50% 118%, rgba(255,198,174,.42), rgba(207,176,244,.2) 42%, rgba(0,0,0,0) 72%)' });
+const halo = el('div', 'abs', s7, { left: 960 - 260, top: 330 - 260, width: 520, height: 520, borderRadius: '50%', background: 'radial-gradient(circle, rgba(174,184,255,.55), rgba(207,176,244,.2) 45%, rgba(0,0,0,0) 70%)' });
+const logoRing = el('div', 'abs', s7, { left: 0, top: 0 }, `<svg width="1920" height="1080"><defs><linearGradient id="lg7" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#AEB8FF"/><stop offset=".5" stop-color="#CFB0F4"/><stop offset="1" stop-color="#FFC6AE"/></linearGradient></defs>
+<circle cx="960" cy="330" r="196" fill="none" stroke="url(#lg7)" stroke-width="5" stroke-dasharray="1232" stroke-dashoffset="1232" class="lr7" stroke-linecap="round"/></svg>`);
+const lr7 = logoRing.querySelector('.lr7');
+const L7 = makeLumi(s7, false);
+const wm = el('div', 'abs bric', s7, { left: 0, width: '1920px', top: 560, textAlign: 'center', fontSize: '168px', fontWeight: 800, letterSpacing: '-.05em', lineHeight: 1, whiteSpace: 'nowrap' });
+const wmA = letters(wm, 'After'), wmB = letters(wm, 'light'); wmB.forEach(l => l.classList.add('grad'));
+wmB.forEach((l, i) => l.style.backgroundSize = '500% 100%'), wmB.forEach((l, i) => l.style.backgroundPosition = `${i * 25}% 0`);
+const tag = el('div', 'abs', s7, { left: 0, width: '1920px', top: 772, textAlign: 'center', font: '500 42px DMS', color: 'var(--text2)' }, 'A living record of the sight you fought to keep.');
+const tiny = el('div', 'abs', s7, { left: 0, width: '1920px', top: 856, display: 'flex', justifyContent: 'center', gap: '18px' });
+const tinyP = ['Local-first', 'No account', 'Works offline'].map(s => el('span', 'pill', tiny, { font: '500 26px DMS', color: 'var(--text2)', padding: '12px 26px' }, s));
+const s7sp = ['#FFC6AE', '#AEB8FF', '#fff'].map(c => sparkle(s7, c));
+const s7rings = makeRings(s7, ['#AEB8FF', '#CFB0F4', '#FFC6AE']);
+
+function drawS7(t) {
+  const lp = P(t, b(40), b(41) - b(40));
+  const y = lp < 1 ? lerp(-500, 330, E.inCubic(lp)) : 330 + Math.sin((t - b(41)) * 3.2) * 8;
+  const hopY = 60 * bump(t, b(43), .42);
+  lumiCam(L7, 960, y - hopY, .66);
+  squash(L7, lp < 1 ? -.06 * lp : spring(t, b(41), .2, 6, 20) + (t > b(43) + .42 ? spring(t, b(43) + .42, .12, 8, 24) : 0));
+  const hp = E.outCubic(P(t, b(41), .6));
+  tf(halo, `scale(${hp * (1 + .06 * Math.sin(t * 3))})`); op(halo, hp);
+  lr7.setAttribute('stroke-dashoffset', 1232 * (1 - E.inOutCubic(P(t, b(41), .9))));
+  tf(logoRing, `rotate(${-90}deg)`); logoRing.style.transformOrigin = '960px 330px';
+  drawRings(s7rings, t, b(41), 960, 330, 1100, 1);
+  [...wmA, ...wmB].forEach((l, i) => { const p = E.outExpo(P(t, b(41.5) + i * .035, .6)); op(l, p > 0 ? 1 : 0); l.style.transform = `translateY(${lerp(120, 0, p)}px)`; l.style.clipPath = ''; });
+  wm.style.clipPath = 'inset(-20% -5% 0 -5%)';
+  const tp = E.outCubic(P(t, b(42.5), .5)); op(tag, tp); tf(tag, `translateY(${lerp(24, 0, tp)}px)`);
+  tinyP.forEach((p, i) => { const q = E.outBack(P(t, b(43) + i * .08, .4)); op(p, clamp(q)); tf(p, `scale(${q})`); });
+  drawSpark(s7sp[0], t, b(41) + .05, 1200, 220, 1.1);
+  drawSpark(s7sp[1], t, b(41) + .15, 720, 300, .8);
+  drawSpark(s7sp[2], t, b(43) + .3, 1170, 150, .7);
+}
+
+// ───────────────────────── master timeline ─────────────────────────
+const scenes = [
+  [s1, 0, b(4), drawS1], [s2, b(4), b(12), drawS2], [s3, b(12), b(20), drawS3],
+  [s4, b(20), b(28), drawS4], [s5, b(28), b(34), drawS5], [s6, b(34), b(40), drawS6], [s7, b(40), 99, drawS7],
+];
+const impacts = [0, b(3), b(10), b(28), b(40) + .5];
+function shakeAt(t) {
+  let x = 0, y = 0;
+  for (const s of impacts) { if (t < s) continue; const a = 22 * Math.exp(-(t - s) * 12); x += a * Math.sin(t * 91 + s); y += a * Math.cos(t * 77 + s * 3); }
+  return [x, y];
+}
+function pulseAt(t) {
+  if (t < b(4) || t >= b(34)) return 0;
+  const k = Math.floor(t / BEAT) * BEAT; return .014 * Math.exp(-(t - k) * 14);
+}
+function render(t) {
+  for (const [root, s, e, fn] of scenes) { const on = t >= s && t < e; vis(root, on); if (on) fn(t); }
+  const [sx, sy] = shakeAt(t);
+  tf(world, `translate(${sx}px,${sy}px) scale(${1 + pulseAt(t)})`);
+  // background base + aura
+  let aura = t < b(4) ? 0 : t < b(12) ? .35 : t < b(20) ? .7 : t < b(28) ? 1 : t < b(34) ? .5 : t < b(40) ? .8 : .95;
+  drawBlobs(t, aura);
+  // flashes on the big hits
+  const fl = Math.max(.3 * (1 - E.outCubic(P(t, 0, .25))), .9 * (1 - P(t, b(28), .12)) * (t >= b(28) ? 1 : 0), (t >= b(40) ? 1 - P(t, b(40), .35) : 0), .35 * bump(t, b(10), .12));
+  op(flash, fl);
+  const g = document.getElementById('grain'); const gr = rng(Math.floor(t * 60) + 11);
+  g.style.backgroundPosition = `${Math.floor(gr() * 256)}px ${Math.floor(gr() * 256)}px`;
+}
+window.render = render;
+window.ready = (async () => {
+  await document.fonts.load('800 100px Bric'); await document.fonts.load('500 40px DMS'); await document.fonts.ready;
+  await Promise.all([...document.images].map(i => i.complete ? 0 : new Promise(r => i.onload = r)));
+  // measure the full stop of "doesn't." so the dot can travel from there
+  scenes.forEach(([r]) => vis(r, true)); vis(s2rec, true);
+  const rc = recDot.getBoundingClientRect(); DOT = { x: rc.left + rc.width / 2, y: rc.top + rc.height / 2 };
+  render(0); return true;
+})();
+// live preview when opened directly
+if (!/render=1/.test(location.search)) {
+  window.ready.then(() => { const t0 = performance.now(); const loop = () => { render(((performance.now() - t0) / 1000) % DUR); requestAnimationFrame(loop); }; loop(); });
+}
+</script>
+</body>
+</html>

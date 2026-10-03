@@ -14,7 +14,7 @@ import Atlas from "../components/Atlas";
 import { routeParams, useHashRoute } from "../lib/router";
 import { formatDate } from "../lib/util";
 
-type Tab = "eye" | "explorer" | "retina" | "procedures" | "atlas" | "conditions";
+type Tab = "eye" | "explorer" | "retina" | "procedures" | "atlas";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "eye", label: "The eye" },

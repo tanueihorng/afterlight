@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { routeParams } from "../lib/router";
 import { useStore, useTimeline } from "../lib/store";
 import type { TimelineEvent } from "../lib/models";
-import { EYE_SHORT, SOURCE_LABELS, type SymptomEntry } from "../lib/models";
+import { EYE_SHORT, MODALITY_LABELS, SOURCE_LABELS, type SymptomEntry } from "../lib/models";
 import SameAsLastTime from "../components/SameAsLastTime";
 import { DemoBadge, EmptyState, EyeBadge, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
 import { formatDate, formatTime, isoToDateOnly, todayLocal, daysAgoISO } from "../lib/util";
+import { inLens, weightOf, type StoryLens } from "../lib/timeline-story";
+import { DiagnosisModal, MedicationModal, ProcedureModal } from "./MyEyes";
 
 const CATEGORIES = [
   { id: "daily_log", label: "Daily logs" },
@@ -18,6 +21,7 @@ const CATEGORIES = [
   { id: "medication", label: "Medications" },
   { id: "prescription", label: "Prescriptions" },
   { id: "measurement", label: "Measurements" },
+  { id: "self_test", label: "My checks" },
   { id: "document", label: "Documents" },
 ] as const;
 
@@ -34,16 +38,64 @@ const RANGES = [
 /** Days rendered at once; the rest load on request. */
 const DAY_PAGE = 60;
 
+type RangeId = (typeof RANGES)[number]["id"];
+
+/**
+ * The lens, range, view and eye filter someone chose, kept for this browser session. Without it
+ * every return to the timeline fell back to the clinical spine and 30 days, and entries the
+ * person had just been looking at seemed to have vanished.
+ */
+const VIEW_KEY = "timeline-view";
+interface SavedView {
+  range?: RangeId;
+  lens?: StoryLens;
+  view?: "story" | "detailed";
+  eyeFilter?: "all" | "right" | "left" | "both";
+}
+
+function readSavedView(): SavedView {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(VIEW_KEY) ?? "{}") as SavedView;
+    return {
+      range: RANGES.some((r) => r.id === raw.range) ? raw.range : undefined,
+      lens: raw.lens === "clinical" || raw.lens === "everything" ? raw.lens : undefined,
+      view: raw.view === "story" || raw.view === "detailed" ? raw.view : undefined,
+      eyeFilter: ["all", "right", "left", "both"].includes(raw.eyeFilter ?? "")
+        ? raw.eyeFilter
+        : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export default function TimelinePage() {
   const store = useStore();
   const timeline = useTimeline();
-  const [eyeFilter, setEyeFilter] = useState<"all" | "right" | "left" | "both">("all");
+  // A save confirmation must lead to the record, including backdated observations.
+  const [origin] = routeParams();
+  const fromSave = origin === "recorded";
+  const [saved] = useState(readSavedView);
+  const [eyeFilter, setEyeFilter] = useState<"all" | "right" | "left" | "both">(
+    saved.eyeFilter ?? "all",
+  );
   const [cats, setCats] = useState<Set<string>>(new Set(CATEGORIES.map((c) => c.id)));
-  const [range, setRange] = useState<(typeof RANGES)[number]["id"]>("30d");
+  const [range, setRange] = useState<RangeId>(fromSave ? "all" : (saved.range ?? "30d"));
   const [customStart, setCustomStart] = useState(daysAgoISO(30));
   const [customEnd, setCustomEnd] = useState(todayLocal());
   const [detail, setDetail] = useState<TimelineEvent | null>(null);
   const [compare, setCompare] = useState<SymptomEntry | null>(null);
+  const [view, setView] = useState<"story" | "detailed">(saved.view ?? "story");
+  const [adding, setAdding] = useState(false);
+  const [inlineAdd, setInlineAdd] = useState<null | "diagnosis" | "procedure" | "medication">(null);
+  const [lens, setLens] = useState<StoryLens>(fromSave ? "everything" : (saved.lens ?? "clinical"));
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(VIEW_KEY, JSON.stringify({ range, lens, view, eyeFilter }));
+    } catch {
+      // Private browsing can refuse storage; the timeline still works, it just forgets.
+    }
+  }, [range, lens, view, eyeFilter]);
 
   const rangeStart = useMemo(() => {
     switch (range) {
@@ -89,12 +141,25 @@ export default function TimelinePage() {
     return Array.from(map.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [filtered]);
 
+  // The story lens: the clinical spine by default, everything on request.
+  const storyByDay = useMemo(() => {
+    const map = new Map<string, TimelineEvent[]>();
+    for (const e of filtered) {
+      if (!inLens(e, lens)) continue;
+      const d = isoToDateOnly(e.date_time);
+      if (!map.has(d)) map.set(d, []);
+      map.get(d)!.push(e);
+    }
+    return Array.from(map.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  }, [filtered, lens]);
+
   // Render a window of days and extend it as the reader reaches the end. A decade of daily
   // entries is thousands of days; mounting them all is what makes a long history feel broken.
   const [visibleDays, setVisibleDays] = useState(DAY_PAGE);
-  useEffect(() => setVisibleDays(DAY_PAGE), [range, eyeFilter, cats, customStart, customEnd]);
-  const shownDays = byDay.slice(0, visibleDays);
-  const moreDays = byDay.length - shownDays.length;
+  useEffect(() => setVisibleDays(DAY_PAGE), [range, eyeFilter, cats, customStart, customEnd, lens, view]);
+  const activeByDay = view === "story" ? storyByDay : byDay;
+  const shownDays = activeByDay.slice(0, visibleDays);
+  const moreDays = activeByDay.length - shownDays.length;
 
   return (
     <>
@@ -103,7 +168,56 @@ export default function TimelinePage() {
         sub="What happened first, what changed, what has remained stable — symptoms, drawings, scans and clinical events on one continuous record."
       />
 
+      <p className="muted" style={{ margin: "0 0 12px" }}>
+        The timeline mirrors what you record — nothing is added here directly.{" "}
+        <a href="#/today">Log today</a> · <a href="#/what-i-see">Draw what you see</a> ·{" "}
+        <a href="#/my-eyes">Diagnoses, medications, imaging</a> ·{" "}
+        <a href="#/appointments">Appointments</a>
+      </p>
+
       <div className="card" style={{ marginBottom: 18 }}>
+        <div className="btn-row" style={{ marginBottom: 14 }}>
+          <span className="muted" style={{ minWidth: 48 }}>View:</span>
+          <button
+            className={`btn subtle ${view === "story" ? "primary" : ""}`}
+            style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
+            onClick={() => setView("story")}
+            aria-pressed={view === "story"}
+          >
+            Story
+          </button>
+          <button
+            className={`btn subtle ${view === "detailed" ? "primary" : ""}`}
+            style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
+            onClick={() => setView("detailed")}
+            aria-pressed={view === "detailed"}
+          >
+            Everything
+          </button>
+          <button
+            className="btn"
+            style={{ marginLeft: "auto", minHeight: "var(--target)" }}
+            onClick={() => setAdding(true)}
+          >
+            + Add event
+          </button>
+          {view === "story" && (
+            <>
+              <span className="muted" style={{ minWidth: 48, marginLeft: 8 }}>Lens:</span>
+              {(["clinical", "everything"] as const).map((l) => (
+                <button
+                  key={l}
+                  className={`btn subtle ${lens === l ? "primary" : ""}`}
+                  style={{ minHeight: "var(--target)", padding: "3px 12px", fontSize: "var(--fs-sm)" }}
+                  onClick={() => setLens(l)}
+                  aria-pressed={lens === l}
+                >
+                  {l === "clinical" ? "Clinical spine" : "With my notes"}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
         <div className="btn-row" style={{ marginBottom: 10 }}>
           <span className="muted" style={{ minWidth: 48 }}>Range:</span>
           {RANGES.map((r) => (
@@ -139,7 +253,7 @@ export default function TimelinePage() {
             </button>
           ))}
         </div>
-        <div className="btn-row">
+        <div className="btn-row" style={view === "story" ? { display: "none" } : undefined}>
           <span className="muted" style={{ minWidth: 48 }}>Show:</span>
           {CATEGORIES.map((c) => (
             <button
@@ -162,14 +276,56 @@ export default function TimelinePage() {
         </div>
       </div>
 
-      {byDay.length === 0 ? (
-        <EmptyState title="Nothing on the timeline for this view.">
-          Widen the date range or filters. Every daily log, symptom, drawing, scan, appointment and
-          treatment appears here on one continuous record.
+      {(view === "story" ? storyByDay : byDay).length === 0 ? (
+        <EmptyState title={view === "story" ? "No clinical events in this view." : "Nothing on the timeline for this view."}>
+          {view === "story"
+            ? "Switch the lens to \"With my notes\" to add your own observations, or widen the date range."
+            : "Widen the date range or filters. Every daily log, symptom, drawing, scan, appointment and treatment appears here on one continuous record."}
         </EmptyState>
+      ) : view === "story" ? (
+        <div className="tl-story">
+          {storyByDay.slice(0, visibleDays).map(([date, events]) => (
+            <div className="tl-day" key={date}>
+              <div className="tl-day-date">{formatDate(date)}</div>
+              {events.map((e) => {
+                const w = weightOf(e.event_type);
+                return (
+                  <button
+                    key={e.id}
+                    className={`tl-event tl-story-event w-${w}`}
+                    onClick={() => setDetail(e)}
+                    style={{ width: "100%", cursor: "pointer", textAlign: "left", color: "inherit", font: "inherit" }}
+                  >
+                    <span className="tl-node" aria-hidden />
+                    <span className="tl-icon" aria-hidden>
+                      {e.icon}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span className="tl-title">{e.title}</span>
+                      {e.summary && (
+                        <>
+                          <br />
+                          <span className="tl-summary">{e.summary}</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="tl-meta">
+                      <EyeBadge eye={e.eye} />
+                      <ProvenanceBadge source={e.source_type} />
+                      <DemoBadge demo={e.demo} />
+                      <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
+                        {e.date_time.length > 10 ? formatTime(e.date_time) : ""}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="timeline">
-          {byDay.map(([date, events]) => (
+          {shownDays.map(([date, events]) => (
             <div className="tl-day" key={date}>
               <div className="tl-day-date">{formatDate(date)}</div>
               {events.map((e) => (
@@ -219,6 +375,57 @@ export default function TimelinePage() {
         </div>
       )}
 
+      {adding && (
+        <Modal title="Add an event" onClose={() => setAdding(false)}>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Each kind is recorded where it belongs — pick one and you'll land in the right form.
+            Set the date to whenever it actually happened; past events land on the timeline by
+            their own date.
+          </p>
+          <div style={{ display: "grid", gap: 8 }}>
+            {(
+              [
+                ["Daily log or symptom", "today", "The form opens directly — set the date to when it happened"],
+                ["Drawing of what you see", "#/what-i-see", "Sketch floaters, glare, blind spots"],
+                ["Diagnosis", "diagnosis", "Opens right here — dated when first documented"],
+                ["Procedure or surgery", "procedure", "Opens right here — dated to the day it happened"],
+                ["Medication", "medication", "Opens right here — start and stop dates"],
+                ["Imaging or scan", "#/my-eyes", "OCT, photos, scans — added in My Eyes"],
+                ["Appointment", "#/appointments", "Past or upcoming, with the clinic"],
+              ] as const
+            ).map(([label, target, sub]) => (
+              <button
+                key={label}
+                className="btn subtle"
+                style={{ justifyContent: "flex-start", textAlign: "left", minHeight: "var(--target)" }}
+                onClick={() => {
+                  setAdding(false);
+                  if (target === "diagnosis" || target === "procedure" || target === "medication") {
+                    // history is usually older than the current range: widen so the saved
+                    // event is on screen the moment the form closes
+                    setRange("all");
+                    setInlineAdd(target);
+                  } else if (target === "today") {
+                    sessionStorage.setItem("today-add", "1");
+                    location.hash = "#/today";
+                  } else {
+                    location.hash = target;
+                  }
+                }}
+              >
+                <span>
+                  <strong>{label}</strong>
+                  <br />
+                  <span className="muted" style={{ fontWeight: 400 }}>{sub}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </Modal>
+      )}
+      {inlineAdd === "diagnosis" && <DiagnosisModal onClose={() => setInlineAdd(null)} />}
+      {inlineAdd === "procedure" && <ProcedureModal onClose={() => setInlineAdd(null)} />}
+      {inlineAdd === "medication" && <MedicationModal onClose={() => setInlineAdd(null)} />}
       {detail && <EventDetail event={detail} onClose={() => setDetail(null)} onCompare={setCompare} />}
       {compare && <SameAsLastTime entry={compare} onClose={() => setCompare(null)} />}
     </>
@@ -280,7 +487,7 @@ function EventDetail({
         return (
           <dl className="kv">
             <dt>Modality</dt>
-            <dd>{i.modality.toUpperCase()}</dd>
+            <dd>{MODALITY_LABELS[i.modality]}</dd>
             <dt>Clinic</dt>
             <dd>{i.clinic ?? "Not recorded"}</dd>
             <dt>Device</dt>

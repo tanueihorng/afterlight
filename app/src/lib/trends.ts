@@ -50,6 +50,7 @@ export function seriesFor(data: AllData, kind: MeasurementKind, eye: Eye): Serie
   const rows = select(data, "measurements")
     .type(kind)
     .eye(eye)
+    .where((row) => row.source_type !== "document_extracted" || row.confirmed === true)
     .order("asc")
     .all();
 

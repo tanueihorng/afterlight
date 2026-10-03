@@ -101,10 +101,11 @@ function unreviewedExtraction(row: { source_type?: SourceType; confirmed?: boole
 
 export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
   const start = opts.range_start;
-  const end = `${opts.range_end}T23:59:59.999Z`;
+  // Date-only comparison on both sides: the window is inclusive of whole local days, and
+  // building an end-of-day timestamp would shift the boundary across timezones.
   const inRange = (iso: string) => {
     const dOnly = isoToDateOnly(iso);
-    return dOnly >= start && dOnly <= end.slice(0, 10);
+    return dOnly >= start && dOnly <= opts.range_end;
   };
 
   const payload: BriefPayload = {

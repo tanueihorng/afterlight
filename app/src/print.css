@@ -37,6 +37,8 @@
   /* The app's own navigation, not the record. The shell itself stays — printing should produce
      what is on screen, not a second copy of it built for the printer. */
   .sidebar,
+  .app-header,
+  .aura,
   .tabbar,
   .topbar-date,
   .no-print,

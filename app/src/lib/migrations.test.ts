@@ -9,7 +9,7 @@ import {
   type Snapshot,
 } from "./migrations";
 import type { FloaterObject } from "./models";
-import { anAllData, aFloater, aSymptom } from "../test/factories";
+import { anAllData, aFloater, aMeasurement, aSymptom } from "../test/factories";
 
 const snapshotAt = (over: Partial<Snapshot> = {}): Snapshot => ({
   data: anAllData(),
@@ -95,6 +95,16 @@ describe("migrate", () => {
     const snap = snapshotAt({ data: anAllData({ floaters: [legacy as FloaterObject] }) });
     migrate(snap, 1);
     expect((snap.data.floaters[0] as Partial<FloaterObject>).source_type).toBeUndefined();
+  });
+
+  it("keeps legacy document measurements unchecked while preserving other readings", () => {
+    const snap = snapshotAt({ data: anAllData({ measurements: [
+      aMeasurement({ id: "document", source_type: "document_extracted", confirmed: undefined }),
+      aMeasurement({ id: "clinic", source_type: "clinician_reported", confirmed: undefined }),
+    ] }) });
+    const result = migrate(snap, 4);
+    expect(result.snapshot.data.measurements.map((m) => m.confirmed)).toEqual([false, true]);
+    expect(snap.data.measurements.every((m) => m.confirmed === undefined)).toBe(true);
   });
 });
 

@@ -6,7 +6,7 @@
 
 import type { AllData } from "./db";
 import type { AppMeta } from "./models";
-import { daysBetween, todayLocal } from "./util";
+import { daysBetween, isoToDateOnly, todayLocal } from "./util";
 
 /** Days after which an export is worth mentioning again. */
 export const BACKUP_STALE_DAYS = 30;
@@ -48,7 +48,7 @@ export function backupState(data: AllData, meta?: AppMeta, today = todayLocal())
   const totalRecords = countRecords(data);
   const unsavedChanges = changesSinceExport(data, lastExportAt);
   const daysSinceExport = lastExportAt
-    ? Math.max(0, daysBetween(lastExportAt.slice(0, 10), today))
+    ? Math.max(0, daysBetween(isoToDateOnly(lastExportAt), today))
     : undefined;
 
   return {
@@ -75,7 +75,7 @@ export function shouldNudge(
 ): boolean {
   if (!state.stale) return false;
   if (!lastNudgeAt) return true;
-  return daysBetween(lastNudgeAt.slice(0, 10), today) >= NUDGE_INTERVAL_DAYS;
+  return daysBetween(isoToDateOnly(lastNudgeAt), today) >= NUDGE_INTERVAL_DAYS;
 }
 
 /* --------------------------------------------------------------- storage */

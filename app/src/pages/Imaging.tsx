@@ -10,7 +10,7 @@ import {
   StorageFullError,
 } from "../lib/db";
 import type { DocumentRecord, Eye, ImagingModality, ImagingRecord, SourceType } from "../lib/models";
-import { EYE_SHORT } from "../lib/models";
+import { EYE_SHORT, MODALITY_LABELS } from "../lib/models";
 import { ConfirmButton, DemoBadge, EmptyState, EyeBadge, Field, Modal, NeedsCheckingBadge, PageHeader, ProvenanceBadge, SourceSelect } from "../components/ui";
 import { formatDate, todayLocal } from "../lib/util";
 import { storeThumbnailFor, thumbnailSrc } from "../lib/thumbs";
@@ -119,14 +119,14 @@ function ImagingList({ modality, compare }: { modality: "OCT" | "other"; compare
       ) : (
         <>
           {compare && <OCTCompare records={list} />}
-          <div className="gallery" style={{ marginTop: compare ? 16 : 0 }}>
+          <div className="gallery imaging-gallery" style={{ marginTop: compare ? 16 : 0 }}>
             {list.map((i) => (
               <button key={i.id} className="gallery-item" onClick={() => setOpenId(i.id)}>
                 {thumbs[i.id] ? (
                   <img src={thumbs[i.id]} alt={`${i.modality} ${formatDate(i.date)}`} />
                 ) : (
                   <div className="img-ph" style={{ display: "grid", placeItems: "center", color: "var(--text-3)" }}>
-                    {i.modality === "OCT" ? "OCT" : "IMG"}
+                    {i.file_ids.length === 0 ? "No image attached" : i.modality === "OCT" ? "OCT" : "IMG"}
                   </div>
                 )}
                 <div className="gallery-meta">
@@ -262,7 +262,7 @@ function ImagingDetail({ record, onClose }: { record: ImagingRecord; onClose: ()
   }, [record]);
 
   return (
-    <Modal title={`${record.modality.toUpperCase()} — ${formatDate(record.date)}`} onClose={onClose} wide>
+    <Modal title={`${MODALITY_LABELS[record.modality]} — ${formatDate(record.date)}`} onClose={onClose} wide>
       <div className="btn-row" style={{ marginBottom: 14 }}>
         <EyeBadge eye={record.eye} />
         <ProvenanceBadge source={record.source_type} />
@@ -396,6 +396,9 @@ function AddRecordModal({
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  // "Device measurement" is only the default while a device's own image is attached; a record
+  // typed in by hand is the person's, unless they say otherwise.
+  const [sourceChosen, setSourceChosen] = useState(false);
   const [img, setImg] = useState({
     modality: defaultModality as ImagingModality,
     date: todayLocal(),
@@ -446,7 +449,10 @@ function AddRecordModal({
       });
       await store.documents.put(rec);
     } else {
-      if (files.length === 0 && !img.findings.trim()) return setSaving(false);
+      if (files.length === 0 && !img.findings.trim()) {
+        setSaveError("Add an image file, or the findings as documented, before saving.");
+        return setSaving(false);
+      }
       const fileIds: string[] = [];
       let thumbFileId: string | undefined;
       for (const f of files) {
@@ -466,7 +472,8 @@ function AddRecordModal({
         findings: img.findings || undefined,
         clinician_interpretation: img.interpretation || undefined,
         patient_notes: img.patient_notes || undefined,
-        source_type: img.source_type,
+        source_type:
+          files.length === 0 && !sourceChosen ? ("patient_reported" as SourceType) : img.source_type,
         confirmed: img.confirmed,
         thumb_file_id: thumbFileId,
       });
@@ -555,7 +562,15 @@ function AddRecordModal({
           <Field label="Clinician interpretation"><textarea value={img.interpretation} onChange={(e) => setImg({ ...img, interpretation: e.target.value })} /></Field>
           <Field label="Your notes"><textarea value={img.patient_notes} onChange={(e) => setImg({ ...img, patient_notes: e.target.value })} /></Field>
           <div className="grid-2">
-            <Field label="Source"><SourceSelect value={img.source_type} onChange={(s) => setImg({ ...img, source_type: s })} /></Field>
+            <Field label="Source">
+              <SourceSelect
+                value={files.length === 0 && !sourceChosen ? "patient_reported" : img.source_type}
+                onChange={(s) => {
+                  setSourceChosen(true);
+                  setImg({ ...img, source_type: s });
+                }}
+              />
+            </Field>
             <label className="check-row" style={{ alignSelf: "end" }}>
               <input type="checkbox" checked={img.confirmed} onChange={(e) => setImg({ ...img, confirmed: e.target.checked })} />
               Details confirmed by me

@@ -8,12 +8,14 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
+  // Limit concurrent software rendering locally; this does not classify failures as harmless.
+  workers: process.env.CI ? undefined : 1,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
+  retries: 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL: "http://localhost:4173",
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
   },
   projects: [
     {

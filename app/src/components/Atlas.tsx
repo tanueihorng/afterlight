@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import FundusFigure from "./FundusFigure";
 import VisionSim from "./VisionSim";
 import RetinaDiagram from "./RetinaDiagram";
-import { EyeBadge, Field, SafetyNotice } from "./ui";
+import { EyeBadge, Field, ProvenanceBadge, SafetyNotice } from "./ui";
 import {
   ATLAS,
   REGION_LABELS,
@@ -90,7 +90,7 @@ export default function Atlas({
         <h2 className="card-title">Look something up</h2>
         <p className="muted" style={{ marginTop: 0 }}>
           A reference to read when you want to understand a word or a picture. Afterlight never
-          suggests what you might have, and nothing here is matched against your own entries.
+          suggests what you might have and never compares your symptoms with anything here.
         </p>
 
         <Field label="Search by name, symptom word, or a term from a letter">
@@ -127,8 +127,8 @@ export default function Atlas({
         <div className="card">
           <h2 className="card-title">Documented in your record</h2>
           <p className="muted" style={{ marginTop: 0 }}>
-            Matched to the name your clinician documented. The illustration is generic and shows the
-            concept, not your eye.
+            Looked up by the name of each diagnosis already in your record, with who recorded it. The
+            illustration is generic and shows the concept, not your eye.
           </p>
           {documented.map(({ diagnosis, entry }) => (
             <button key={diagnosis.id} className="atlas-row" onClick={() => setSelectedId(entry!.id)}>
@@ -138,6 +138,7 @@ export default function Atlas({
               </span>
               <span className="tl-meta">
                 <EyeBadge eye={diagnosis.eye} />
+                <ProvenanceBadge source={diagnosis.source_type} />
                 <span className="muted">Read about {entry!.name} →</span>
               </span>
             </button>

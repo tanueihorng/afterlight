@@ -1,66 +1,75 @@
-# Asset pipeline
+# Eye asset pipeline
 
-Afterlight's eye is **procedural today**: geometry, iris, sclera and fundus are all generated on
-the device at runtime, and no binary assets ship. This document is for the next step — baking
-sculpted detail in Blender — and for anyone who needs to know why the split is where it is.
+The eye combines **Blender-authored anatomy** with **interactive procedural detail**. Blender
+5.2 LTS authors the full static model — sclera, cornea, iris, lens, ciliary body, zonules,
+retina, choroid, optic nerve with sheath, and the four rectus muscles — and bakes neutral
+surface detail. Blender is required only to regenerate source assets; the application builds
+and runs without it.
 
-## The line
+## Rebuild
 
-**Blender owns what is sculptural and fixed:**
+From the repository root:
 
-- the base anatomy mesh, with clean topology and UVs
-- sculpted detail baked to normal / AO / curvature maps: scleral collagen, iris stromal relief,
-  crypts, furrows, the limbal falloff
-- Phase 07's procedure animations, which are scripted sequences rather than states
-
-**The engine owns everything continuous:**
-
-- iris colour from the melanin model, pupil diameter, scleral vessel density
-- the entire fundus — vessel tree, cup:disc ratio, macular pigment
-- every Phase 07 severity parameter
-
-Baking a parameter is a bug, not a shortcut. It produces a combinatorial explosion of assets and
-kills the severity slider, which is the single most explanatory interaction in the app. The fundus
-in particular stays procedural: Blender adds nothing to a view that is dominated by vessel growth
-and lesion layers.
-
-## Running it
-
-Blender 4.x is required, and **only** to regenerate assets. A clone without Blender builds, tests
-and runs everything — that is a hard requirement, checked by CI.
-
-```bash
-blender --background assets-src/eye.blend --python assets-src/build-eye.py
-cd app && npm run verify:assets
+```sh
+cd app && node scripts/anatomy/export-anatomy-data.mjs   # params + vessel tree for Blender
+blender --background --python assets-src/build-anatomy.py  # full model, export, renders
+cd app && npm run assets:embed                            # refresh EyeExplorer.html's blocks
+npm run verify                                            # includes the asset hash checks
+npm run build:standalone                                  # EyeExplorer-engine.html
+node scripts/capture-eye-final.mjs --tag <name>           # comparable browser evidence
 ```
 
-The script models, bakes, decimates to three tiers, exports compressed glTF, and prints a hash for
-every output. Nothing in it needs a human clicking in the UI, because an agent has to be able to
-reproduce every byte.
+The Blender run takes minutes and is CPU-heavy: run it on its own, never alongside the e2e suite
+or captures, and rebuild (`npm run build`) before testing so no asset hash changes underneath a
+running browser. The capture script needs `npx vite preview --port 4173 --strictPort` already
+running and writes to `docs/eye-realism/captures/<name>/` with a `capture-report.json`.
 
-## Formats and budgets
+**Who owns which parameter.** Blender owns static shape only: wall thicknesses, corneal
+asphericity, lens profile, nerve and muscle geometry, all read from `params.json`. The browser
+owns everything that varies — iris colour and pupil, fundus painting and vessel growth, scleral
+redness, light, laterality (a mirror), slice, separation, layer magnification, and every
+condition delta. Changing a measurement means editing `dimensions.ts` and re-running the whole
+chain above; changing a look never needs Blender.
 
-| | |
-|---|---|
-| Geometry | `.glb`, Draco compressed |
-| Textures | KTX2/Basis where the browser can transcode, WebP otherwise; baked at 2K, shipped 2K (high) and 1K (medium/low) |
-| Hosted build | assets ≤ 12 MB total, lazy-loaded behind the Visualize chunk, never on initial load |
-| Standalone file | ≤ 5 MB, low tier, inlined, must render with the network blocked |
+`export-anatomy-data.mjs` bundles `dimensions.ts` and writes `assets-src/generated/params.json`
+plus the seeded vessel tree mapped onto the retina — Blender reads the same numbers the browser
+uses, so there is no second anatomy table to drift.
 
-Everything ships locally. Nothing is fetched at runtime — not from a CDN, not from an asset host,
-not lazily from a remote. That is non-negotiable #1 applied to bytes.
+`build-anatomy.py` executes the preserved iris-bake pipeline (`build-eye.py`) first, then authors
+every static structure from `params.json`, validates topology (watertight solids, outward
+winding, finite bounds), exports quantised grid vertices to
+`app/src/engine/assets/anatomy.bin` + `anatomy.json`, renders four studies into
+`assets-src/renders/`, and saves the editable `assets-src/eye.blend` with named collections
+(Globe, Anterior, Retina, Nerve, Muscles, Vessels, Studio) and four cameras.
 
-## Licensing
+Every solid is assembled from regular grid patches whose shared border rows carry identical
+coordinates, so wall thickness is real geometry and openings (limbus, scleral canal, disc) are
+built into the grids — the browser regenerates indices from `rows × cols` and welds coincident
+vertices by position. Colour, pupil size, vessel density, laterality and every condition delta
+stay runtime parameters; nothing about severity is baked.
 
-Self-authored or CC0 only. Every asset is listed in `assets-src/ASSETS.md` with its origin, author,
-licence and hash, and `npm run verify:assets` fails the build if a committed file has drifted from
-its manifest entry or has no licence line. An asset whose licence cannot be stated in one line is
-removed.
+The generated maps are neutral: the iris bake's tangent-space normals and linear relief mask,
+plus the model grids. The Cycles renders in `assets-src/renders/` are material studies for
+structural review — **not screenshots of the app** — and carry the same generic-model boundary
+as the browser.
 
-## Current state
+## Browser integration
 
-**No assets have been baked.** The pipeline is written and scripted but has never been run:
-Blender was not installed on the machine where Phase 06 was built. The engine is fully procedural
-in the meantime, which is a working state rather than a placeholder — the realism gain from baked
-detail is real but incremental, and should be judged with a side-by-side comparison in the PR that
-introduces it, as Phase 06's acceptance criteria require.
+`engine/anatomy/model.ts` decodes the binary into plain typed arrays (no Three import), so the
+app (Three r180) and the legacy explorer (embedded r160) each adapt the same data through their
+own thin adapter — no Three instance crosses that boundary. `materials/iris-detail.ts` colours
+the neutral relief from the live iris controls. `assets:embed` bundles the shared painter and
+PNGs into the root `EyeExplorer.html` in a marked block; `verify:assets` checks both PNG hashes
+and that the embedded copy matches the source.
+
+## Provenance and budgets
+
+The self-authored assets and their SHA-256 hashes are listed in `assets-src/ASSETS.md`; no
+downloaded photographs, models or environment maps are used. The source `.blend` stays outside
+the shipped app. Budgets measured at the phase-12 export: geometry data ~0.6 MB binary
+(~0.8 MB inlined base64), iris PNGs ~0.7 MB, inside the 12 MB lazy renderer and 5 MB
+standalone caps with room for Three itself. The application's initial-download budget remains
+enforced separately.
+
+These are generic educational models. A material study is not clinical validation or a model of
+a patient's eye. The clinical-review status is unchanged.

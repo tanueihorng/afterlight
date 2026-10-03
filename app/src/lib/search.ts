@@ -5,7 +5,7 @@ import type { AllData } from "./db";
 import type { Eye, SourceType } from "./models";
 import { EYE_SHORT, MEASUREMENT_LABELS } from "./models";
 import type { Route } from "./router";
-import { formatDate } from "./util";
+import { formatDate, isoToDateOnly } from "./util";
 
 export interface SearchHit {
   id: string;
@@ -213,7 +213,7 @@ export function buildIndex(s: AllData): IndexRow[] {
           x.frequency,
           x.description,
         ),
-        date: x.date_time.slice(0, 10),
+        date: isoToDateOnly(x.date_time),
         eye: x.eye,
         source_type: x.source_type,
         route: "timeline",
@@ -248,7 +248,7 @@ export function buildIndex(s: AllData): IndexRow[] {
         kind: "Floater",
         title: x.nickname || `${x.shape} floater`,
         snippet: j(x.shape, x.size, x.opacity, x.appearance),
-        date: x.first_seen.slice(0, 10),
+        date: isoToDateOnly(x.first_seen),
         eye: x.eye,
         source_type: x.source_type,
         route: "my-eyes",
@@ -265,7 +265,7 @@ export function buildIndex(s: AllData): IndexRow[] {
         kind: "Drawing",
         title: "What I See drawing",
         snippet: x.description ?? "",
-        date: x.date_time.slice(0, 10),
+        date: isoToDateOnly(x.date_time),
         eye: x.eye,
         source_type: x.source_type,
         route: "what-i-see",
@@ -282,7 +282,7 @@ export function buildIndex(s: AllData): IndexRow[] {
         kind: "Appointment",
         title: x.reason || "Appointment",
         snippet: j(x.clinic, x.clinician, x.specialty, x.notes),
-        date: x.date_time.slice(0, 10),
+        date: isoToDateOnly(x.date_time),
         eye: "not_applicable",
         source_type: "clinician_reported",
         route: "appointments",
@@ -299,7 +299,7 @@ export function buildIndex(s: AllData): IndexRow[] {
         kind: "Question for doctor",
         title: x.text,
         snippet: x.answer ?? "",
-        date: x.created_at.slice(0, 10),
+        date: isoToDateOnly(x.created_at),
         eye: "not_applicable",
         source_type: "patient_reported",
         route: "appointments",
@@ -459,7 +459,7 @@ export function buildIndex(s: AllData): IndexRow[] {
         kind: "Appointment brief",
         title: `Brief ${formatDate(x.range_start)} → ${formatDate(x.range_end)}`,
         snippet: "Saved appointment brief",
-        date: x.created_at.slice(0, 10),
+        date: isoToDateOnly(x.created_at),
         eye: "both",
         source_type: "ai_generated",
         route: "appointments",

@@ -1,4 +1,13 @@
-import { THEMES, TYPE_SCALES, prefsFromMeta, type ThemeId, type TypeScale } from "../lib/prefs";
+import {
+  ACCENTS,
+  THEMES,
+  TYPE_SCALES,
+  isHighContrast,
+  prefsFromMeta,
+  type AccentId,
+  type ThemeId,
+  type TypeScale,
+} from "../lib/prefs";
 import { useStore } from "../lib/store";
 
 /**
@@ -27,8 +36,29 @@ export default function DisplaySettings() {
             </button>
           ))}
         </div>
+        <p className="muted pref-hint">{THEMES.find((t) => t.id === prefs.theme)?.description}</p>
+      </fieldset>
+
+      <fieldset className="pref-group">
+        <legend className="field-label">Colour</legend>
+        <div className="swatches settings-swatches">
+          {ACCENTS.map((a) => (
+            <button
+              key={a.id}
+              className="swatch"
+              aria-pressed={prefs.accent === a.id}
+              disabled={isHighContrast(prefs.theme)}
+              onClick={() => store.setMeta({ accent: a.id as AccentId })}
+            >
+              <span className={`swatch-dot swatch-${a.id}`} aria-hidden="true" />
+              {a.label}
+            </button>
+          ))}
+        </div>
         <p className="muted pref-hint">
-          {THEMES.find((t) => t.id === prefs.theme)?.description}
+          {isHighContrast(prefs.theme)
+            ? "High contrast keeps its own fixed colours."
+            : `${ACCENTS.find((a) => a.id === prefs.accent)?.description} A matter of taste only — colour never carries meaning here.`}
         </p>
       </fieldset>
 
@@ -69,9 +99,16 @@ export default function DisplaySettings() {
             checked={prefs.glareComfort}
             onChange={(e) => store.setMeta({ glare_comfort: e.target.checked })}
           />
-          <label htmlFor="pref-glare">
-            Lower brightness for glare comfort
-          </label>
+          <label htmlFor="pref-glare">Lower brightness for glare comfort</label>
+        </div>
+        <div className="check-row">
+          <input
+            id="pref-solid"
+            type="checkbox"
+            checked={prefs.solidSurfaces}
+            onChange={(e) => store.setMeta({ solid_surfaces: e.target.checked })}
+          />
+          <label htmlFor="pref-solid">Solid surfaces instead of glass</label>
         </div>
         <div className="check-row">
           <input
@@ -83,7 +120,8 @@ export default function DisplaySettings() {
           <label htmlFor="pref-imagery">Dim scans, drawings and illustrations</label>
         </div>
         <p className="muted pref-hint">
-          If your system already asks for reduced motion, Afterlight follows it without this setting.
+          If your system already asks for reduced motion, Afterlight follows it without this
+          setting.
         </p>
       </fieldset>
     </section>

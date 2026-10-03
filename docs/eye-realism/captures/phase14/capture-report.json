@@ -1,0 +1,47 @@
+{
+  "capturedAt": "2026-09-13T13:04:12.939Z",
+  "baseURL": "http://localhost:4173",
+  "viewport": "1280x800 @1x",
+  "gl": "SwiftShader (software) — timings are relative baselines on this machine, not device evidence",
+  "appStats": [
+    {
+      "label": "app exterior",
+      "calls": 116,
+      "triangles": 540788
+    },
+    {
+      "label": "app cross_section",
+      "calls": 156,
+      "triangles": 554936
+    },
+    {
+      "label": "app cornea",
+      "calls": 28,
+      "triangles": 125860
+    },
+    {
+      "label": "app fundus",
+      "calls": 0,
+      "triangles": 0
+    }
+  ],
+  "explorerStats": [
+    {
+      "label": "explorer default",
+      "calls": 0,
+      "triangles": 0
+    },
+    {
+      "label": "explorer cut 40",
+      "calls": 0,
+      "triangles": 0
+    },
+    {
+      "label": "explorer cut 100",
+      "calls": 0,
+      "triangles": 0
+    }
+  ],
+  "appSliceSweepMs": 1025,
+  "notes": "appSliceSweepMs covers 10 ArrowRight steps with 60ms waits on the Slice position slider; Explorer cut uses #cutSlider input events."
+}

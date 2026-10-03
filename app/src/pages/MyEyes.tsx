@@ -8,10 +8,12 @@ import {
   type Measurement,
   type Medication,
   type Procedure,
+  MODALITY_LABELS,
 } from "../lib/models";
-import { ConfirmButton, Field, Modal, PageHeader, StatusBadge } from "../components/ui";
+import { ConfirmButton, Field, Modal, NeedsCheckingBadge, PageHeader, ProvenanceBadge, StatusBadge } from "../components/ui";
 import Trends from "../components/Trends";
 import { formatDate, isoToDateOnly, todayLocal } from "../lib/util";
+import { t } from "../lib/i18n";
 
 type EyeSide = "right" | "left";
 type ModalKind = "baseline" | "diagnosis" | "procedure" | "medication" | "measurement" | "prescription" | null;
@@ -71,11 +73,14 @@ function EyeProfile({
     .filter((i) => i.eye === eye || i.eye === "both")
     .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
   const lastAcuity = store.measurements.list
-    .filter((m) => (m.eye === eye || m.eye === "both") && m.kind === "visual_acuity")
+    .filter((m) => (m.eye === eye || m.eye === "both") && m.kind === "visual_acuity" && (m.source_type !== "document_extracted" || m.confirmed === true))
     .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
   const lastIop = store.measurements.list
-    .filter((m) => (m.eye === eye || m.eye === "both") && m.kind === "iop")
+    .filter((m) => (m.eye === eye || m.eye === "both") && m.kind === "iop" && (m.source_type !== "document_extracted" || m.confirmed === true))
     .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+  const uncheckedMeasurements = store.measurements.list
+    .filter((m) => (m.eye === eye || m.eye === "both") && m.source_type === "document_extracted" && m.confirmed !== true)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
   const nextAppt = store.appointments.list
     .filter((a) => a.date_time >= new Date().toISOString())
     .sort((a, b) => (a.date_time > b.date_time ? 1 : -1))[0];
@@ -130,7 +135,7 @@ function EyeProfile({
         <dd>
           {lastImaging ? (
             <>
-              {lastImaging.modality.toUpperCase()} · {formatDate(lastImaging.date)}
+              {MODALITY_LABELS[lastImaging.modality]} · {formatDate(lastImaging.date)}
               {lastImaging.thumb && (
                 <img src={lastImaging.thumb} alt={`${lastImaging.modality} thumbnail`} style={{ display: "block", marginTop: 6, maxWidth: 190, borderRadius: 8, border: "1px solid var(--border-soft)" }} />
               )}
@@ -141,9 +146,27 @@ function EyeProfile({
         </dd>
         <dt>Next appointment</dt>
         <dd>
-          {nextAppt ? `${formatDate(nextAppt.date_time.slice(0, 10))}${nextAppt.reason ? ` · ${nextAppt.reason}` : ""}` : "Not recorded"}
+          {nextAppt ? `${formatDate(isoToDateOnly(nextAppt.date_time))}${nextAppt.reason ? ` · ${nextAppt.reason}` : ""}` : "Not recorded"}
         </dd>
       </dl>
+      {uncheckedMeasurements.length > 0 && (
+        <div className="unchecked-measurements">
+          <div className="card-title">{t("eyes.unchecked_values")}</div>
+          {uncheckedMeasurements.map((m) => {
+            const source = store.documents.list.find((d) => d.id === m.source_document_id);
+            return (
+              <div key={m.id} className="unchecked-measurement">
+                <strong>{MEASUREMENT_LABELS[m.kind]}: {m.value}{m.unit ? ` ${m.unit}` : ""}</strong>
+                <span className="muted"> · {formatDate(m.date)}</span>{" "}
+                <ProvenanceBadge source={m.source_type} />{" "}
+                <NeedsCheckingBadge source={m.source_type} confirmed={m.confirmed} />
+                {source && <div className="muted">{t("eyes.source_document", { title: source.title })}</div>}
+                {m.note && <div className="muted">{m.note}</div>}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <hr className="divider" />
       <div className="card-title">Diagnoses</div>
@@ -262,7 +285,9 @@ function fmtRx(e: { sphere?: number; cylinder?: number; axis?: number; acuity?: 
     e.cylinder != null ? (e.cylinder > 0 ? `+${e.cylinder}` : `${e.cylinder}`) : "—",
     e.axis != null ? `×${e.axis}` : "—",
   ];
-  return parts.join(" ");
+  const rx = parts.join(" ");
+  // Acuity goes in at add time; if it was recorded it must come back out, not vanish.
+  return e.acuity ? `${rx} · ${e.acuity}` : rx;
 }
 
 /* ---------------- modals ---------------- */
@@ -305,9 +330,9 @@ function BaselineModal({ eye, onClose }: { eye: EyeSide; onClose: () => void }) 
   );
 }
 
-function DiagnosisModal({ onClose }: { onClose: () => void }) {
+export function DiagnosisModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
-  const [d, setD] = useState({ name: "", eye: "right" as Eye, first_documented: todayLocal(), status: "active", clinician: "", clinic: "", notes: "", confirmed: true, source_type: "clinician_reported" });
+  const [d, setD] = useState({ name: "", eye: "right" as Eye, first_documented: todayLocal(), status: "active", clinician: "", clinic: "", notes: "", confirmed: false, source_type: "clinician_reported" });
   return (
     <Modal title="Add diagnosis" onClose={onClose}>
       <Field label="Diagnosis"><input type="text" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} /></Field>
@@ -376,7 +401,7 @@ function DiagnosisModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ProcedureModal({ onClose }: { onClose: () => void }) {
+export function ProcedureModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const [p, setP] = useState({ procedure_type: "", date: todayLocal(), eye: "right" as Eye, surgeon: "", facility: "", indication: "", outcome: "" });
   return (
@@ -425,7 +450,7 @@ function ProcedureModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function MedicationModal({ onClose }: { onClose: () => void }) {
+export function MedicationModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
   const [m, setM] = useState({ name: "", kind: "prescription", eye: "right" as Eye, dose: "", frequency: "", start_date: todayLocal(), end_date: "", prescribed_by: "", reason: "" });
   return (
@@ -490,7 +515,7 @@ function MedicationModal({ onClose }: { onClose: () => void }) {
 
 function MeasurementModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
-  const [m, setM] = useState({ kind: "visual_acuity", eye: "right" as Eye, date: todayLocal(), value: "", unit: "", note: "", source_type: "clinician_reported" });
+  const [m, setM] = useState({ kind: "visual_acuity", eye: "right" as Eye, date: todayLocal(), value: "", unit: "", note: "", source_type: "clinician_reported", source_document_id: "" });
   return (
     <Modal title="Add measurement" onClose={onClose}>
       <div className="grid-2">
@@ -519,13 +544,23 @@ function MeasurementModal({ onClose }: { onClose: () => void }) {
           <option value="clinician_reported">Clinician documented</option>
           <option value="device_measurement">Device measurement</option>
           <option value="patient_reported">Patient reported</option>
+          <option value="document_extracted">{t("eyes.document_source")}</option>
         </select>
       </Field>
+      {m.source_type === "document_extracted" && (
+        <Field label={t("eyes.source_record")}>
+          <select value={m.source_document_id} onChange={(e) => setM({ ...m, source_document_id: e.target.value })}>
+            <option value="">{t("eyes.select_document")}</option>
+            {store.documents.list.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+          </select>
+        </Field>
+      )}
+      <Field label="Note (optional)"><input type="text" value={m.note} onChange={(e) => setM({ ...m, note: e.target.value })} placeholder="e.g. taken with the new drops" /></Field>
       <div className="modal-actions">
         <button className="btn" onClick={onClose}>Cancel</button>
         <button
           className="btn primary"
-          disabled={!m.value.trim()}
+          disabled={!m.value.trim() || (m.source_type === "document_extracted" && !m.source_document_id)}
           onClick={async () => {
             const rec: Measurement = newRecord({
               date: m.date,
@@ -535,6 +570,8 @@ function MeasurementModal({ onClose }: { onClose: () => void }) {
               unit: m.unit || undefined,
               note: m.note || undefined,
               source_type: m.source_type as Measurement["source_type"],
+              confirmed: m.source_type !== "document_extracted",
+              source_document_id: m.source_type === "document_extracted" ? m.source_document_id : undefined,
             });
             await store.measurements.put(rec);
             onClose();

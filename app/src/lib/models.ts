@@ -385,6 +385,9 @@ export interface Measurement {
   correction?: "none" | "glasses" | "contacts" | "pinhole";
   note?: string;
   source_type: SourceType;
+  /** A transcription stays unchecked until the person compares it with its source. */
+  confirmed?: boolean;
+  source_document_id?: string;
   demo?: boolean;
   created_at: string;
   updated_at: string;
@@ -471,6 +474,15 @@ export interface StoredFile {
 }
 
 export type ImagingModality = "OCT" | "fundus" | "visual_field" | "corneal" | "other";
+
+/** How each kind of imaging is named on screen: never the stored identifier. */
+export const MODALITY_LABELS: Record<ImagingModality, string> = {
+  OCT: "OCT scan",
+  fundus: "Fundus photograph",
+  visual_field: "Visual field test",
+  corneal: "Corneal imaging",
+  other: "Other imaging",
+};
 
 export interface ImagingRecord {
   id: string;
@@ -621,6 +633,10 @@ export interface AppMeta {
   };
   glare_comfort?: boolean;
   dim_imagery?: boolean;
+  /** The three-colour theme for buttons and background light. Cosmetic; never carries meaning. */
+  accent?: "dusk" | "ocean" | "blossom" | "sunrise" | "lagoon" | "aurora" | "sorbet" | "moonstone";
+  /** Solid surfaces instead of frosted glass, for anyone who finds transparency hard to read. */
+  solid_surfaces?: boolean;
   demo_seeded: boolean;
   /** Schema the stored records conform to; absent means version 1. */
   schema_version?: number;

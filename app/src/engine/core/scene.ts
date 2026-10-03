@@ -1,36 +1,60 @@
-// The eye scene: geometry, materials, lighting and the render loop.
+// The eye scene: the Blender-authored model, live materials, sections and the render loop.
 //
 // Framework-agnostic on purpose. React mounts it and tears it down; nothing here knows React
 // exists, which is what keeps it testable and what makes the standalone offline build possible.
+//
+// Geometry comes from the committed anatomical model (engine/anatomy/assets) — no nested
+// spheres. Everything the contract keeps runtime-owned — iris colour, pupil, vessel tree, the
+// fundus, laterality, slices — is applied here as materials, transforms and generated caps, so
+// no condition can ever freeze into the model.
 
 import {
   ACESFilmicToneMapping,
   AmbientLight,
   BufferAttribute,
-  CircleGeometry,
+  BufferGeometry,
   Clock,
   Color,
   DirectionalLight,
   DoubleSide,
   Group,
   Mesh,
+  MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
-  RingGeometry,
-  Scene,
-  SphereGeometry,
+  Plane,
+  Raycaster,
+  PMREMGenerator,
+  PlaneGeometry,
+  Vector2,
+  Vector3,
   SRGBColorSpace,
+  Scene,
+  ShapeGeometry,
+  Shape,
+  TextureLoader,
   WebGLRenderer,
+  type Material,
   type Object3D,
 } from "three";
+import { irisNormalUrl } from "../materials/iris-detail";
 import { EYE, mm } from "../anatomy/dimensions";
 import { DEFAULT_IRIS, pupilRadiusMm, type IrisParams } from "../anatomy/iris";
 import { DEFAULT_FUNDUS, type FundusParams } from "../anatomy/fundus";
-import { irisTexture, scleraTexture, disposeTextureCache } from "../materials/textures";
+import {
+  irisTexture,
+  scleraTexture,
+  fundusTexture,
+  muscleFibreTexture,
+  disposeTextureCache,
+} from "../materials/textures";
+import { loadEyeModel, EYE_MODEL_MANIFEST, type StructureMesh } from "../anatomy/model-assets";
+import { sectionCap, type SectionPlane } from "../anatomy/section";
+import { vesselTubesFor, type VesselTubeMesh } from "../anatomy/vessels3d";
 import { TIERS, probeCapability, type QualityTier } from "./capability";
 
-export type ViewMode = "exterior" | "cross_section" | "fundus";
+export type ViewMode = "exterior" | "cross_section" | "fundus" | "cornea";
 
 export interface EyeSceneOptions {
   eye: "right" | "left";
@@ -42,7 +66,12 @@ export interface EyeSceneOptions {
   view: ViewMode;
   /** 0 dark to 1 bright; drives pupil size. */
   light: number;
+  slice: number;
+  separation: number;
+  zoom: number;
   reducedMotion: boolean;
+  /** Illustrative retina/choroid wall magnification; labelled as such in the UI. */
+  layerMagnification?: number;
 }
 
 export const DEFAULT_SCENE: EyeSceneOptions = {
@@ -52,27 +81,26 @@ export const DEFAULT_SCENE: EyeSceneOptions = {
   scleraVessels: 0.45,
   view: "exterior",
   light: 0.5,
+  slice: 0.5,
+  separation: 0,
+  zoom: 1,
   reducedMotion: false,
 };
 
-/**
- * A ring with polar UVs: u runs around the circle, v from the pupil margin outwards. Three's own
- * RingGeometry maps a square over the annulus, which smears an iris texture badly.
- */
-function polarRing(inner: number, outer: number, segments: number): RingGeometry {
-  const geometry = new RingGeometry(inner, outer, segments, 2);
-  const position = geometry.getAttribute("position");
-  const uv = new Float32Array(position.count * 2);
-  for (let i = 0; i < position.count; i++) {
-    const x = position.getX(i);
-    const y = position.getY(i);
-    const radius = Math.hypot(x, y);
-    const angle = Math.atan2(y, x);
-    uv[i * 2] = (angle + Math.PI) / (Math.PI * 2);
-    uv[i * 2 + 1] = 1 - (radius - inner) / (outer - inner);
-  }
-  geometry.setAttribute("uv", new BufferAttribute(uv, 2));
-  return geometry;
+/** Slice s ∈ [0,1] → kept-side plane offset: 0 = whole eye, 1 = deep cut past the disc. */
+function sliceConstant(s: number): number {
+  return mm(13 - 15 * Math.max(0, Math.min(1, s)));
+}
+
+interface StructureNode {
+  group: Group;
+  mesh: Mesh;
+  caps: Mesh[];
+  cutMaterials: Material[];
+  /** local-space x range, for skipping sections that cannot touch the structure */
+  minX: number;
+  maxX: number;
+  sliceable: boolean;
 }
 
 function clampAngle(value: number, limit: number): number {
@@ -88,20 +116,37 @@ export class EyeScene {
   private options: EyeSceneOptions;
   private tier: QualityTier;
   private disposables: { dispose(): void }[] = [];
-  private iris: Mesh | null = null;
+  private structures = new Map<string, StructureNode>();
+  private pupil: Mesh | null = null;
+  private limbus: Mesh | null = null;
+  private vesselMeshes: Mesh[] = [];
   private eyeGroup: Group | null = null;
+  private sectionPlane = new Plane(new Vector3(-1, 0, 0), 0);
+  private rotationTarget = { x: 0, y: 0 };
   private targetPupil = 0;
   private currentPupil = 0;
   private onContextLost?: () => void;
+  private selected: string | null = null;
+  private raycaster = new Raycaster();
+  private magnification = EYE_MODEL_MANIFEST.layerMagnification;
+  /**
+   * The model this scene renders — the shared decoded arrays until the layer magnification
+   * changes, after which the two shell entries are private scaled copies. Geometry AND section
+   * caps both read from here, so a cut always matches the walls on screen.
+   */
+  private sceneModel: Map<string, StructureMesh> | null = null;
 
-  constructor(private canvas: HTMLCanvasElement, options: Partial<EyeSceneOptions> = {}) {
+  constructor(
+    private canvas: HTMLCanvasElement,
+    options: Partial<EyeSceneOptions> = {},
+  ) {
     this.options = { ...DEFAULT_SCENE, ...options };
     const capability = probeCapability();
     this.tier = this.options.quality ?? capability.tier;
 
     this.camera = new PerspectiveCamera(28, 1, 0.01, 100);
-    this.camera.position.set(0, 0, 6.4);
-    this.scene.background = new Color(0x05070c);
+    this.camera.position.set(0, 0, 7.2);
+    this.scene.background = new Color(0x141009);
 
     this.renderer = new WebGLRenderer({
       canvas,
@@ -111,15 +156,37 @@ export class EyeScene {
     });
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.0;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, TIERS[this.tier].pixelRatioCap));
 
     canvas.addEventListener("webglcontextlost", this.handleContextLost);
     canvas.addEventListener("webglcontextrestored", this.handleContextRestored);
 
+    this.renderer.localClippingEnabled = true;
+    const room = new Scene();
+    room.background = new Color(0x343536);
+    const softboxGeometry = new PlaneGeometry(3.5, 5);
+    const softboxMaterial = new MeshBasicMaterial({ color: new Color(0xfff3df).multiplyScalar(4) });
+    const softbox = new Mesh(softboxGeometry, softboxMaterial);
+    softbox.position.set(-4, 5, 6);
+    softbox.lookAt(0, 0, 0);
+    room.add(softbox);
+    const pmrem = new PMREMGenerator(this.renderer);
+    const environment = this.track(pmrem.fromScene(room, 0.04, 0.1, 100, { size: 64 }));
+    this.scene.environment = environment.texture;
+    this.scene.environmentIntensity = 0.5;
+    softboxGeometry.dispose();
+    softboxMaterial.dispose();
+    room.clear();
+    pmrem.dispose();
     this.build();
+    this.setView(this.options.view);
+    this.setSlice(this.options.slice);
+    this.setSeparation(this.options.separation);
+    this.setZoom(this.options.zoom);
     this.currentPupil = pupilRadiusMm(this.options.iris);
     this.targetPupil = this.currentPupil;
+    this.updatePupil();
   }
 
   /* ------------------------------------------------------------ building */
@@ -129,167 +196,272 @@ export class EyeScene {
     return resource;
   }
 
-  private build(): void {
-    const settings = TIERS[this.tier];
+  /** Model millimetres → scene units. */
+  private toScene(positions: Float32Array): Float32Array {
+    const out = new Float32Array(positions.length);
+    for (let i = 0; i < positions.length; i++) out[i] = mm(positions[i]);
+    return out;
+  }
 
-    // Work out the anterior geometry from the real dimensions rather than by eye.
-    const globeRadius = mm(EYE.axialLength / 2);
-    const limbusRadius = mm(EYE.limbus.diameter / 2);
-    // Where the limbus sits on the globe, and therefore where the sclera has to stop.
-    const limbusZ = Math.sqrt(globeRadius ** 2 - limbusRadius ** 2);
-    const limbusAngle = Math.asin(limbusRadius / globeRadius);
-    const corneaRadius = mm(EYE.cornea.anteriorRadius);
-    // The corneal cap must meet the globe exactly at the limbus, or there is a visible seam.
-    const corneaCentreZ = limbusZ - Math.sqrt(corneaRadius ** 2 - limbusRadius ** 2);
-    const irisZ = limbusZ - mm(EYE.anteriorChamber.depth);
+  private geometryFromMesh(
+    positions: Float32Array,
+    uvs: Float32Array | null,
+    indices: Uint32Array,
+  ): BufferGeometry {
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new BufferAttribute(this.toScene(positions), 3));
+    if (uvs && uvs.length === (positions.length / 3) * 2) {
+      geometry.setAttribute("uv", new BufferAttribute(new Float32Array(uvs), 2));
+    }
+    geometry.setIndex(new BufferAttribute(new Uint32Array(indices), 1));
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+  private buildMaterials(): Map<string, Material[]> {
+    const settings = TIERS[this.tier];
+    const track = <T extends Material>(m: T): T => this.track(m) as T;
+
+    const scleraMap = scleraTexture(this.options.scleraVessels, settings.textureSize);
+    const sclera = track(
+      new MeshPhysicalMaterial({
+        map: scleraMap ?? undefined,
+        color: 0xffffff,
+        roughness: 0.42,
+        clearcoat: 0.12,
+        clearcoatRoughness: 0.35,
+        sheen: 0.25,
+        side: DoubleSide,
+      }),
+    );
+    const scleraCut = track(
+      new MeshStandardMaterial({ color: 0xf2eee6, roughness: 0.85, side: DoubleSide }),
+    );
+    scleraCut.name = "cut";
+    const cornea = track(
+      new MeshPhysicalMaterial({
+        color: 0xffffff,
+        transmission: 1,
+        thickness: mm(EYE.cornea.centralThickness),
+        ior: EYE.cornea.ior,
+        roughness: 0.02,
+        metalness: 0,
+        clearcoat: 0.6,
+        clearcoatRoughness: 0.08,
+        envMapIntensity: 0.9,
+        specularIntensity: 0.5,
+        side: DoubleSide,
+      }),
+    );
+    const irisMap = irisTexture(this.options.iris, settings.textureSize, () => this.renderOnce());
+    const irisNormal = this.track(new TextureLoader().load(irisNormalUrl, () => this.renderOnce()));
+    irisNormal.anisotropy = 8;
+    const iris = track(
+      new MeshStandardMaterial({
+        map: irisMap ?? undefined,
+        normalMap: irisNormal,
+        normalScale: new Vector2(
+          0.65 * this.options.iris.fibreDensity,
+          0.65 * this.options.iris.fibreDensity,
+        ),
+        roughness: 0.72,
+        metalness: 0,
+        side: DoubleSide,
+      }),
+    );
+    const irisCut = track(
+      new MeshStandardMaterial({ color: 0x4a3226, roughness: 0.9, side: DoubleSide }),
+    );
+    const lens = track(
+      new MeshPhysicalMaterial({
+        color: 0xfbf7ec,
+        transmission: 1,
+        thickness: mm(EYE.lens.thickness),
+        ior: 1.42,
+        roughness: 0.03,
+        envMapIntensity: 0.7,
+        side: DoubleSide,
+      }),
+    );
+    const lensCut = track(
+      new MeshStandardMaterial({ color: 0xe9e2cf, roughness: 0.6, side: DoubleSide }),
+    );
+    lensCut.name = "cut";
+    const fundusMap = fundusTexture(this.fundusParams(), settings.textureSize);
+    const retina = track(
+      new MeshStandardMaterial({
+        map: fundusMap ?? undefined,
+        roughness: 0.55,
+        side: DoubleSide,
+      }),
+    );
+    const retinaCut = track(
+      new MeshStandardMaterial({ color: 0xe8b48c, roughness: 0.85, side: DoubleSide }),
+    );
+    retinaCut.name = "cut";
+    const choroid = track(
+      new MeshStandardMaterial({ color: 0x6e3222, roughness: 0.8, side: DoubleSide }),
+    );
+    const choroidCut = track(
+      new MeshStandardMaterial({ color: 0xb47a60, roughness: 0.8, side: DoubleSide }),
+    );
+    choroidCut.name = "cut";
+    const ciliary = track(
+      new MeshStandardMaterial({ color: 0xb56a5a, roughness: 0.6, side: DoubleSide }),
+    );
+    const ciliaryCut = track(
+      new MeshStandardMaterial({ color: 0xd09a8a, roughness: 0.8, side: DoubleSide }),
+    );
+    const zonule = track(
+      new MeshStandardMaterial({ color: 0xd8d2c4, roughness: 0.55, side: DoubleSide }),
+    );
+    const sheath = track(
+      new MeshPhysicalMaterial({ color: 0xe9e4d6, roughness: 0.5, sheen: 0.3, side: DoubleSide }),
+    );
+    const core = track(
+      new MeshStandardMaterial({ color: 0xdccbb8, roughness: 0.55, side: DoubleSide }),
+    );
+    const nerveHead = track(
+      new MeshStandardMaterial({ color: 0xf0cba8, roughness: 0.6, side: DoubleSide }),
+    );
+    const fibreMap = muscleFibreTexture();
+    const muscleBelly = track(
+      new MeshStandardMaterial({
+        color: 0xb2685c,
+        roughness: 0.62,
+        bumpMap: fibreMap,
+        bumpScale: 0.15,
+        side: DoubleSide,
+      }),
+    );
+    const muscleCut = track(
+      new MeshStandardMaterial({ color: 0xd49a90, roughness: 0.85, side: DoubleSide }),
+    );
+    muscleCut.name = "cut";
+    const tendon = track(
+      new MeshStandardMaterial({ color: 0xe9e4da, roughness: 0.5, side: DoubleSide }),
+    );
+
+    const byStructure = new Map<string, Material[]>();
+    const set = (id: string, mats: Material[]) => byStructure.set(id, mats);
+    set("sclera", [sclera, scleraCut, scleraCut, sclera, sclera, sclera]);
+    set("cornea", [cornea]);
+    set("iris", [iris, irisCut]);
+    set("lens", [lens]);
+    set("ciliary_body", [ciliary, ciliaryCut]);
+    set("zonules", [zonule]);
+    set("retina", [retinaCut, retina, retinaCut, retina, retinaCut, retinaCut]);
+    set("choroid", [choroid, choroid, choroidCut, choroid, choroidCut, choroidCut]);
+    set("optic_nerve_sheath", [sheath]);
+    set("optic_nerve_core", [core]);
+    set("nerve_head", [nerveHead]);
+    for (const id of ["muscle_medial", "muscle_lateral", "muscle_superior", "muscle_inferior"]) {
+      set(id, [muscleBelly, tendon, muscleCut]);
+    }
+    return byStructure;
+  }
+
+  private build(): void {
+    const model = this.sceneModel ?? loadEyeModel();
+    this.sceneModel = model;
+    const materials = this.buildMaterials();
 
     const eyeGroup = new Group();
     eyeGroup.name = "eye";
     this.scene.add(eyeGroup);
     this.eyeGroup = eyeGroup;
 
-    // Sclera: a sphere with the corneal aperture cut out of the front. Without the cut the iris
-    // is sealed inside an opaque ball, which is exactly what an eye is not.
-    const globeGeometry = this.track(
-      new SphereGeometry(
-        globeRadius,
-        settings.globeSegments,
-        settings.globeSegments,
-        0,
-        Math.PI * 2,
-        limbusAngle,
-        Math.PI - limbusAngle,
-      ),
-    );
-    const scleraMap = scleraTexture(this.options.scleraVessels, settings.textureSize);
-    const globeMaterial = this.track(
-      new MeshPhysicalMaterial({
-        map: scleraMap ?? undefined,
-        color: 0xffffff,
-        roughness: 0.38,
-        clearcoat: 0.55,
-        clearcoatRoughness: 0.22,
-        sheen: 0.35,
-        side: DoubleSide,
-      }),
-    );
-    const globe = new Mesh(globeGeometry, globeMaterial);
-    // The sphere's pole is +Y; rotate it so the aperture faces the viewer.
-    globe.rotation.x = Math.PI / 2;
-    globe.scale.set(EYE.horizontalDiameter / EYE.axialLength, 1, EYE.verticalDiameter / EYE.axialLength);
-    eyeGroup.add(globe);
+    const sliceable = new Set([
+      "sclera",
+      "cornea",
+      "iris",
+      "lens",
+      "ciliary_body",
+      "retina",
+      "choroid",
+      "optic_nerve_sheath",
+      "optic_nerve_core",
+      "nerve_head",
+      "zonules",
+      "muscle_medial",
+      "muscle_lateral",
+      "muscle_superior",
+      "muscle_inferior",
+    ]);
 
-    // Iris: a flat annulus behind the anterior chamber, textured in polar coordinates.
-    const irisGeometry = this.track(
-      polarRing(mm(1), limbusRadius, settings.irisSegments),
-    );
-    const irisMap = irisTexture(this.options.iris, settings.textureSize);
-    const irisMaterial = this.track(
-      new MeshStandardMaterial({
-        map: irisMap ?? undefined,
-        // The same painting drives relief: fibres and crypts have depth, which is most of what
-        // separates an iris from a flat disc with a pattern on it.
-        bumpMap: irisMap ?? undefined,
-        bumpScale: 0.6,
-        roughness: 0.5,
-        metalness: 0,
-        side: DoubleSide,
-      }),
-    );
-    this.iris = new Mesh(irisGeometry, irisMaterial);
-    this.iris.position.z = irisZ;
-    eyeGroup.add(this.iris);
+    for (const [structure, meshData] of model) {
+      const geometry = this.geometryFromMesh(meshData.positions, meshData.uvs, meshData.indices);
+      const structureMaterials = materials.get(structure) ?? [];
 
-    // Pupil: a real dark disc so it can constrict, not a hole painted in the texture.
-    const pupilGeometry = this.track(new CircleGeometry(mm(2), 64));
-    const pupilMaterial = this.track(new MeshStandardMaterial({ color: 0x04050b, roughness: 1 }));
-    const pupil = new Mesh(pupilGeometry, pupilMaterial);
-    pupil.name = "pupil";
-    pupil.position.z = irisZ - mm(0.05);
-    eyeGroup.add(pupil);
+      // group per contiguous slot run → one material per group
+      const slotOrder: string[] = [];
+      for (const slot of meshData.slotOfTriangle) {
+        if (!slotOrder.includes(slot)) slotOrder.push(slot);
+      }
+      let scanned = 0;
+      while (scanned < meshData.slotOfTriangle.length) {
+        const slot = meshData.slotOfTriangle[scanned];
+        let count = 0;
+        while (scanned + count < meshData.slotOfTriangle.length && meshData.slotOfTriangle[scanned + count] === slot) {
+          count++;
+        }
+        geometry.addGroup(scanned * 3, count * 3, slotOrder.indexOf(slot));
+        scanned += count;
+      }
 
-    // Cornea: transmissive and refractive. This is the single strongest cue that the render is an
-    // eye rather than a ball with a picture on it — it bends the iris behind it.
-    const corneaGeometry = this.track(
-      new SphereGeometry(
-        corneaRadius,
-        settings.globeSegments,
-        settings.globeSegments,
-        0,
-        Math.PI * 2,
-        0,
-        Math.asin(limbusRadius / corneaRadius),
-      ),
-    );
-    const corneaMaterial = this.track(
-      new MeshPhysicalMaterial({
-        transmission: 1,
-        thickness: mm(EYE.cornea.centralThickness) * 6,
-        ior: EYE.cornea.ior,
-        roughness: 0.015,
-        metalness: 0,
-        clearcoat: 1,
-        clearcoatRoughness: 0.01,
-        transparent: true,
-        side: DoubleSide,
-      }),
-    );
-    const cornea = new Mesh(corneaGeometry, corneaMaterial);
-    cornea.rotation.x = Math.PI / 2;
-    cornea.position.z = corneaCentreZ;
-    eyeGroup.add(cornea);
+      const material: Material | Material[] =
+        structureMaterials.length > 1 ? structureMaterials : structureMaterials[0];
+      if (sliceable.has(structure)) {
+        const mats = Array.isArray(material) ? material : [material];
+        for (const m of mats) m.clippingPlanes = [this.sectionPlane];
+      }
 
-    // Limbus: the transition from clear cornea to sclera is a soft band, not an edge.
-    const limbusGeometry = this.track(
-      new RingGeometry(limbusRadius * 0.94, limbusRadius * 1.13, 96, 1),
-    );
-    const limbusMaterial = this.track(
-      new MeshStandardMaterial({
-        color: 0x2b2530,
-        transparent: true,
-        opacity: 0.42 * this.options.iris.limbalRing,
-        roughness: 0.8,
-        side: DoubleSide,
-      }),
-    );
-    const limbus = new Mesh(limbusGeometry, limbusMaterial);
-    limbus.position.z = limbusZ - mm(0.2);
-    eyeGroup.add(limbus);
+      const mesh = new Mesh(geometry, material);
+      mesh.name = structure;
 
-    // Tear film: a thin, very smooth layer whose specular is the wet look.
-    const tearGeometry = this.track(
-      new SphereGeometry(
-        corneaRadius * 1.005,
-        48,
-        48,
-        0,
-        Math.PI * 2,
-        0,
-        Math.asin(limbusRadius / corneaRadius) * 0.98,
-      ),
-    );
-    const tearMaterial = this.track(
-      new MeshPhysicalMaterial({
-        transmission: 1,
-        roughness: 0,
-        ior: 1.336,
-        thickness: 0.01,
-        transparent: true,
-        opacity: 0.6,
-        side: DoubleSide,
-      }),
-    );
-    const tear = new Mesh(tearGeometry, tearMaterial);
-    tear.rotation.x = Math.PI / 2;
-    tear.position.z = corneaCentreZ;
-    eyeGroup.add(tear);
+      const group = new Group();
+      group.name = structure;
+      group.add(mesh);
 
-    // Lighting: a key, a fill and a rim, all generated. Nothing is fetched.
-    const key = new DirectionalLight(0xfff4e6, 3.1);
+      let minX = Infinity;
+      let maxX = -Infinity;
+      for (let i = 0; i < meshData.positions.length; i += 3) {
+        minX = Math.min(minX, meshData.positions[i]);
+        maxX = Math.max(maxX, meshData.positions[i]);
+      }
+
+      const list = Array.isArray(material) ? material : [material];
+      const node: StructureNode = {
+        group,
+        mesh,
+        caps: [],
+        cutMaterials: [],
+        minX,
+        maxX,
+        sliceable: sliceable.has(structure),
+      };
+      if (node.sliceable) {
+        // the palest variant in the array is the cut face; caps reuse it so a sliced wall reads
+        const cut = list.find((m) => m.name === "cut") ?? list[list.length - 1];
+        node.cutMaterials = [cut];
+      }
+      this.structures.set(structure, node);
+      eyeGroup.add(group);
+    }
+
+    // Laterality is a mirror transform on the whole group: the model is authored right-eye.
+    // Three renders correct winding for negative determinant.
+    eyeGroup.scale.x = this.options.eye === "left" ? -1 : 1;
+
+    this.buildVessels();
+    this.buildPupilAndLimbus();
+
+    // Lighting: key, fill, rim and a soft anterior fill so the cut bowl reads. All generated.
+    const key = new DirectionalLight(0xfff4e6, 2.0);
     key.position.set(2.2, 2.4, 4.4);
     this.scene.add(key);
 
-    const fill = new DirectionalLight(0xc3d6ff, 0.8);
+    const fill = new DirectionalLight(0xc3d6ff, 1.1);
     fill.position.set(-3.2, -1.4, 2.2);
     this.scene.add(fill);
 
@@ -297,7 +469,117 @@ export class EyeScene {
     rim.position.set(-1.6, 1.6, -2.6);
     this.scene.add(rim);
 
-    this.scene.add(new AmbientLight(0xffffff, 0.4));
+    const bowl = new DirectionalLight(0xfff0e2, 0.7);
+    bowl.position.set(0.6, 0.4, 3.2);
+    this.scene.add(bowl);
+
+    this.scene.add(new AmbientLight(0xffffff, 0.45));
+  }
+
+  /** The retina texture is always painted for the authored right eye; laterality is the mirror. */
+  private fundusParams(): FundusParams {
+    return { ...this.options.fundus, eye: "right" };
+  }
+
+  private buildVessels(): void {
+    const tubes: VesselTubeMesh = vesselTubesFor(this.fundusParams(), {
+      calibre: 1,
+      radialSegments: this.tier === "low" ? 5 : this.tier === "medium" ? 6 : 8,
+      eye: "right",
+    });
+    const artery = this.track(
+      new MeshStandardMaterial({ color: 0xb2544a, roughness: 0.75, clippingPlanes: [this.sectionPlane] }),
+    );
+    const vein = this.track(
+      new MeshStandardMaterial({ color: 0x8e4040, roughness: 0.8, clippingPlanes: [this.sectionPlane] }),
+    );
+    // `kind` is per-vertex: a triangle's kind is the kind of its first corner
+    for (const kindIndex of [0, 1] as const) {
+      const indices: number[] = [];
+      for (let t = 0; t < tubes.indices.length / 3; t++) {
+        if (tubes.kind[tubes.indices[t * 3]] === kindIndex) {
+          indices.push(
+            tubes.indices[t * 3],
+            tubes.indices[t * 3 + 1],
+            tubes.indices[t * 3 + 2],
+          );
+        }
+      }
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", new BufferAttribute(this.toScene(tubes.positions), 3));
+      geometry.setAttribute("normal", new BufferAttribute(new Float32Array(tubes.normals), 3));
+      geometry.setIndex(new BufferAttribute(new Uint32Array(indices), 1));
+      const mesh = new Mesh(geometry, kindIndex === 0 ? artery : vein);
+      mesh.name = kindIndex === 0 ? "retinal_arteries" : "retinal_veins";
+      this.vesselMeshes.push(mesh);
+      this.eyeGroup?.add(mesh);
+    }
+  }
+
+  private buildPupilAndLimbus(): void {
+    // Pupil: a real dark disc so it can constrict, sitting at the iris plane.
+    const shape = new Shape();
+    shape.absarc(0, 0, mm(1), 0, Math.PI * 2, false);
+    const pupilGeometry = this.track(new ShapeGeometry(shape, 48));
+    const pupilMaterial = this.track(
+      new MeshBasicMaterial({ color: 0x05060c, side: DoubleSide }),
+    );
+    this.pupil = new Mesh(pupilGeometry, pupilMaterial);
+    this.pupil.name = "pupil";
+    this.pupil.position.z = mm(9.315) - 0.04;
+    this.eyeGroup?.add(this.pupil);
+
+    // Limbus: the transition from clear cornea to sclera as a soft band, not an edge.
+    const ring = new Shape();
+    ring.absarc(0, 0, mm(EYE.limbus.diameter / 2 + EYE.limbus.width / 4), 0, Math.PI * 2, false);
+    const hole = new Shape();
+    hole.absarc(0, 0, mm(EYE.limbus.diameter / 2 - EYE.limbus.width / 4), 0, Math.PI * 2, true);
+    ring.holes.push(hole);
+    const limbusGeometry = this.track(new ShapeGeometry(ring, 64));
+    const limbusMaterial = this.track(
+      new MeshBasicMaterial({
+        color: 0x241f28,
+        transparent: true,
+        opacity: 0.32,
+        side: DoubleSide,
+        depthWrite: false,
+      }),
+    );
+    this.limbus = new Mesh(limbusGeometry, limbusMaterial);
+    this.limbus.name = "limbus";
+    this.limbus.position.z = mm(10.42);
+    this.eyeGroup?.add(this.limbus);
+  }
+
+  /* -------------------------------------------------------------- sections */
+
+  private rebuildCaps(): void {
+    const model = this.sceneModel ?? loadEyeModel();
+    for (const [structure, node] of this.structures) {
+      for (const cap of node.caps) {
+        node.group.remove(cap);
+        cap.geometry.dispose();
+      }
+      node.caps = [];
+      if (!node.sliceable) continue;
+      const c = sliceConstant(this.options.slice);
+      if (this.options.view !== "cross_section" || c >= node.maxX || c <= node.minX) continue;
+      const data = model.get(structure);
+      if (!data) continue;
+      const plane: SectionPlane = { normal: [1, 0, 0], constant: c };
+      const cap = sectionCap(data, plane);
+      if (!cap || !cap.indices.length) continue;
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", new BufferAttribute(this.toScene(cap.positions), 3));
+      geometry.setIndex(new BufferAttribute(new Uint32Array(cap.indices), 1));
+      geometry.computeVertexNormals();
+      const cutMaterial = node.cutMaterials[0] ?? node.mesh.material;
+      const capMesh = new Mesh(geometry, cutMaterial);
+      capMesh.name = `${structure}.cap`;
+      capMesh.renderOrder = 1;
+      node.group.add(capMesh);
+      node.caps.push(capMesh);
+    }
   }
 
   /* -------------------------------------------------------------- runtime */
@@ -305,21 +587,333 @@ export class EyeScene {
   setLight(light: number): void {
     this.options.light = light;
     this.targetPupil = (8 - 6 * Math.min(1, Math.max(0, light)) ** 0.55) / 2;
+    if (this.options.reducedMotion) {
+      this.currentPupil = this.targetPupil;
+      this.updatePupil();
+      this.renderOnce();
+    } else this.start();
   }
+
+  /** Live appearance updates — sliders retune materials without rebuilding the scene. */
+  setAppearance(options: {
+    iris?: IrisParams;
+    fundus?: FundusParams;
+    scleraVessels?: number;
+    eye?: "right" | "left";
+  }): void {
+    if (options.iris) {
+      this.options.iris = options.iris;
+      const irisNode = this.structures.get("iris");
+      const irisMaterials = Array.isArray(irisNode?.mesh.material) ? irisNode!.mesh.material : [];
+      const map = irisTexture(options.iris, TIERS[this.tier].textureSize, () => this.renderOnce());
+      const target = irisMaterials.find((m) => (m as MeshStandardMaterial).map !== undefined);
+      if (target) {
+        (target as MeshStandardMaterial).map = map ?? null;
+        (target as MeshStandardMaterial).needsUpdate = true;
+      }
+      // the pupil follows the iris params' live pupilMm (which the studio derives from light)
+      this.targetPupil = pupilRadiusMm(options.iris);
+    }
+    if (options.fundus) {
+      this.options.fundus = options.fundus;
+      const retinaNode = this.structures.get("retina");
+      const retinaMaterials = Array.isArray(retinaNode?.mesh.material) ? retinaNode!.mesh.material : [];
+      const map = fundusTexture(this.fundusParams(), TIERS[this.tier].textureSize);
+      const target = retinaMaterials.find((m) => (m as MeshStandardMaterial).map !== undefined);
+      if (target) {
+        (target as MeshStandardMaterial).map = map ?? null;
+        (target as MeshStandardMaterial).needsUpdate = true;
+      }
+    }
+    if (options.scleraVessels !== undefined) {
+      this.options.scleraVessels = options.scleraVessels;
+      const scleraNode = this.structures.get("sclera");
+      const scleraMaterials = Array.isArray(scleraNode?.mesh.material) ? scleraNode!.mesh.material : [];
+      const map = scleraTexture(options.scleraVessels, TIERS[this.tier].textureSize);
+      const target = scleraMaterials.find((m) => (m as MeshStandardMaterial).map !== undefined);
+      if (target) {
+        (target as MeshStandardMaterial).map = map ?? null;
+        (target as MeshStandardMaterial).needsUpdate = true;
+      }
+    }
+    if (options.eye) {
+      this.options.eye = options.eye;
+      if (this.eyeGroup) this.eyeGroup.scale.x = options.eye === "left" ? -1 : 1;
+    }
+    this.renderOnce();
+  }
+
+  private pickWidth = 1;
+  private pickHeight = 1;
 
   resize(width: number, height: number): void {
     if (!this.renderer) return;
     this.camera.aspect = width / Math.max(1, height);
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+    this.pickWidth = Math.max(1, width);
+    this.pickHeight = Math.max(1, height);
   }
 
   /** Rotate the eye, as a person would turn a model in their hand. */
   rotate(deltaX: number, deltaY: number): void {
     if (!this.eyeGroup) return;
-    this.eyeGroup.rotation.y = clampAngle(this.eyeGroup.rotation.y + deltaX, 1.1);
-    this.eyeGroup.rotation.x = clampAngle(this.eyeGroup.rotation.x + deltaY, 0.8);
+    this.rotationTarget.y = clampAngle(this.rotationTarget.y + deltaX, Math.PI);
+    this.rotationTarget.x = clampAngle(this.rotationTarget.x + deltaY, 1.4);
+    if (this.options.reducedMotion) {
+      this.eyeGroup.rotation.set(this.rotationTarget.x, this.rotationTarget.y, 0);
+    }
+    if (!this.options.reducedMotion) this.start();
     this.renderOnce();
+  }
+
+  setView(view: ViewMode): void {
+    this.options.view = view;
+    const visible: Record<ViewMode, string[]> = {
+      exterior: ["*"],
+      cross_section: ["*"],
+      cornea: ["cornea", "iris", "pupil", "lens", "limbus", "ciliary_body", "zonules"],
+      fundus: ["retina", "retinal_arteries", "retinal_veins", "nerve_head"],
+    };
+    const list = visible[view];
+    for (const [name, node] of this.structures) {
+      node.group.visible = list.includes("*") || list.includes(name);
+    }
+    for (const vessel of this.vesselMeshes) {
+      vessel.visible = list.includes("*") || list.includes(vessel.name);
+    }
+    if (this.pupil) this.pupil.visible = list.includes("*") || list.includes("pupil");
+    if (this.limbus) this.limbus.visible = list.includes("*") || list.includes("limbus");
+
+    // Fixed framings from the anatomy. The cutaway's yaw puts the kept (nasal) bowl towards
+    // the viewer with the cornea to the opposite screen side; the mirror follows laterality.
+    const yaw = this.options.eye === "left" ? 0.95 : -0.95;
+    this.rotationTarget = {
+      x: view === "cross_section" ? 0.12 : 0,
+      y: view === "cross_section" ? yaw : view === "cornea" ? yaw * 0.4 : 0,
+    };
+    if (this.options.reducedMotion) this.eyeGroup?.rotation.set(this.rotationTarget.x, this.rotationTarget.y, 0);
+    const distance =
+      view === "cornea" ? 5.4 : view === "fundus" ? 3.4 : view === "cross_section" ? 5.6 : 7.2;
+    this.camera.position.set(
+      view === "fundus" ? 0.5 : 0,
+      view === "fundus" ? 0.3 : 0,
+      distance,
+    );
+    this.camera.lookAt(view === "fundus" ? 0 : 0, view === "fundus" ? 0 : 0, view === "fundus" ? -1.0 : 0);
+    this.rebuildCaps();
+    if (!this.options.reducedMotion) this.start();
+  }
+
+  setSlice(value: number): void {
+    this.options.slice = Math.max(0, Math.min(1, value));
+    const active = this.options.view === "cross_section";
+    this.sectionPlane.normal.set(-1, 0, 0);
+    this.sectionPlane.constant = active ? sliceConstant(this.options.slice) : 1e6;
+    this.rebuildCaps();
+    this.renderOnce();
+  }
+
+  setSeparation(value: number): void {
+    this.options.separation = Math.max(0, Math.min(1, value));
+    const order: Record<string, number> = {
+      cornea: 1,
+      limbus: 0.95,
+      iris: 0.75,
+      pupil: 0.75,
+      lens: 0.5,
+      zonules: 0.35,
+      ciliary_body: 0.3,
+    };
+    for (const [name, node] of this.structures) {
+      const factor = order[name];
+      if (factor === undefined) continue;
+      const apply = this.options.view === "cross_section" || this.options.view === "cornea";
+      node.group.position.z = apply ? factor * this.options.separation * mm(EYE.anteriorChamber.depth) * 2 : 0;
+    }
+    if (this.pupil) {
+      this.pupil.position.z =
+        mm(9.315) - 0.04 + (order.pupil ?? 0) * this.options.separation * mm(EYE.anteriorChamber.depth) * 2;
+    }
+    if (this.limbus) {
+      this.limbus.position.z =
+        mm(10.42) + (order.limbus ?? 0) * this.options.separation * mm(EYE.anteriorChamber.depth) * 2;
+    }
+    this.renderOnce();
+  }
+
+  setZoom(value: number): void {
+    this.camera.zoom = Math.max(0.7, Math.min(1.6, value));
+    this.camera.updateProjectionMatrix();
+    this.renderOnce();
+  }
+
+  /* --------------------------------------------------- inspection (phase 14) */
+
+  /** Pick the structure under canvas-local pixel coordinates, or null. */
+  pick(offsetX: number, offsetY: number): string | null {
+    if (!this.renderer) return null;
+    const nx = (offsetX / this.pickWidth) * 2 - 1;
+    const ny = -(offsetY / this.pickHeight) * 2 + 1;
+    this.raycaster.setFromCamera(new Vector2(nx, ny), this.camera);
+    const targets: Mesh[] = [];
+    for (const [name, node] of this.structures) {
+      if (node.group.visible) targets.push(node.mesh);
+      void name;
+    }
+    const hits = this.raycaster.intersectObjects(targets, false);
+    return hits.length ? (hits[0].object.name || null) : null;
+  }
+
+  /** Select a structure (outline via emissive tint) or clear the selection. */
+  setSelected(id: string | null): void {
+    if (this.selected && this.structures.has(this.selected)) {
+      const prev = this.structures.get(this.selected)!;
+      const mats = Array.isArray(prev.mesh.material) ? prev.mesh.material : [prev.mesh.material];
+      for (const m of mats) {
+        (m as MeshStandardMaterial).emissive?.set(0x000000);
+      }
+    }
+    this.selected = id;
+    if (id && this.structures.has(id)) {
+      const node = this.structures.get(id)!;
+      const mats = Array.isArray(node.mesh.material) ? node.mesh.material : [node.mesh.material];
+      for (const m of mats) {
+        (m as MeshStandardMaterial).emissive?.set(0x33261a);
+      }
+    }
+    this.renderOnce();
+  }
+
+  get selection(): string | null {
+    return this.selected;
+  }
+
+  /** Structure bounds in scene units, for the accessible text and focus requests. */
+  structureBounds(id: string): { min: [number, number, number]; max: [number, number, number] } | null {
+    const node = this.structures.get(id);
+    if (!node) return null;
+    const s = 1 / 10; // mm → scene
+    return {
+      min: [node.minX * s, 0, 0],
+      max: [node.maxX * s, 0, 0],
+    };
+  }
+
+  /** Move the camera to frame a structure — only on an explicit request, never on selection. */
+  focusStructure(id: string): void {
+    const centres: Record<string, [number, number, number]> = {
+      cornea: [0, 0, 1.05],
+      lens: [0, 0, 0.72],
+      iris: [0, 0, 0.93],
+      sclera: [0, 0, 0],
+      retina: [0, 0, -0.5],
+      choroid: [0, 0, -0.5],
+      optic_nerve_sheath: [0.3, 0, -1.8],
+      optic_nerve_core: [0.3, 0, -1.8],
+      nerve_head: [0.35, 0.03, -0.98],
+      ciliary_body: [0, 0, 0.65],
+      zonules: [0, 0, 0.7],
+      muscle_medial: [0.9, 0, -0.8],
+      muscle_lateral: [-0.9, 0, -0.8],
+      muscle_superior: [0, 0.9, -0.8],
+      muscle_inferior: [0, -0.9, -0.8],
+    };
+    const target = centres[id];
+    if (!target) return;
+    this.rotationTarget = { x: 0, y: this.rotationTarget.y };
+    this.camera.position.set(target[0] * 0.4, target[1] * 0.4 + 0.1, 3.6);
+    this.camera.lookAt(target[0], target[1], target[2]);
+    this.renderOnce();
+  }
+
+  /** Show or hide one structure (the accessible layer list drives this). */
+  setLayerVisible(id: string, visible: boolean): void {
+    const node = this.structures.get(id);
+    if (node) node.group.visible = visible;
+    if (id === "retina") {
+      for (const vessel of this.vesselMeshes) vessel.visible = visible;
+    }
+    this.renderOnce();
+  }
+
+  isLayerVisible(id: string): boolean {
+    return this.structures.get(id)?.group.visible ?? false;
+  }
+
+  /**
+   * The illustrative layer magnification (retina + choroid walls), labelled as such in the UI.
+   * Rescales those two shells radially about the globe centre in the scene's own model copy and
+   * rebuilds their geometry and sections, so a cut through a magnified wall stays truthful.
+   */
+  setLayerMagnification(factor: number): void {
+    const clamped = Math.max(1, Math.min(4, factor));
+    const ratio = clamped / this.magnification;
+    if (Math.abs(ratio - 1) < 0.001) return;
+    this.magnification = clamped;
+    if (!this.sceneModel) return;
+    for (const id of ["choroid", "retina"]) {
+      const original = loadEyeModel().get(id);
+      const node = this.structures.get(id);
+      if (!original || !node) continue;
+      if (this.sceneModel.get(id) === original) {
+        // fork into a private scaled copy on first change; the shared arrays stay immutable
+        this.sceneModel.set(id, {
+          ...original,
+          positions: new Float32Array(original.positions),
+        });
+      }
+      const scaled = this.sceneModel.get(id)!;
+      for (let i = 0; i < scaled.positions.length; i += 3) {
+        const x = original.positions[i];
+        const y = original.positions[i + 1];
+        const z = original.positions[i + 2];
+        scaled.positions[i] = x * ratio;
+        scaled.positions[i + 1] = y * ratio;
+        scaled.positions[i + 2] = z * ratio;
+      }
+      node.mesh.geometry.dispose();
+      node.mesh.geometry = this.geometryFromMesh(scaled.positions, scaled.uvs, scaled.indices);
+      let minX = Infinity;
+      let maxX = -Infinity;
+      for (let i = 0; i < scaled.positions.length; i += 3) {
+        minX = Math.min(minX, scaled.positions[i]);
+        maxX = Math.max(maxX, scaled.positions[i]);
+      }
+      node.minX = minX;
+      node.maxX = maxX;
+    }
+    this.rebuildCaps();
+    this.renderOnce();
+  }
+
+  get layerMagnification(): number {
+    return this.magnification;
+  }
+
+  get currentZoom(): number {
+    return this.camera.zoom;
+  }
+
+  /** Restore the documented initial state of the current view (phase 14's reset action). */
+  reset(): void {
+    this.setSelected(null);
+    for (const [id] of this.structures) this.setLayerVisible(id, true);
+    for (const vessel of this.vesselMeshes) vessel.visible = true;
+    this.setLayerMagnification(EYE_MODEL_MANIFEST.layerMagnification);
+    this.setView(this.options.view);
+    this.setSlice(this.options.slice);
+    this.setSeparation(this.options.separation);
+    this.setZoom(1);
+    this.options.zoom = 1;
+    this.camera.position.set(0, 0, this.options.view === "cornea" ? 5.4 : this.options.view === "fundus" ? 3.4 : this.options.view === "cross_section" ? 5.6 : 7.2);
+    this.camera.lookAt(0, 0, this.options.view === "fundus" ? -1.0 : 0);
+    if (this.eyeGroup && !this.options.reducedMotion) this.start();
+    this.renderOnce();
+  }
+
+  private updatePupil(): void {
+    if (this.pupil) this.pupil.scale.setScalar(this.currentPupil / 2);
   }
 
   private tick = (): void => {
@@ -329,12 +923,25 @@ export class EyeScene {
     // The pupil eases to its target; an instant jump reads as a glitch, not a reflex.
     const speed = this.options.reducedMotion ? 1 : 4;
     this.currentPupil += (this.targetPupil - this.currentPupil) * Math.min(1, delta * speed);
-    const pupil = this.eyeGroup?.getObjectByName("pupil");
-    // The disc is built at 2 mm radius; scale it to the current pupil radius.
-    if (pupil) pupil.scale.setScalar(Math.max(0.1, this.currentPupil / 2));
+    this.updatePupil();
+    if (this.eyeGroup) {
+      const ease = this.options.reducedMotion ? 1 : 1 - Math.exp(-12 * delta);
+      this.eyeGroup.rotation.x += (this.rotationTarget.x - this.eyeGroup.rotation.x) * ease;
+      this.eyeGroup.rotation.y += (this.rotationTarget.y - this.eyeGroup.rotation.y) * ease;
+    }
 
+    this.updateSectionPlane();
     this.renderer.render(this.scene, this.camera);
-    this.frame = requestAnimationFrame(this.tick);
+    const turning =
+      this.eyeGroup &&
+      (Math.abs(this.eyeGroup.rotation.x - this.rotationTarget.x) > 0.0001 ||
+        Math.abs(this.eyeGroup.rotation.y - this.rotationTarget.y) > 0.0001);
+    // Once the control settles, a still eye needs no further GPU work.
+    if (turning || Math.abs(this.targetPupil - this.currentPupil) > 0.0001) {
+      this.frame = requestAnimationFrame(this.tick);
+    } else {
+      this.frame = 0;
+    }
   };
 
   start(): void {
@@ -349,7 +956,12 @@ export class EyeScene {
   }
 
   /** Render exactly one frame — used for stills and for reduced-motion mode. */
+  private updateSectionPlane(): void {
+    if (this.eyeGroup) this.sectionPlane.normal.set(-1, 0, 0).applyEuler(this.eyeGroup.rotation);
+  }
+
   renderOnce(): void {
+    this.updateSectionPlane();
     this.renderer?.render(this.scene, this.camera);
   }
 

@@ -105,10 +105,15 @@ export function growVessels(params: VesselParams = DEFAULT_VESSELS): VesselSegme
         y: current.y + Math.sin(heading) * step,
       };
 
-      // The fovea is avascular. A vessel that reaches it is bent away rather than drawn through.
-      if (distance(next, p.fovea) < p.favRadius) {
+      // The fovea is avascular. Vessels begin curving around it well before they reach the
+      // zone — steering only at the boundary pins several branches into a knot there, in the
+      // texture and on the 3D tubes alike. Real arcades bow around the macula; so does this.
+      const keepOut = p.favRadius * 2.5;
+      const favDistance = distance(next, p.fovea);
+      if (favDistance < keepOut) {
         const away = Math.atan2(next.y - p.fovea.y, next.x - p.fovea.x);
-        heading = away + (sweep > 0 ? 0.5 : -0.5);
+        const around = away + (sweep > 0 ? 0.5 : -0.5);
+        heading += (around - heading) * (0.25 + 0.45 * (1 - favDistance / keepOut));
         continue;
       }
       if (next.x < 0.02 || next.x > 0.98 || next.y < 0.02 || next.y > 0.98) break;

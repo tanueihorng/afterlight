@@ -14,7 +14,9 @@ const app = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(app, "dist");
 
 const assets = readdirSync(join(dist, "assets"))
-  .filter((f) => f.endsWith(".js") || f.endsWith(".css"))
+  // Fonts and the Today companion too: they are bundled rather than fetched, and a cold offline
+  // load without them would change what the first screen looks like.
+  .filter((f) => [".js", ".css", ".woff2", ".webp"].some((ext) => f.endsWith(ext)))
   .map((f) => `./assets/${f}`);
 
 const shell = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", ...assets];
