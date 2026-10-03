@@ -1447,6 +1447,18 @@ input[type="range"] {
   color: var(--text-3);
 }
 
+.unchecked-measurements {
+  margin-top: 18px;
+}
+
+.unchecked-measurement + .unchecked-measurement {
+  margin-top: 14px;
+}
+
+.unchecked-measurement .badge {
+  margin-top: 4px;
+}
+
 /* ---------- drawing canvas ---------- */
 
 .draw-layout {
@@ -1556,6 +1568,26 @@ input[type="range"] {
   justify-content: space-between;
   gap: 6px;
   align-items: center;
+}
+
+.imaging-gallery {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+}
+
+.imaging-gallery .gallery-meta {
+  justify-content: flex-start;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.imaging-gallery .gallery-meta > :first-child {
+  flex-basis: 100%;
+}
+
+.imaging-gallery .gallery-meta .badge {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .gallery-item.selected {

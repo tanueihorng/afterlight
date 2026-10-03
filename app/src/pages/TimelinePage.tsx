@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { routeParams } from "../lib/router";
 import { useStore, useTimeline } from "../lib/store";
 import type { TimelineEvent } from "../lib/models";
-import { EYE_SHORT, SOURCE_LABELS, type SymptomEntry } from "../lib/models";
+import { EYE_SHORT, MODALITY_LABELS, SOURCE_LABELS, type SymptomEntry } from "../lib/models";
 import SameAsLastTime from "../components/SameAsLastTime";
 import { DemoBadge, EmptyState, EyeBadge, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
 import { formatDate, formatTime, isoToDateOnly, todayLocal, daysAgoISO } from "../lib/util";
@@ -37,20 +38,64 @@ const RANGES = [
 /** Days rendered at once; the rest load on request. */
 const DAY_PAGE = 60;
 
+type RangeId = (typeof RANGES)[number]["id"];
+
+/**
+ * The lens, range, view and eye filter someone chose, kept for this browser session. Without it
+ * every return to the timeline fell back to the clinical spine and 30 days, and entries the
+ * person had just been looking at seemed to have vanished.
+ */
+const VIEW_KEY = "timeline-view";
+interface SavedView {
+  range?: RangeId;
+  lens?: StoryLens;
+  view?: "story" | "detailed";
+  eyeFilter?: "all" | "right" | "left" | "both";
+}
+
+function readSavedView(): SavedView {
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(VIEW_KEY) ?? "{}") as SavedView;
+    return {
+      range: RANGES.some((r) => r.id === raw.range) ? raw.range : undefined,
+      lens: raw.lens === "clinical" || raw.lens === "everything" ? raw.lens : undefined,
+      view: raw.view === "story" || raw.view === "detailed" ? raw.view : undefined,
+      eyeFilter: ["all", "right", "left", "both"].includes(raw.eyeFilter ?? "")
+        ? raw.eyeFilter
+        : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export default function TimelinePage() {
   const store = useStore();
   const timeline = useTimeline();
-  const [eyeFilter, setEyeFilter] = useState<"all" | "right" | "left" | "both">("all");
+  // A save confirmation must lead to the record, including backdated observations.
+  const [origin] = routeParams();
+  const fromSave = origin === "recorded";
+  const [saved] = useState(readSavedView);
+  const [eyeFilter, setEyeFilter] = useState<"all" | "right" | "left" | "both">(
+    saved.eyeFilter ?? "all",
+  );
   const [cats, setCats] = useState<Set<string>>(new Set(CATEGORIES.map((c) => c.id)));
-  const [range, setRange] = useState<(typeof RANGES)[number]["id"]>("30d");
+  const [range, setRange] = useState<RangeId>(fromSave ? "all" : (saved.range ?? "30d"));
   const [customStart, setCustomStart] = useState(daysAgoISO(30));
   const [customEnd, setCustomEnd] = useState(todayLocal());
   const [detail, setDetail] = useState<TimelineEvent | null>(null);
   const [compare, setCompare] = useState<SymptomEntry | null>(null);
-  const [view, setView] = useState<"story" | "detailed">("story");
+  const [view, setView] = useState<"story" | "detailed">(saved.view ?? "story");
   const [adding, setAdding] = useState(false);
   const [inlineAdd, setInlineAdd] = useState<null | "diagnosis" | "procedure" | "medication">(null);
-  const [lens, setLens] = useState<StoryLens>("clinical");
+  const [lens, setLens] = useState<StoryLens>(fromSave ? "everything" : (saved.lens ?? "clinical"));
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(VIEW_KEY, JSON.stringify({ range, lens, view, eyeFilter }));
+    } catch {
+      // Private browsing can refuse storage; the timeline still works, it just forgets.
+    }
+  }, [range, lens, view, eyeFilter]);
 
   const rangeStart = useMemo(() => {
     switch (range) {
@@ -280,7 +325,7 @@ export default function TimelinePage() {
         </div>
       ) : (
         <div className="timeline">
-          {byDay.map(([date, events]) => (
+          {shownDays.map(([date, events]) => (
             <div className="tl-day" key={date}>
               <div className="tl-day-date">{formatDate(date)}</div>
               {events.map((e) => (
@@ -442,7 +487,7 @@ function EventDetail({
         return (
           <dl className="kv">
             <dt>Modality</dt>
-            <dd>{i.modality.toUpperCase()}</dd>
+            <dd>{MODALITY_LABELS[i.modality]}</dd>
             <dt>Clinic</dt>
             <dd>{i.clinic ?? "Not recorded"}</dd>
             <dt>Device</dt>

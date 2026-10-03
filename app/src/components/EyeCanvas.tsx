@@ -31,8 +31,8 @@ export default function EyeCanvas({
   // Appearance changes retune materials in place; the scene is built once per mount.
   const { view, slice, separation, zoom, ...appearance } = options;
   const key = JSON.stringify(appearance);
-  const keyRef = useRef(key);
-  keyRef.current = key;
+  const onPickRef = useRef(onPick);
+  onPickRef.current = onPick;
 
   useEffect(() => {
     const capability = probeCapability();
@@ -78,22 +78,27 @@ export default function EyeCanvas({
     // Drag to turn the model, the way you would turn one in your hand.
     let dragging = false;
     let last = { x: 0, y: 0 };
+    let start = last;
+    let moved = false;
     const onDown = (e: PointerEvent) => {
       dragging = true;
       last = { x: e.clientX, y: e.clientY };
+      start = last;
+      moved = false;
       canvas.setPointerCapture(e.pointerId);
     };
     const onMove = (e: PointerEvent) => {
       if (!dragging) return;
+      moved ||= Math.hypot(e.clientX - start.x, e.clientY - start.y) >= 4;
       scene?.rotate((e.clientX - last.x) * 0.006, (e.clientY - last.y) * 0.006);
       last = { x: e.clientX, y: e.clientY };
     };
     const onUp = (e: PointerEvent) => {
-      if (dragging && onPick) {
-        const moved = Math.hypot(e.clientX - last.x, e.clientY - last.y);
-        if (moved < 4) {
+      if (dragging && e.type !== "pointercancel" && onPickRef.current) {
+        const distance = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+        if (!moved && distance < 4) {
           const rect = canvas.getBoundingClientRect();
-          onPick(scene?.pick(e.clientX - rect.left, e.clientY - rect.top) ?? null);
+          onPickRef.current(scene?.pick(e.clientX - rect.left, e.clientY - rect.top) ?? null);
         }
       }
       dragging = false;
@@ -182,6 +187,8 @@ export default function EyeCanvas({
 
   const shellRef = useRef<HTMLElement>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const supportsFullscreen =
+    document.fullscreenEnabled && typeof document.documentElement.requestFullscreen === "function";
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", onChange);
@@ -220,15 +227,17 @@ export default function EyeCanvas({
         role="img"
         aria-label={`${GENERIC_MODEL_BOUNDARY} Drag, or use the arrow keys, to turn it.`}
       />
-      <button
-        type="button"
-        className="eye-full-btn"
-        aria-pressed={fullscreen}
-        aria-label={fullscreen ? t("eye.fullscreen.exit") : t("eye.fullscreen")}
-        onClick={toggleFullscreen}
-      >
-        {fullscreen ? "⤡" : "⛶"}
-      </button>
+      {supportsFullscreen && (
+        <button
+          type="button"
+          className="eye-full-btn"
+          aria-pressed={fullscreen}
+          aria-label={fullscreen ? t("eye.fullscreen.exit") : t("eye.fullscreen")}
+          onClick={toggleFullscreen}
+        >
+          {fullscreen ? "⤡" : "⛶"}
+        </button>
+      )}
       <figcaption className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 8 }}>
         {GENERIC_MODEL_BOUNDARY}
       </figcaption>

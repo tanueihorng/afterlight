@@ -83,14 +83,13 @@ test.describe("timeline — reading the record", () => {
 
   test("pagination reveals a long history on request", async ({ page }) => {
     await asReturningUser(page);
-    // Test setup: seed 70 quiet days spread over four months directly into IndexedDB, so the
-    // timeline's day-paging can be exercised through the UI without 70 form round-trips.
+    // A long-history fixture avoids 150 form round-trips; pagination itself is exercised in the UI.
     await page.evaluate(async () => {
       const open = () => new Promise((res, rej) => { const r = indexedDB.open("afterlight"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
       const db = await open();
       const tx = db.transaction("dailyLogs", "readwrite");
       const store = tx.objectStore("dailyLogs");
-      for (let i = 1; i <= 70; i++) {
+      for (let i = 1; i <= 150; i++) {
         const d = new Date();
         d.setDate(d.getDate() - i * 2);
         const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -109,21 +108,13 @@ test.describe("timeline — reading the record", () => {
     await page.getByRole("button", { name: "All time" }).click();
     await page.waitForTimeout(400);
 
-    // 140 days of quiet days: the first 60-day page cannot reach the oldest one.
-    await expect(page.getByText(/no change today/i).first()).toBeVisible();
-    const earlier = page.getByRole("button", { name: /show earlier entries/i });
-    await expect(earlier).toBeVisible();
-    await earlier.click();
-    await page.waitForTimeout(300);
-    await expect(page.getByText(/no change today/i).first()).toBeVisible();
-
-    // Show all lays out everything remaining.
-    const showAll = page.getByRole("button", { name: /show all/i });
-    if (await showAll.isVisible().catch(() => false)) {
-      await showAll.click();
-      await page.waitForTimeout(300);
-      await expect(page.getByText(/no change today/i).first()).toBeVisible();
-    }
+    const days = page.locator("main .tl-day");
+    await expect(days).toHaveCount(60);
+    await page.getByRole("button", { name: /show earlier entries/i }).click();
+    await expect(days).toHaveCount(120);
+    await page.getByRole("button", { name: /show all/i }).click();
+    await expect(days).toHaveCount(150);
+    await expect(page.getByRole("button", { name: /show earlier entries/i })).toHaveCount(0);
   });
 
   test("an empty record says so honestly", async ({ page }) => {

@@ -19,7 +19,9 @@ test.describe("the daily loop", () => {
     expect(box!.height).toBeGreaterThanOrEqual(44);
 
     await noChange.click();
-    await expect(page.getByText(/today is recorded/i)).toBeVisible();
+    await expect(page.getByRole("status").filter({
+      has: page.getByRole("button", { name: "View timeline →", exact: true }),
+    })).toHaveText(/^✓\s*Today is recorded\.\s*View timeline →$/);
   });
 
   test("records a change, and it reaches the timeline", async ({ page }) => {
@@ -36,10 +38,10 @@ test.describe("the daily loop", () => {
       .check();
     await page.getByRole("button", { name: /save today's record/i }).click();
 
-    await page.goto("/#/timeline");
-    // Symptoms are observation-weight: the story view's clinical spine hides them, so verify
-    // on the Everything view where the whole record is listed.
-    await page.getByRole("button", { name: "Everything" }).click();
+    await page.getByRole("button", { name: "View timeline →", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "With my notes", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText(/glare/i).first()).toBeVisible();
     await expect(page.getByText(/patient reported/i).first()).toBeVisible();
   });
@@ -57,7 +59,9 @@ test.describe("the record survives a reload", () => {
   test("a saved day is still there after reloading", async ({ page }) => {
     await asReturningUser(page);
     await page.getByRole("button", { name: /nothing different today/i }).click();
-    await expect(page.getByText(/today is recorded/i)).toBeVisible();
+    await expect(page.getByRole("status").filter({
+      has: page.getByRole("button", { name: "View timeline →", exact: true }),
+    })).toHaveText(/^✓\s*Today is recorded\.\s*View timeline →$/);
 
     await page.reload();
     await expect(page.getByText(/today is recorded as no change/i)).toBeVisible({

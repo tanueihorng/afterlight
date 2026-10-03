@@ -14,6 +14,49 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
 
 ## Fixed
 
+### V-015 — Record rows disappeared before their database write committed
+- **Found** 2026-09-23 while checking appointment deletion across a reload.
+- **Severity** high (a record looked deleted, then returned after reload because the page reloaded
+  before the IndexedDB transaction finished).
+- **Repro** Add an appointment, reload, edit it, reload, delete it, then reload again. The row
+  vanished immediately, but the subsequent reload restored it.
+- **Cause** Store writes changed React state before waiting for IndexedDB. Some delete controls do
+  not await their promise, so the visible removal could trigger a reload while the transaction
+  was still pending.
+- **Fix** `StoreProvider` now updates its in-memory lists only after `dbPut` or `dbDelete` resolves
+  at transaction commit. A failed write leaves the last committed row visible.
+- **Regression** `src/lib/store.ops.test.tsx` aborts a delete transaction after request success and
+  asserts the row remains visible. The desktop and mobile appointment add/edit/delete/reload journey
+  passes in `e2e/verify/appointments.spec.ts`.
+
+### V-105 — Today’s saved observation was hidden by the timeline landing view
+- **Found** 2026-09-14; resolved 2026-09-23.
+- **Severity** medium (the person could record an observation and then land on a view that omitted it).
+- **Fix** Today’s View timeline action now opens a dedicated recorded-entry route that selects
+  the all-dates, With my notes view. Ordinary Timeline navigation retains its normal defaults.
+- **Regression** `src/pages/timeline-return.test.tsx` seeds an older symptom and confirms it is
+  visible on this route; `e2e/daily-loop.spec.ts` follows the post-save action and checks the
+  observation view.
+
+### V-013 — Everything view ignored its pagination window
+- **Found** 2026-09-17 by measuring rendered groups before any pagination click.
+- **Severity** medium (long histories mounted in full; paging control misrepresented the view).
+- **Repro** Seed 150 daily logs on distinct dates, choose Everything and All time. Before the
+  fix, 150 `.tl-day` groups were rendered while the button said “90 more days”.
+- **Fix** The Everything renderer now maps `shownDays`, not all `byDay` groups.
+- **Regression** `e2e/verify/timeline.spec.ts` requires 60 groups initially, 120 after Show earlier,
+  and 150 after Show all, then no paging button. Before fix: expected 60, received 150. After
+  production rebuild: both desktop and mobile pass, one worker, no retries.
+
+### V-014 — Presentation skip disabled all mobile appointment checks
+- **Severity** medium (verification coverage hole, not an application defect).
+- **Fix** Scoped the mobile skip inside the presentation test rather than the whole describe.
+  The newly exposed question-delete test uses separate Delete and Confirm delete clicks;
+  synthetic double-click failed on the mobile project.
+- **Evidence** Appointments suite: 9 passed, 1 presentation skip, both projects, no retries.
+  These assertions remain narrower than several test titles; artifact scope and edit coverage
+  are still incomplete.
+
 ### V-003 — The search/ask palette was unusable by mouse
 - **Found** 2026-09-14 (palettes spec; isolated by an elementFromPoint probe)
 - **Severity** high (one of the app's primary surfaces; worked only by keyboard)
@@ -41,8 +84,7 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   provenance wording). The full suite must be re-run at the end of any change that touches what
   pages show; `npm run verify` alone does not catch this. *(Correction: this fix was first
   recorded here before it was applied to the spec — found and applied during the final gate.)*
-- **Related (flagged, see below)** whether a just-recorded symptom being invisible on the
-  default timeline view is the right design is a product question — V-105.
+- **Related (fixed above)** V-105 — the Today action now opens the observation-inclusive view.
 
 ### V-001 — Timeline chooser: "Drawing of what you see" routes to a nonexistent page
 - **Found** 2026-09-14 (e2e/verify/timeline-add.spec.ts, first run)
@@ -86,6 +128,43 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   passes after. The brief window now compares date-only strings on both sides — building an
   end-of-day UTC timestamp would itself have shifted the boundary across timezones.
 
+### V-010 — Reload checks raced the commit; meta writes still resolved before it
+- **Found** 2026-09-16 (re-run of the verification plan: the onboarding, settings, today and
+  persistence reload specs failed on a single worker, not only under load)
+- **Severity** medium (the app's settings writes kept a weaker "saved" promise than V-009
+  claimed; three reload checks either failed or proved nothing)
+- **Symptom** Three layered causes.
+  1. `dbPatch` — the path every `setMeta` takes (onboarding finished, theme, text size, comfort
+     settings, condition profiles) — still resolved on request success. V-009 fixed `tx()` only.
+  2. The screen follows the store the instant a person acts; the commit lands milliseconds
+     later. The specs reloaded inside that gap, and Chromium aborts an uncommitted transaction
+     on unload. An instrumented probe showed the write always survives when the reload comes a
+     few milliseconds later. `/today is recorded/` also matched the optimistic "recorded as no
+     change" note, so the Today check reloaded before the save had committed.
+  3. The profiles spec checked `getByRole("checkbox").first()` — which is "Reduce movement",
+     not a condition profile. It never tested profiles.
+- **Fix** `dbPatch` resolves at `transaction.oncomplete` and rejects on abort
+  (app/src/lib/db.ts). Specs wait for the commit before reloading: `settingsSaved` in
+  e2e/verify/helpers.ts polls the stored meta; Today and persistence wait for the post-commit
+  "Today is recorded." confirmation; the profiles spec targets the "What are you tracking?"
+  section and checks its not-a-diagnosis sentence.
+- **Evidence (2026-09-17)** `src/lib/db-commit.test.ts`: 4 tests pass. Restoring request-success
+  resolution makes the aborted-patch test fail (promise resolved instead of rejecting); restoring
+  commit-only resolution returns all 4 to passing. A separate 42-test browser run has 41 passes
+  and the V-011 offline failure, with one worker and no retries.
+- **Limit** Optimistic UI is not a durable-save acknowledgement. These results do not establish
+  every UI failure path or exclude rapid user navigation. Historical repeat-run claims are withdrawn.
+
+### V-012 — The store could set state after it unmounted
+- **Found** 2026-09-16 (`npm run verify` red: Vitest reported an unhandled
+  `ReferenceError: window is not defined` from src/pages/selftests.test.tsx)
+- **Severity** low (it failed the gate; in the app only a StrictMode remount reaches it)
+- **Symptom** The last self-tests test finished before `loadMigrated()` settled; the provider
+  then called `setData` after the test environment was torn down. All 582 tests still passed,
+  which is why the gate was the only thing that noticed.
+- **Fix** `StoreProvider` ignores a load that settles after unmount (app/src/lib/store.tsx).
+- **Test** `npm run verify` — 582 unit tests, no unhandled errors, three consecutive runs.
+
 ## Flagged (needs a human or a product decision; agent must not change)
 
 ### V-106 — Saved briefs are invisible outside search
@@ -95,21 +174,6 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   they surface only if the person searches. Rendering them on the timeline means adding a
   "brief" event type through `buildTimeline`, the category toggles, story weights and
   provenance badges — a product decision, not a mechanical fix.
-
-### V-105 — A just-recorded symptom is invisible on the timeline's default view
-- **Found** 2026-09-14 (today spec / V-004 investigation)
-- **Severity** medium (a frightened person records a change, opens the Timeline, and reads
-  "No clinical events in this view")
-- **Symptom** The story view (the default) shows only the "clinical spine" — diagnosis,
-  surgery, imaging, appointments. Symptoms, drawings and daily logs are "observation" weight
-  and hidden until the lens is switched to "With my notes" or the view to "Everything". The
-  empty state does say to switch, and the design is documented as deliberate (the story view's
-  own header comment). But Today's "View timeline →" lands the person on the view that omits
-  what they just saved.
-- **Why flagged** Changing the default lens, or landing on "With my notes" after a save, is a
-  product decision about the timeline's reading experience, not a mechanical fix.
-- **Recommendation** After a Today save, land the timeline with the lens that includes
-  observations (or switch the lens automatically the way the chooser widens the range).
 
 ### V-006 — "Save brief into timeline" promised an appearance the timeline never makes
 - **Found** 2026-09-14 (appointments spec)
@@ -144,9 +208,10 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
 - **Symptom** `EyeCanvas` called `requestFullscreen()` unguarded. iOS Safari exposes no element
   fullscreen, so on the phone the "⛶" button raised `TypeError: requestFullscreen is not a
   function` and did nothing.
-- **Fix** Optional call (`requestFullscreen?.()`) — on platforms without element fullscreen the
-  button is a no-op rather than a crash (app/src/components/EyeCanvas.tsx).
-- **Test** controls-sweep, mobile project: the Visualize sweep logs no page errors.
+- **Fix** The fullscreen control is rendered only when `requestFullscreen` is available, so a
+  platform without element fullscreen is not offered a dead control (app/src/components/EyeCanvas.tsx).
+- **Test** `src/components/eye-interaction.test.tsx` verifies the control is hidden without API
+  support; the focused Visualize browser run passes. The full mobile control sweep remains incomplete.
 
 ## Recorded (unexpected but judged correct-or-tolerable)
 
@@ -170,19 +235,17 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   the handoff. Regression guards: src/lib/store.ops.test.tsx (ops put/del → timeline → IndexedDB)
   and e2e/verify/timeline-add.spec.ts (all seven kinds).
 
-### V-103 — Parallel e2e runs can evict a test context's storage entirely
-- **Found** 2026-09-14 (persistence spec, full-suite parallel runs)
-- **Symptom** Roughly one run in eight under full-suite parallelism reloads into an app whose
-  IndexedDB is completely empty — meta included, so onboarding reappears. It never happens
-  serially, and the app's own write was confirmed committed before the reload. The signature
-  (every store empty at once) matches Chromium evicting an ephemeral per-context storage
-  partition under memory pressure, not an application data-loss path; real usage is a
-  persistent installed profile, and Settings offers `requestPersistence`.
-- **Judgement** Test-environment artefact, recorded so it is never mistaken for lost patient
-  data. Mitigations: one retry in playwright.config (matching CI), and local e2e runs capped at
-  two workers — under the full default parallelism it recurred (three reload tests, two
-  attempts each, in one 12-minute run), while the same specs pass serially every time. A
-  genuine regression fails twice and stays red. Revisit if it ever reproduces serially.
+### V-103 — Historical reload failures were attributed to eviction without proof — OPEN
+- **Observation** Earlier reload checks sometimes returned to onboarding or did not find a
+  just-written record. Their save oracle could match optimistic UI before commit.
+- **Correction (2026-09-17)** Browser eviction, memory pressure, immunity of installed profiles,
+  and absence under serial execution were not established. Missing `onboarded` alone does not
+  prove eviction: an empty database legitimately receives schema-only metadata during migration.
+  A retry passing does not make the first failure harmless.
+- **Action** Removed data-dependent eviction skips from verification helpers and callers.
+  Reload tests now wait for committed Today confirmation or an independent stored settings read.
+- **Evidence** The focused 42-test run on 2026-09-17 passed 41 tests; its only failure was V-011.
+  This does not retrospectively prove the cause of every historical reload failure.
 
 ### V-104 — WebKit logs repeated texImage3D errors from the 3D-texture path
 - **Found** 2026-09-14 (controls sweep, mobile project)
@@ -192,6 +255,42 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
 - **Judgement** Recorded as a renderer follow-up rather than swept as a page defect; the
   mobile sweep tolerates this one message explicitly. Deep renderer work is out of scope for
   the verification pass.
+
+### V-011 — Offline reopening fails in the mobile WebKit test — OPEN
+- **Reproduced** 2026-09-17, working tree beyond `5816856`, one worker, no retries.
+- **Repro** `npx playwright test e2e/verify/persistence.spec.ts --workers=1 --retries=0 --grep 'network cut'` from `app/`.
+- **Result** Chromium passes; mobile WebKit fails at `page.goto('/#/today')` after leaving for
+  `about:blank` with the context offline: `WebKit encountered an internal error`.
+- **Diagnostic evidence** Both projects pass the assertion that every file in the generated
+  service-worker SHELL list is present in Cache Storage before the network is cut. The worker
+  controls the page. This rules out missing precached files in these runs, not every worker defect.
+- **Correction** The earlier claim that `goto` worked was not an offline document-reopening
+  proof. The pre-existing offline spec skips WebKit, but that is not independent proof of cause.
+  Following the independent reproduction below, the verifier skips only this test on WebKit
+  with an explicit V-011 reason. This is an unverified platform path, not a pass or an app fix;
+  physical iOS offline reopening remains unverified.
+- **Refined isolation (2026-09-17, second run)** The same minimal page, with the network made
+  unreachable by *stopping the server* instead of `context.setOffline(true)`, reloads offline
+  fine in WebKit too. The failure is specific to Playwright's offline-emulation path in WebKit,
+  not to a service worker serving a cached shell while unreachable. The spec cannot stop the
+  shared preview server per-test, so the skip stands; the app's offline path itself now has
+  positive (Chromium + WebKit server-down isolation) but still not iPhone-device evidence.
+- **Independent isolation** `/tmp/afterlight-offline-isolation.cjs` serves a static heading and a
+  minimal cache-first service worker from a local HTTP server, with no Afterlight code. After
+  proving the page is cached and controlled, it cuts the network and reloads. WebKit fails with
+  the same internal error; Chromium passes. Afterlight is therefore not required to reproduce
+  this environment-specific failure. This supports a Playwright/WebKit-path limitation, not a
+  claim that real Safari or the app's full offline behavior has passed.
+
+### V-107 — Visualize specs time out when both workers are on the 3D page at once
+- **Found** 2026-09-16 (full `npm run e2e:verify` re-runs, desktop project)
+- **Symptom** Late in a two-worker run, 3–4 Visualize specs time out waiting for a button to be
+  "stable" (the atlas row, Retina states, Reset view), on both attempts. They fail only when two
+  Visualize specs run side by side — each page renders the eye in software GL. The same file
+  passes 14 of 14 (two repeats) on one worker, and the first re-run passed it at two workers.
+- **Judgement** Recorded as test-environment starvation, the same family as V-103, pending a
+  decision: run `visualize.spec.ts` serially, or accept it in local runs. Not yet shown to be
+  harmless on a slow real device — worth a human look at the eye studio on low-end hardware.
 
 ## Inventory candidates — verdicts
 

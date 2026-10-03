@@ -11,6 +11,8 @@ For the original Blender/Three.js eye realism follow-up, start with the
 their visual acceptance criteria and a ready-to-paste execution prompt. These phases are planned,
 not implemented.
 
+Ideas discussed but not yet planned live in [`../future.md`](../future.md).
+
 ---
 
 ## The point of all of this

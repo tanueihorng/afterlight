@@ -8,6 +8,10 @@ test.describe("appointments and the brief", () => {
 
     await page.getByRole("button", { name: /add appointment/i }).click();
     const dialog = page.getByRole("dialog");
+    for (const label of ["Date", "Time", "Clinic", "Clinician", "Specialty", "Reason"]) {
+      const bounds = await dialog.getByLabel(label, { exact: true }).boundingBox();
+      expect(bounds?.height, `${label} must be a usable touch target`).toBeGreaterThanOrEqual(44);
+    }
     const tomorrow = new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
     await dialog.getByLabel(/^date/i).fill(tomorrow);
     await dialog.getByLabel(/time/i).fill("10:30");
@@ -16,6 +20,20 @@ test.describe("appointments and the brief", () => {
     await dialog.getByRole("button", { name: /save appointment/i }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByText(/verification review/i).first()).toBeVisible();
+    await page.reload();
+    await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+    await expect(dialog.getByLabel(/time/i)).toHaveValue("10:30");
+    await expect(dialog.getByLabel("Clinic", { exact: true })).toHaveValue("Verify Eye Clinic");
+    await dialog.getByLabel(/reason/i).fill("Updated verification review");
+    await dialog.getByRole("button", { name: /save appointment/i }).click();
+    await expect(dialog).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByText(/updated verification review/i).first()).toBeVisible();
+    await page.getByRole("button", { name: "Delete", exact: true }).click();
+    await page.getByRole("button", { name: "Confirm delete?", exact: true }).click();
+    await expect(page.getByText(/updated verification review/i)).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByText(/updated verification review/i)).toHaveCount(0);
     expect(errors).toEqual([]);
   });
 
@@ -32,15 +50,26 @@ test.describe("appointments and the brief", () => {
     // Update its status.
     await dialog.getByRole("button", { name: /update/i }).first().click();
     const update = page.getByRole("dialog").last();
-    await update.getByLabel(/status/i).selectOption("asked");
+    await update.getByLabel(/status/i).selectOption("answered");
+    await update.getByLabel("Answer / note from the appointment").fill("Test appointment note");
     await update.getByRole("button", { name: /save/i }).click();
 
+    await dialog.getByRole("button", { name: /update/i }).first().click();
+    await expect(update.getByLabel(/status/i)).toHaveValue("answered");
+    await expect(update.getByLabel("Answer / note from the appointment")).toHaveValue(
+      "Test appointment note",
+    );
+    await update.getByRole("button", { name: "Cancel", exact: true }).click();
+
     // Delete it (two-click arm inside the window).
-    await dialog.getByRole("button", { name: /delete/i }).first().dblclick();
+    await dialog.getByRole("button", { name: "Delete", exact: true }).click();
+    await dialog.getByRole("button", { name: "Confirm delete?", exact: true }).click();
     await expect(dialog.getByText(/verify: is my vision stable/i)).toHaveCount(0);
   });
 
-  test("the brief builds with a period, extra sections, and saves into the timeline", async ({ page }) => {
+  test("the brief builds with a period, extra sections, and is discoverable in search", async ({
+    page,
+  }) => {
     const errors = collectErrors(page);
     await asReturningUser(page);
     await loadDemo(page);
@@ -79,8 +108,8 @@ test.describe("appointments and the brief", () => {
     await expect(dialog.locator("svg").first()).toBeVisible();
   });
 
-  test.skip(({ isMobile }) => isMobile, "presentation is a desktop gesture");
   test("present mode steps through the brief and exits", async ({ page }) => {
+    test.skip(test.info().project.name === "mobile", "presentation is a desktop gesture");
     await asReturningUser(page);
     await loadDemo(page);
     await page.goto("/#/appointments");

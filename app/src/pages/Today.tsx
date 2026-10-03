@@ -40,7 +40,8 @@ import { toAllData } from "../lib/store";
 
 interface Row {
   key: string;
-  eye: "right" | "left";
+  // "both" only ever comes from an existing record; the form adds rows per eye.
+  eye: "right" | "left" | "both";
   symptom_type: string;
   comparison: BaselineComparison | "";
   severity: number;
@@ -48,6 +49,13 @@ interface Row {
   floaterShape?: string;
   existingId?: string;
 }
+
+const EYE_WORDS: Record<SymptomEntry["eye"], string> = {
+  right: "right eye",
+  left: "left eye",
+  both: "both eyes",
+  not_applicable: "no eye given",
+};
 
 /** When the change started, which is not always today. */
 type WhenOption = "today" | "yesterday" | "custom";
@@ -72,7 +80,7 @@ export default function Today() {
   const [rows, setRows] = useState<Row[]>(() =>
     todaysSymptoms.map((s) => ({
       key: s.id,
-      eye: (s.eye === "both" ? "right" : s.eye) as "right" | "left",
+      eye: s.eye === "left" || s.eye === "both" ? s.eye : "right",
       symptom_type: s.symptom_type,
       comparison: s.baseline_comparison ?? "",
       severity: s.severity ?? 0,
@@ -82,6 +90,8 @@ export default function Today() {
   );
   const [note, setNote] = useState(existingLog?.note ?? "");
   const [justSaved, setJustSaved] = useState(false);
+  // What the last save took out of today's record, so it can be put back in one tap.
+  const [removed, setRemoved] = useState<SymptomEntry[]>([]);
   const alreadyRecorded = !!existingLog;
   // The daily loop is a decision before it is a form: answer the question, then only fill in what
   // the answer requires.
@@ -160,7 +170,8 @@ export default function Today() {
     const log = {
       id: existingLog?.id ?? crypto.randomUUID(),
       date,
-      overall: "no_change" as const,
+      // Symptoms already saved today stay, so the day cannot also read as "no change".
+      overall: todaysSymptoms.length > 0 ? ("recorded" as const) : ("no_change" as const),
       note: note || undefined,
       source_type: "patient_reported" as const,
       demo: undefined,
@@ -168,18 +179,19 @@ export default function Today() {
       updated_at: nowISO(),
     };
     await store.dailyLogs.put(log);
-    setRows([]);
+    // Only unsaved rows go; rows for saved symptoms must stay, or the next save would delete them.
+    setRows((r) => r.filter((row) => row.existingId));
+    setRemoved([]);
     setJustSaved(true);
   };
 
   const save = async () => {
-    const rowsToSave = rows.filter((r) => r.symptom_type && r.comparison);
-    // remove entries that were deleted in this edit session
-    for (const s of todaysSymptoms) {
-      if (!rowsToSave.some((r) => r.existingId === s.id)) {
-        await store.symptoms.del(s.id);
-      }
-    }
+    // A new row needs a comparison to mean anything; a row for a saved symptom is kept whatever
+    // its fields say — an incomplete form must never be the reason a record disappears.
+    const rowsToSave = rows.filter((r) => r.existingId || (r.symptom_type && r.comparison));
+    // Only the rows the person removed with ✕ are deleted, and they can be put back.
+    const gone = todaysSymptoms.filter((s) => !rowsToSave.some((r) => r.existingId === s.id));
+    for (const s of gone) await store.symptoms.del(s.id);
     for (const r of rowsToSave) {
       let floaterId: string | undefined;
       const existingEntry = r.existingId
@@ -207,6 +219,8 @@ export default function Today() {
         floaterId = floater.id;
       }
       const entry: SymptomEntry = {
+        // Anything the form does not show is carried over from the saved record untouched.
+        ...existingEntry,
         id: r.existingId ?? crypto.randomUUID(),
         // Dated by when it started, which is not always when it was written down. Recording last
         // night's change this morning must not move its onset a day later, or the brief is wrong.
@@ -214,20 +228,21 @@ export default function Today() {
           existingEntry?.date_time ?? (entryDate === date ? nowISO() : `${entryDate}T12:00:00`),
         eye: r.eye,
         symptom_type: r.symptom_type,
-        status:
-          r.comparison === "new"
+        status: !r.comparison
+          ? (existingEntry?.status ?? "same")
+          : r.comparison === "new"
             ? "new"
             : r.comparison === "fewer"
               ? "better"
               : r.comparison === "slightly_more" || r.comparison === "much_more"
                 ? "worse"
                 : "same",
-        baseline_comparison: r.comparison || undefined,
+        baseline_comparison: r.comparison || existingEntry?.baseline_comparison,
         severity: r.severity > 0 ? r.severity : undefined,
         description: r.description || undefined,
         floater_object_id: floaterId ?? existingEntry?.floater_object_id,
         drawing_id: existingEntry?.drawing_id,
-        source_type: "patient_reported",
+        source_type: existingEntry?.source_type ?? "patient_reported",
         created_at: existingEntry?.created_at ?? nowISO(),
         updated_at: nowISO(),
       };
@@ -243,11 +258,32 @@ export default function Today() {
       updated_at: nowISO(),
     };
     await store.dailyLogs.put(log);
+    setRemoved(gone);
     setJustSaved(true);
   };
 
+  /** Undo the removals of the last save: the same records, ids and dates, back in the day. */
+  const restoreRemoved = async () => {
+    for (const s of removed) await store.symptoms.put(s);
+    if (existingLog) await store.dailyLogs.put({ ...existingLog, overall: "recorded", updated_at: nowISO() });
+    setRows((r) => [
+      ...r,
+      ...removed.map((s) => ({
+        key: s.id,
+        eye: s.eye === "left" || s.eye === "both" ? s.eye : ("right" as const),
+        symptom_type: s.symptom_type,
+        comparison: s.baseline_comparison ?? ("" as const),
+        severity: s.severity ?? 0,
+        description: s.description ?? "",
+        existingId: s.id,
+      })),
+    ]);
+    setRemoved([]);
+  };
+
   const eyePanel = (eye: "right" | "left") => {
-    const rowsForEye = rows.filter((r) => r.eye === eye);
+    // A both-eyes record (only ever an existing one) is shown, and kept, under the right eye.
+    const rowsForEye = rows.filter((r) => r.eye === eye || (eye === "right" && r.eye === "both"));
     return (
       <section
         className={`card eye-panel ${eye}`}
@@ -615,6 +651,28 @@ export default function Today() {
               onClick={() => nav("timeline", "recorded")}
             >
               {t("today.view_timeline")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {justSaved && removed.length > 0 && (
+        <div className="safety" style={{ marginBottom: 16 }} role="status">
+          <span className="safety-icon" aria-hidden>
+            ↺
+          </span>
+          <div>
+            Removed from today:{" "}
+            {removed
+              .map((s) => `${s.symptom_type}, ${EYE_WORDS[s.eye]}`)
+              .join(", ")}
+            .{" "}
+            <button
+              className="btn subtle"
+              style={{ minHeight: "var(--target)", padding: "2px 8px" }}
+              onClick={restoreRemoved}
+            >
+              Put {removed.length === 1 ? "it" : "them"} back
             </button>
           </div>
         </div>

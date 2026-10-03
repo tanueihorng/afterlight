@@ -130,6 +130,10 @@ never blended.
 - **Measurements** — acuity, pressure, thickness, with the unit and the method they were taken by.
 - **Prescriptions** — glasses, over time.
 
+Measurements copied from an uploaded report can be linked to that document. Until you check them,
+My Eyes shows them in a separate "Values transcribed from a document" section. They do not replace
+the last clinical value or appear in the trend chart or appointment brief.
+
 ## Scans and letters
 
 **Imaging & Documents** keeps the originals. They stay exactly as your clinic gave them to you.

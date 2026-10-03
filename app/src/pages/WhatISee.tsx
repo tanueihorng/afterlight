@@ -5,7 +5,7 @@ import { DARK_PALETTE, drawingToDataURL, renderDrawing, renderMark } from "../li
 import { describeDrawing, describeMark } from "../lib/describe";
 import { conditionById } from "../engine/conditions";
 import { ConfirmButton, DemoBadge, EyeBadge, EmptyState, Field, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
-import { formatDate, formatTime, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
+import { formatDate, formatTime, isoToDateOnly, nowISO, pluralize, todayLocal } from "../lib/util";
 
 const CANVAS_W = 800;
 const CANVAS_H = 740;
@@ -499,7 +499,7 @@ function HistoryTab({ onCompare }: { onCompare: () => void }) {
         <button className="btn" onClick={onCompare}>
           ⇆ Compare two dates
         </button>
-        <span className="muted">{drawings.length} drawings, newest first</span>
+        <span className="muted">{pluralize(drawings.length, "drawing")}, newest first</span>
       </div>
       <div className="gallery">
         {drawings.map((d) => (

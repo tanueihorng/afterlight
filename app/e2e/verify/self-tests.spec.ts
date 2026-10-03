@@ -5,7 +5,10 @@ test.describe("self-tests — checks you do yourself", () => {
     const errors = collectErrors(page);
     await asReturningUser(page);
     await page.goto("/#/self-tests");
-    await page.locator(".card", { hasText: /amsler/i }).getByRole("button", { name: /start this check/i }).click();
+    await page
+      .locator(".card", { hasText: /amsler/i })
+      .getByRole("button", { name: /start this check/i })
+      .click();
 
     // The conditions form gates the test area.
     await page.getByLabel(/distance/i).fill("40");
@@ -14,8 +17,15 @@ test.describe("self-tests — checks you do yourself", () => {
     await page.getByLabel(/room lighting/i).selectOption("normal");
 
     const grid = page.locator("canvas").first();
-    await grid.click({ position: { x: 160, y: 160 } });
-    await expect(page.getByText(/1/i).first()).toBeVisible();
+    await grid.scrollIntoViewIfNeeded();
+    const bounds = await grid.boundingBox();
+    expect(bounds).not.toBeNull();
+    const start = { x: bounds!.x + 140, y: bounds!.y + 140 };
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(bounds!.x + 180, bounds!.y + 180);
+    await page.mouse.up();
+    await expect(grid).toHaveAttribute("aria-label", /1 area marked/);
 
     await page.getByLabel(/note/i).fill("A wobble near the centre");
     await page.getByRole("button", { name: /save this check/i }).click();
@@ -34,7 +44,10 @@ test.describe("self-tests — checks you do yourself", () => {
   test("the home acuity check calibrates, steps, and records honestly", async ({ page }) => {
     await asReturningUser(page);
     await page.goto("/#/self-tests");
-    await page.locator(".card", { hasText: /home vision/i }).getByRole("button", { name: /start this check/i }).click();
+    await page
+      .locator(".card", { hasText: /home vision/i })
+      .getByRole("button", { name: /start this check/i })
+      .click();
     await page.getByLabel(/distance/i).fill("40");
     await page.getByLabel(/wearing/i).selectOption("none");
     await page.getByLabel(/brightness/i).selectOption("medium");
@@ -47,7 +60,13 @@ test.describe("self-tests — checks you do yourself", () => {
 
     // Step through rows until the honest stop, then record.
     const could = page.getByRole("button", { name: /i could read that row/i });
-    for (let i = 0; i < 16 && (await could.isVisible().catch(() => false)) && (await could.isEnabled().catch(() => false)); i++) {
+    for (
+      let i = 0;
+      i < 16 &&
+      (await could.isVisible().catch(() => false)) &&
+      (await could.isEnabled().catch(() => false));
+      i++
+    ) {
       await could.click();
     }
     // Stop at the row the person cannot read — or at the screen's honest limit.
@@ -61,7 +80,10 @@ test.describe("self-tests — checks you do yourself", () => {
   test("the contrast check records where the person stops", async ({ page }) => {
     await asReturningUser(page);
     await page.goto("/#/self-tests");
-    await page.locator(".card", { hasText: /contrast/i }).getByRole("button", { name: /start this check/i }).click();
+    await page
+      .locator(".card", { hasText: /contrast/i })
+      .getByRole("button", { name: /start this check/i })
+      .click();
     await page.getByLabel(/distance/i).fill("40");
     await page.getByLabel(/wearing/i).selectOption("glasses");
     await page.getByLabel(/brightness/i).selectOption("low");

@@ -1,266 +1,110 @@
-# Verification charter — what "every single thing" means, and how each thing was checked
+# Verification charter — evidence and limits
 
-Written 2026-09-14, after a run of defects surfaced from one small feature (the timeline
-add-event chooser). The trust problem is real: unit tests and e2e suites written alongside the
-code they test share that code's blind spots. This document is the contract for an independent
-verification pass that treats the app as a black box first and reads the code only to
-understand what was found.
+Updated 2026-09-23. **Overall status: partial; whole-app verification is not complete.**
 
-The manifest below enumerates the interactive surface — every control a person can reach — and
-records the verdict for each. It is a checklist, not prose: a line without a verdict is
-unfinished work.
+This corrects the reports dated 2026-09-14 and 2026-09-16. The previous manifest bulk-filled
+124 `pass` cells without per-control execution evidence. Those verdicts are withdrawn, as are
+the blanket claims of a clean sweep, green suites, complete persistence coverage and completed
+human inspection. Historical aggregate totals and repeat-run claims are not used as evidence
+here. A spec's existence, a test title or a code fix is not a passing run.
 
-## Method — six levels
+## Charter and verdicts
 
-- **L1 · Sweep.** Every route, every interactive element enumerated and exercised. Nothing may
-  crash, log an error, or leave the app in a broken state — regardless of what the element is
-  *supposed* to do.
-- **L2 · Behaviour.** Each control's claimed effect (from its own label) is verified: dialogs
-  open, saves land in the visible record, toggles toggle, deletes delete. Both empty-state and
-  populated-state where the control renders differently.
-- **L3 · Flows.** Cross-page journeys a real person performs: the daily loop, the appointment
-  brief, export → wipe → import, demo data load and removal, onboarding.
-- **L4 · Persistence.** Everything saved survives a reload; the offline path still works; the
-  export round-trips byte-honestly.
-- **L5 · Accessibility.** The existing enforced suites (axe on every page and theme, keyboard
-  journeys, target sizes) plus spot checks on anything new found by L1–L4.
-- **L6 · Human pass.** What automation cannot judge: rendering quality, canvas feel, print
-  layout, the 3D explorer, the landing page, the standalone file — checked by eye and hand.
+Verify the app's observable promises, starting with real user actions and following saved data
+through storage, reload and export. Keep these areas distinct:
 
-## Verdicts
+- **L1 — Sweep:** routes, controls, errors and recovery, on desktop and phone.
+- **L2 — Behaviour:** each control's effect, with empty and populated records.
+- **L3 — Flows:** daily recording, onboarding, briefs, demo removal and archive round-trips.
+- **L4 — Persistence:** commit acknowledgements, reloads, offline use and stored files.
+- **L5 — Accessibility:** keyboard, screen reader, focus, targets, themes and type scales.
+- **L6 — Human inspection:** rendering, drawing feel, print, landing page and standalone explorer.
 
-- **pass** — exercised, behaves as its label claims, no errors.
-- **fixed** — found broken, fixed under this effort; regression test named.
-- **flagged** — needs a human (clinical wording, clinician-facing copy, safety text) or a
-  product decision; recorded, not changed by an agent.
-- **recorded** — behaves unexpectedly but the behaviour is judged correct-or-tolerable and is
-  documented here so it can never surprise anyone again.
-- *(empty)* — not yet verified. An empty verdict anywhere in this file means the verification
-  is not complete.
+**Verified** means the named check has a recorded outcome, limited to its actual assertions.
+**Partial** means some evidence exists but the area's acceptance criteria remain uncovered.
+**Unverified** means no adequate execution evidence is recorded. **Open** means an unresolved
+failure or explanation. **Flagged** requires a human decision. Historical reproductions are
+labelled as such; hypotheses are not findings of cause.
 
-## Tooling
+For future verdicts, record the date, revision/working-tree state, command or manual steps,
+environment, assertions and result (including failures/skips). Do not infer coverage from test
+names or replace a failure with an environment explanation without discriminating evidence.
+Findings and their limits belong in [DEFECTS.md](DEFECTS.md).
 
-`app/e2e/verify/` — Playwright specs, one file per area, run with `npm run e2e:verify` (and as
-part of the full `npm run e2e`). The suite runs on the desktop (Chromium, software GL) and
-mobile (iPhone 13, WebKit) projects. Findings land in `DEFECTS.md`; fixes carry a test that
-would fail if the behaviour regressed.
+## Focused evidence — 2026-09-23
 
----
+This pass used the current working tree, including pre-existing uncommitted changes. The checks below
+were executed after the store commit-order fix; they describe only the named flows.
 
-## The manifest
-
-Global shell (`App.tsx`, palettes, error boundary) —
-[SPEC: controls-sweep, palettes](../../../app/e2e/verify/)
-
-| Control | Expected | Verdict |
+| Check | Result | What it establishes |
 | --- | --- | --- |
-| 9 sidebar nav buttons | route to their pages; active state follows | pass |
-| Skip-to-content link | moves focus to main | pass |
-| "Search my records ⌘K" | opens search palette | pass |
-| "Ask my records ?" | opens ask palette | pass |
-| Dark/Light mode toggle | switches theme, persists | pass |
-| Mobile tabbar (4 tabs) | route; More sheet opens with 5 remaining + search + ask | pass |
-| Cmd/Ctrl+K | opens search palette even while typing | pass |
-| `/` (not in a field) | opens search palette | pass |
-| `?` (not in a field) | opens ask palette | pass |
-| Palette: mode tabs | switch between search and ask | fixed (V-003: the palette was unclickable by mouse) |
-| Palette: query input + Enter | search: navigates to hit; ask: shows cited answer | pass |
-| Palette: result rows | keyboard cursor + Enter; citation buttons navigate | pass |
-| Palette: 8 example chips (ask) | run that question | pass |
-| Palette: Escape / backdrop | closes, focus restored | pass |
-| ErrorBoundary card | export, reload, copy details, technical disclosure | pass |
-| Loading screen | shows until store ready | pass |
+| `cd app && npm run verify` | **Pass** — typecheck, lint, guard, assets, changelog, 591 unit tests, production build, bundle budget and built-file no-network check | The configured project gate is clean. Build emits existing warnings for the large Visualize chunk and `MyEyes` being imported both dynamically and statically. |
+| Focused Playwright run: daily loop; Today; appointments; persistence; timeline; timeline add; settings, `--workers=1` | **82 passed, 2 skipped** across desktop Chromium and mobile WebKit | Covered add/edit/delete and reload for appointments; question updates; daily record save/edit/delete; demo load/remove; settings persistence; timeline filters and chooser; browser offline is covered on desktop Chromium. Skips: desktop-only brief presentation on mobile, and offline navigation on mobile WebKit (V-011). |
+| Focused Playwright run: My Eyes; self-checks; imaging; palettes; Visualize, `--workers=1` | **41 passed, 7 skipped; 2 initial Amsler test failures** across desktop Chromium and mobile WebKit | The two failures came from the Amsler test clicking once instead of drawing, with its canvas below the viewport. The test now scrolls the canvas into view and draws by pointer drag; rerunning the complete self-check file passed **6/6** across both projects. The other executed My Eyes, imaging/document, palette search/ask and Visualize assertions passed. The seven skips remain skips; this is selected flow coverage, not a whole-page sweep. |
+| Focused Playwright run: handoff; mobile shell; offline; release; onboarding; What I See, `--workers=1` | **49 passed, 5 skipped** across desktop Chromium and mobile WebKit | PDF bytes and drawing output, encrypted share scope and QR text, print provenance, document import, phone navigation/overflow, onboarding, and drawing save/edit/compare passed. Four phone-only checks skip on desktop; the mobile network-cut record check is skipped under V-011. |
+| `controls-sweep.spec.ts`, all nine desktop routes split into focused runs; phone shell on mobile | **9/9 route sweeps and 1/1 mobile shell sweep passed** | Every visible button, link, tab and summary on Today, What I See, Timeline, My Eyes, Checks, Imaging, Appointments, Visualize and Settings was clicked without a page error or loss of navigation. Mobile tab routing and More-sheet destinations passed. These are crash/navigation smoke checks; the page-specific tests establish selected control effects. |
+| `src/components/eye-interaction.test.tsx`, `src/pages/timeline-return.test.tsx`, `src/lib/store.ops.test.tsx` | **7 passed** | A transaction abort keeps the last committed list visible; Today-to-timeline opens with observations and all dates; model drag/cancel does not select, clicks select, latest callback is used, and unsupported fullscreen is hidden. |
+| `e2e/engine.spec.ts --project=desktop --workers=1` | **8 passed** (5.3 minutes) | Real 3D rendering, accessible selection/reset, generic boundary, repeated scene disposal, section-resource stability, keyboard rotation and the standalone explorer offline/no-network journey all passed in Chromium. No physical GPU/device performance claim. |
+| Manual narrow-screen review on the local app | **Observed** | Today targets and bottom navigation are legible; the appointment time input was too small and is now full width with a 44px minimum height. The save confirmation’s timeline action visibly opens the entry with its eye and provenance labels. |
 
-Onboarding — [SPEC: onboarding]
+A wider 224-test run was stopped after 10.8 minutes while a route-control sweep was still running. It recorded
+34 passes, one 3D boundary timeout, and an interrupted appointment sweep. The isolated desktop engine file
+later passed 8/8; the appointment sweep passed on its own, then all nine desktop route sweeps and the mobile
+shell sweep passed in focused runs. The combined 224-test run itself remains incomplete. Physical-device iOS
+offline use, full screen-reader review and physical print output are not certified by this pass.
 
-| Control | Expected | Verdict |
+## Focused evidence — 2026-09-17
+
+The following execution results were supplied for this documentation correction; they were not
+rerun during the edit. Source inspection confirms the named assertions and commit handlers.
+The working tree has changes beyond HEAD `5816856`, including the regression test and `dbPatch`
+changes; these results must not be attributed to that commit alone.
+
+| Check | Recorded result | What it establishes |
 | --- | --- | --- |
-| Welcome: Skip setup | finishes onboarding, no records written | pass |
-| Welcome: Begin | step 1 | pass |
-| Step 1: surgery radio + fields | writes procedure + baseline when completed | pass |
-| Step 1: diagnosis input | writes diagnosis | pass |
-| Steps 1–3: Back | returns without losing entries | pass |
-| Step 2: two baseline textareas | writes both baselines | pass |
-| Step 3: local-storage warning | Continue only; text is honest | pass |
-| Step 4: Open Afterlight | finishes, writes `onboarded`, lands on Today | pass |
+| `app/src/lib/db-commit.test.ts`, unchanged implementation | **4 pass** | Put and patch reject when request success is followed by transaction abort; an aborted patch preserves the previous committed value; an idempotent patch preserves unrelated metadata; empty-store migration retains schema and onboarding across subsequent loads. |
+| Production `dbPatch` mutation: add `write.onsuccess = () => resolve(merged)` | **1 fails**, with the promise resolved instead of rejecting | The aborted-patch regression detects premature acknowledgement in the production implementation, not merely in a test-local imitation. |
+| Restore commit-only resolution at `transaction.oncomplete` | **4 pass** | The focused suite returns to passing when the premature resolution is removed. |
 
-Today — [SPEC: today]
+The empty-store migration check writes `schema_version`, creates one backup, patches
+`onboarded`, then calls `loadMigrated()` again. Schema and onboarding remain present and no
+second backup is created. This is not a browser reload test, but it provides no basis to blame
+empty migration for the reported loss. Nor is there evidence here establishing browser eviction.
 
-| Control | Expected | Verdict |
+**V-009's commit barrier is verified at this focused scope, including the `dbPatch` extension
+tracked in V-010. It is not proof that all reload data loss is fixed.** The tests do not establish
+every UI save path, real-browser unload behaviour, whole-record persistence or storage eviction.
+
+## Per-area evidence and outstanding work
+
+Spec paths below are under `app/e2e/verify/` unless stated otherwise. They identify available
+coverage to inspect/run, not results. No area inherits a pass from a suite filename.
+
+| Area | Status | Evidence retained and limits |
 | --- | --- | --- |
-| "Nothing different today" | writes no-change log; confirmation shown | pass |
-| "Something changed" | recording form opens | pass |
-| Suggestion chips | from own history only; prefill a row | pass |
-| "◎ Open checks" | routes to self-tests (only when profiles suggest) | pass |
-| BackupNudge: Export now / Not now | export or dismiss ≤1/week | pass |
-| Today/Yesterday/Another day | date basis switches; custom date input appears | pass |
-| Per-row: type select, 6 comparison chips, floater shapes, severity slider, description | all save | pass |
-| "＋ Add symptom" / "✕ Remove" | rows add/remove; removal deletes the record on save | pass |
-| "✧ Draw what I see" | routes to What I See | pass |
-| Note for today | saves | pass |
-| Back | decision view, no writes | pass |
-| Save today's record | writes symptoms + floaters + log; "Today is recorded…" appears | pass |
-| Urgent SafetyNotice | appears for new/much-more urgent symptoms; one restrained sentence | pass |
-| "View timeline →" | routes with the new record visible | pass |
-| Edit existing day | prefills; Update wording | pass |
+| Global shell, navigation and palettes | Partial | All nine desktop route-control smoke sweeps and the mobile tabbar/More sheet passed; palette mouse-driven search and ask examples passed. Shortcut, focus, error-boundary and semantic effects of every control are not fully covered. |
+| Onboarding | Partial | Browser skip, full path and Back journeys passed on desktop and mobile. Migration metadata checks pass; reload of every onboarding field remains outside this run. |
+| Today | Partial | The focused daily-loop and Today browser flows passed save/edit/delete and persistence checks. After saving, the View timeline action now opens the saved observation across all dates; `timeline-return.test.tsx` covers an older observation. All fields, urgent-notice behaviour and timing remain unverified here. |
+| What I See | Partial | Drawing save/history/delete, undo/redo/clear and compare passed on desktop and mobile. Every drawing tool, text equivalents, and reload coverage remain outside this run. |
+| Timeline | Partial | The focused range/lens and chooser flows passed, including Today’s saved-observation destination (V-105 fixed below). Not every chooser kind and record is covered through reload; V-102 remains unresolved at that broader scope. |
+| My Eyes | Partial | Selected forms and confirmation/provenance assertions passed in the focused desktop/mobile browser run. Full form, trend and persistence coverage is unverified. |
+| Checks | Partial | The complete Amsler, acuity and contrast browser flows passed on desktop and mobile (6 tests). Other calibration details, all controls, stored drawing equivalents and accessibility remain outside this run. |
+| Imaging and documents | Partial | Selected scan, extracted-content review, ambiguous-date, file open/delete and OCT comparison browser flows passed. Quota failures and full file-byte/reload coverage are not established. |
+| Appointments, briefs and sharing | Partial | Appointment add/edit/delete and question updates survived reload. Handoff checks passed PDF byte stability, embedded drawings, encryption/scope, QR text and print provenance. Physical pagination, device print output and clinician-facing wording remain open; wording needs human review. V-106 remains a product decision. |
+| Visualize and explorer | Partial / open | Selected atlas search, deep links, severity and viewer modes passed in the page-focused run. All 8 desktop engine checks passed, including the generic boundary, resource stability and standalone offline explorer. Some mobile checks skip; visual quality on physical devices and slow-device performance are not certified. |
+| Settings, demo and archives | Partial | Settings persistence and demo load/removal passed in the focused run. Archive merge/replace/encryption and wipe flows remain unverified. |
+| Cross-cutting persistence and offline | Partial / open | Focused daily and appointment save/edit/delete reload journeys passed, along with offline recording on Chromium. The cause/extent of broader reload loss remains open (V-103); the mobile WebKit network-cut reload remains skipped under V-011. No blanket round-trip claim. |
+| Search and ask | Partial | Selected palette search and ask examples passed by mouse. All record types, citation and not-found cases and keyboard paths are not fully covered by this run. |
+| Accessibility | Partial | `npm run verify` passed the configured accessibility test suite and lint checks. Full screen-reader and physical-device review is not claimed. |
+| Technical invariants | Partial | `npm run verify` passed the configured guard, unit tests, build, initial/lazy bundle budgets and built-file no-network check. This does not certify untested real-device and export/print scenarios. |
+| Human inspection and clinical review | Partial / flagged | Manual narrow-screen inspection found and verified the 44px appointment time-input improvement and checked the Today-to-timeline path. Browser print assertions preserve provenance; physical print output and broader visual inspection remain open. Clinical, safety and clinician-facing copy require human review; this report is never clinical sign-off. |
 
-What I See — [SPEC: what-i-see]
+## Execution boundary for this correction
 
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| Draw/History/Compare tabs | switch; state retained | pass |
-| 10 tool buttons + label input | each draws; label text applies | pass |
-| 4 ink buttons, size, opacity | affect strokes | pass |
-| Undo/Redo (buttons + Cmd+Z/Shift) | step history; disabled at ends | pass |
-| Clear | empties canvas | pass |
-| Eye select | Right/Left/Both | pass |
-| Description input | saves with drawing | pass |
-| Save drawing | persists; history tab shows it; timeline event appears | pass |
-| Words-in-words disclosure | text equivalent of marks | pass |
-| Gallery item → detail modal | large render, badges, delete (two-click), close | pass |
-| Compare tab: pick A/B, slider | overlay blend follows slider | pass |
-| Atlas-draft notice + "Start from blank instead" | clears prefilled draft | pass |
-
-Timeline — [SPEC: timeline-add, timeline]
-
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| Story/Everything view toggle | lens vs full listing | pass |
-| Clinical spine / With my notes lens | filters story view | pass |
-| 7 range toggles + custom start/end | filter correctly; custom inputs appear | pass |
-| 4 eye filters | eye-specific rows filter; whole-record rows stay | pass |
-| 12 category toggles | each filters the detailed view; hidden in story view | pass |
-| "+ Add event" → 7 kinds | all verified in SPEC timeline-add (all pass/fixed, see DEFECTS) | pass |
-| Event row → detail modal | per-type body, badges, close | pass |
-| "Is this the same as last time?" → SameAsLastTime | prior rows, verdicts, note, save | pass |
-| Pagination: Show earlier / Show all | extends by 60 days / everything | pass |
-| Inline record-there links | route correctly | pass |
-
-My Eyes — [SPEC: my-eyes]
-
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| Edit baseline (per eye) | BaselineModal saves | pass |
-| + Diagnosis (modal: name, eye, date, status, source, clinician, clinic, notes, confirmed) | saves; appears in panel and timeline | fixed (V-002: confirmed defaulted to checked) |
-| + Procedure (modal) | saves; appears; timeline event | pass |
-| + Medication (modal, prescription/self-care variants) | saves; conditional fields behave | pass |
-| + Measurement (10 kinds, value gating, unit, source) | saves; appears in Trends | pass |
-| + Add prescription (both-eye numeric fields, acuity) | saves; row appears | pass |
-| Prescription row Delete (two-click) | deletes | pass |
-| Trends card | plots own numbers; never judged; table equivalent | pass |
-| Recent symptoms / key values | "Not recorded" shown as missing, never blank | pass |
-
-Checks (self-tests) — [SPEC: self-tests]
-
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| 3 launcher cards → RunTest | each check starts | pass |
-| Conditions form (4 fields) | gates the test area | pass |
-| Calibration slider (acuity) | px-per-mm changes honestly | pass |
-| Amsler: draw/undo/clear + words | marks record as a drawing | pass |
-| Acuity rows: could read / stop here | advances or records | pass |
-| Contrast rows: can see / stop here | advances or records | pass |
-| Note, Cancel, Save this check | persists result (+ drawing); appears in history and timeline | pass |
-| Previous checks history | comparability framing, no verdicts | pass |
-
-Imaging & Documents — [SPEC: imaging]
-
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| 3 tabs | switch lists | pass |
-| ＋ Add files → IngestFiles modal | dropzone/choose; per-file row; apply-to-all; ambiguous-date 3-way select; OCR seam if present; unchecked count; Add N files | pass |
-| Add one scan/document → AddRecordModal | saves with file; storage-full alert path | pass |
-| Gallery item → ImagingDetail | metadata, full image, delete record & files | pass |
-| OCT compare selects + slider | overlay blend follows slider | pass |
-| Document row: open original | opens stored file in new tab | pass |
-| Document row: Delete | deletes record + file | pass |
-
-Appointments — [SPEC: appointments]
-
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| ＋ Add appointment (modal fields) | creates; appears upcoming/past by date | pass |
-| Edit appointment | updates | pass |
-| Delete appointment (two-click) | deletes | pass |
-| Questions: add, Update modal (status+note), Delete | all persist | pass |
-| Next-appointment card: Prepare brief | opens BriefView with correct period | pass |
-| BriefView: period presets + custom dates | filters sections | pass |
-| BriefView: extra sections (numbers, checks) | sections appear only with data | pass |
-| BriefView: header + paper size | persist to meta; affect print/PDF | pass |
-| Save as PDF / Print / Share… / Present fullscreen / Save brief into timeline | each does what it says; brief footer present | fixed (V-006: save copy promised a timeline appearance that never happens; copy now truthful) |
-| ShareBrief: file tab (dates, includes, passphrase, save/share) | counts of included AND excluded; encrypted file saves | pass |
-| ShareBrief: QR card tab | QR renders; says it is plain text | pass |
-| PresentMode: nav, keys, swipe, zoom, exit | works; hc-light forced | pass |
-
-Visualize — [SPEC: visualize]
-
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| 5 tabs (eye, explorer iframe, retina states, procedures, atlas) | switch; boundary notices present | pass |
-| EyeStudio: 4 view buttons + reset | views change; reset restores | pass |
-| EyeCanvas: drag, click-pick, arrows, +/-, fullscreen | rotate/pick/zoom; fallback card without WebGL2 | pass |
-| Slice / magnification / separation / zoom sliders | render responds | pass |
-| 15 structures: select + Focus | description toggles; camera focuses | pass |
-| Iris: 5 presets + 5 sliders + remember + reset | appearance changes; persists | pass |
-| View card: eye, room light, background pigmentation | pupil and fundus respond | pass |
-| RetinaStates: 9 states, eye toggle, labels toggle | states render faded (never black); labels toggle | pass |
-| Procedures: record procedures + library explainers, step slider, prev/next, step buttons | scrub correctly; disabled at ends | pass |
-| Atlas: search, region filters, documented/related sections, grid → detail | filters correctly; empty state honest | pass |
-| Atlas detail: link anchor, severity slider, one/compare view, eye toggle | simulation responds | pass |
-| VisionSim: own photo (never stored), back to default, "Is this like what you see?" | draft lands in What I See | pass |
-| 3D explorer iframe | loads, boundary stated, offline-capable | pass |
-
-Settings — [SPEC: settings]
-
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| 5 theme buttons | each applies and persists | pass |
-| 4 text sizes | each applies and persists | pass |
-| 3 display checkboxes (movement, brightness, dim scans) | each applies | pass |
-| 13 condition profiles | each toggles; prompts change, nothing diagnoses | pass |
-| Load demo data / Remove demo data | seeds coherently; removes in one action; badge truthfully | pass |
-| Passphrase box + Export everything | downloads archive; encrypted when passphrase set | pass |
-| Import from an export → preview → Merge/Replace | preview honest; merge adds, replace wipes; reload | pass |
-| Test my backup | inspects without changing anything | pass |
-| Ask browser to persist | requests persistence when unpersisted | pass |
-| Danger zone: delete all (double confirm) | wipes all 19 stores, reloads empty | pass |
-| About: 4 links + changelog toggle | open locally-shipped pages; changelog matches VERSION | pass |
-| Sealed-archive modal (encrypted import) | wrong passphrase → honest error; correct → preview | pass |
-
-Cross-cutting — [SPEC: persistence, palettes, keyboard]
-
-| Control | Expected | Verdict |
-| --- | --- | --- |
-| Reload after every save path | record still there | fixed (V-005: entries written before the UTC offset were dated a day early, which broke edit and delete matching) |
-| Offline (SW) | shell cached; recording works offline | pass |
-| Search across all record types | finds; cites; navigates | pass |
-| Ask | answers only from the record; not-found sentence exact | pass |
-| Keyboard-only daily loop | completable without mouse | pass |
-| Demo data story | clinically coherent; every demo badge removable | pass |
-
-Scope notes: deep technical guarantees (PDF determinism, QR golden fixtures, migrations,
-no-network build checks, bundle budgets, contrast maths) are enforced by the existing
-`npm run verify` gate and unit suites and are not duplicated here; this charter covers what
-only a running app can show.
-
----
-
-## Result (2026-09-14)
-
-- **Sweep (L1):** every clickable control on all nine routes, populated record, desktop and
-  phone shells — no crashes, no console errors, app always navigable afterwards.
-- **Behaviour (L2) and flows (L3):** 151 automated checks across fourteen spec files, both
-  browser projects, plus 582 unit tests. `npm run e2e:verify` is green.
-- **Persistence (L4):** reload, offline-after-install, export → wipe → import (merge and
-  replace), demo load/remove, encrypted archive — all round-trip.
-- **Accessibility (L5):** the enforced axe/keyboard/target suites stay green; one unlabelled
-  input found and labelled (V-005 companion fix in Today's describe field).
-- **Human pass (L6):** the eye renders correctly in 3D with its boundary stated; the drawing
-  canvas draws with a real pointer; the brief, landing page and standalone explorer were each
-  inspected by eye.
-
-Eight defects were found and fixed (V-001 – V-008), two product questions are flagged for a
-human (V-105, V-106), and four behaviours are recorded so they can never be mistaken for bugs
-(V-101 – V-104). Everything in the manifest above now carries a verdict; no line was left
-empty. The verifier itself was mutation-checked: a deliberately broken route turned the suite
-red, and the fix turned it green.
+This pass changed existing save ordering, timeline navigation, 3D input handling and input sizing,
+with regression tests and browser checks; it added no new product feature. The working tree already
+contained other uncommitted work, which was preserved. `npm run verify` passed on this tree, the
+focused desktop/mobile browser runs completed, and all route-control sweeps later passed individually.
+The combined 224-test run was stopped after 10.8 minutes; physical-device, full screen-reader and
+print checks keep whole-app certification partial. No commit, release, publish or clinical-review
+approval was made.

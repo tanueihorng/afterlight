@@ -1,4 +1,4 @@
-import { expect, test, collectErrors } from "./helpers";
+import { expect, test, collectErrors, settingsSaved } from "./helpers";
 
 test.describe("onboarding", () => {
   test("skip setup writes no records and lands on Today", async ({ page }) => {
@@ -7,6 +7,7 @@ test.describe("onboarding", () => {
     await page.getByRole("button", { name: /skip setup/i }).click();
     await expect(page.getByRole("heading", { name: /how is your vision today/i })).toBeVisible();
     expect(errors).toEqual([]);
+    await settingsSaved(page, { onboarded: true });
 
     // Reload must not show onboarding again.
     await page.reload();

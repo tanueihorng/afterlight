@@ -25,6 +25,14 @@ describe("series extraction", () => {
     expect(seriesFor(data, "iop", "left").points[0].raw).toBe("27");
   });
 
+  it("keeps unchecked document transcriptions out of trends", () => {
+    const data = anAllData({ measurements: [
+      iop("2026-08-24", "14.6", { source_type: "document_extracted", confirmed: false }),
+      iop("2026-09-01", "15", { source_type: "document_extracted", confirmed: true }),
+    ] });
+    expect(seriesFor(data, "iop", "right").points.map((p) => p.raw)).toEqual(["15"]);
+  });
+
   it("converts acuity to logMAR so a mixed record reads as one series", () => {
     const data = anAllData({
       measurements: [

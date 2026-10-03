@@ -74,6 +74,11 @@ export const EN = {
   "source.document_extracted": SOURCE_LABELS.document_extracted,
   "source.ai_generated": SOURCE_LABELS.ai_generated,
   "source.not_checked": "Not checked yet",
+  "eyes.unchecked_values": "Values transcribed from a document",
+  "eyes.source_document": "Source: {title}",
+  "eyes.document_source": "Extracted from document",
+  "eyes.source_record": "Source document",
+  "eyes.select_document": "Select a document",
 
   "eye.right": EYE_LABELS.right,
   "eye.left": EYE_LABELS.left,

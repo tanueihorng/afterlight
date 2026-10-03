@@ -1,5 +1,12 @@
 import fs from "node:fs";
-import { expect, test, asReturningUser, collectErrors, contextStorageEvicted } from "./helpers";
+import {
+  expect,
+  test,
+  asReturningUser,
+  collectErrors,
+  todaySaved,
+  settingsSaved,
+} from "./helpers";
 
 test.describe("settings — the record's control room", () => {
   test("every theme applies and persists across a reload", async ({ page }) => {
@@ -7,17 +14,22 @@ test.describe("settings — the record's control room", () => {
     await asReturningUser(page);
     await page.goto("/#/settings");
 
-    const themes = ["dark", "light", "high contrast"];
-    for (const t of themes) {
-      await page.getByRole("button", { name: new RegExp(t, "i") }).first().click();
-      await page.waitForTimeout(150);
+    const themes = [
+      ["Dark", "dark"],
+      ["Light", "light"],
+      ["High contrast dark", "hc-dark"],
+      ["High contrast light", "hc-light"],
+    ];
+    for (const [label, theme] of themes) {
+      const button = page.getByRole("button", { name: label, exact: true });
+      await button.click();
+      await expect(button).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await settingsSaved(page, { theme });
+      await page.reload();
+      await expect(button).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
     }
-    // Land on dark and prove it survives a reload.
-    await page.getByRole("button", { name: /^dark$/i }).first().click();
-    await page.reload();
-    await page.waitForTimeout(600);
-    const theme = await page.evaluate(() => document.documentElement.dataset.theme);
-    expect(theme).toMatch(/dark/);
     expect(errors).toEqual([]);
   });
 
@@ -27,24 +39,32 @@ test.describe("settings — the record's control room", () => {
     await page.getByRole("button", { name: /larger/i }).first().click();
     await page.getByRole("checkbox", { name: /reduce movement/i }).check();
     await page.getByRole("checkbox", { name: /dim scans/i }).check();
+    await settingsSaved(page, { type_scale: 1.5, reduced_motion: true, dim_imagery: true });
     await page.reload();
-    await page.waitForTimeout(500);
+    await expect(page.getByRole("button", { name: "Larger", exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("checkbox", { name: /reduce movement/i })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: /dim scans/i })).toBeChecked();
+    await expect(page.locator("html")).toHaveAttribute("data-motion", "reduced");
+    await expect(page.locator("html")).toHaveAttribute("data-imagery", "dimmed");
   });
 
   test("condition profiles toggle and persist without ever diagnosing", async ({ page }) => {
     await asReturningUser(page);
     await page.goto("/#/settings");
     await page.waitForTimeout(500); // let the controlled checkboxes hydrate
-    const box = page.getByRole("checkbox").first();
+    // The profiles section, not the page's first checkbox — that one is "Reduce movement" (V-010).
+    const profiles = page.locator("section", {
+      has: page.getByRole("heading", { name: /what are you tracking/i }),
+    });
+    const box = profiles.getByRole("checkbox").first();
     await box.check();
     await expect(box).toBeChecked(); // the check itself must take
+    await expect(profiles.getByText(/1 selected/i)).toBeVisible();
+    await settingsSaved(page, { condition_profiles: [expect.any(String)] });
     await page.reload();
     await page.waitForTimeout(600);
-    if (await contextStorageEvicted(page)) {
-      test.skip(true, "V-103: the browser evicted this context's storage; nothing about the app");
-    }
-    await expect(page.getByRole("checkbox").first()).toBeChecked();
+    await expect(profiles.getByRole("checkbox").first()).toBeChecked();
+    await expect(profiles.getByText(/not recorded as a diagnosis/i)).toBeVisible();
   });
 
   test("demo data loads with a badge and removes in one action", async ({ page }) => {
@@ -62,6 +82,7 @@ test.describe("settings — the record's control room", () => {
   test("an export downloads and its JSON carries the records", async ({ page }) => {
     await asReturningUser(page);
     await page.getByRole("button", { name: /nothing different today/i }).click();
+    await todaySaved(page);
     await page.goto("/#/settings");
 
     const download = page.waitForEvent("download");
@@ -69,6 +90,13 @@ test.describe("settings — the record's control room", () => {
     const file = await download;
     const path = await file.path();
     expect(path).toBeTruthy();
+    // The export must carry the day just recorded, not merely exist.
+    const archive = JSON.parse(fs.readFileSync(path!, "utf8"));
+    expect(archive.format).toBe("afterlight-archive");
+    const dailyLogs: Array<Record<string, unknown>> = archive.data.dailyLogs;
+    expect(Array.isArray(dailyLogs)).toBe(true);
+    expect(dailyLogs).toHaveLength(1);
+    expect(dailyLogs[0]).toMatchObject({ overall: "no_change", source_type: "patient_reported" });
   });
 
   test("an export re-imports as merge, and the danger zone wipes everything after double confirm", async ({ page }) => {
@@ -76,37 +104,49 @@ test.describe("settings — the record's control room", () => {
     const errors = collectErrors(page);
     await asReturningUser(page);
     await page.getByRole("button", { name: /nothing different today/i }).click();
+    await todaySaved(page);
     await page.goto("/#/settings");
 
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: /export everything/i }).click();
     const file = await download;
-    const bytes = fs.readFileSync(await file.path());
+    const path = await file.path();
+    expect(path).toBeTruthy();
+    const bytes = fs.readFileSync(path!);
+    expect(JSON.parse(bytes.toString("utf8")).data.dailyLogs).toHaveLength(1);
+    await expect(page.getByRole("status")).toContainText("Export downloaded");
 
-    // Wipe the record (arm + confirm inside the window).
-    await page.getByRole("button", { name: /delete all records permanently/i }).dblclick();
-    await page.waitForTimeout(1500); // the app reloads itself after the wipe
+    // Arming deletion must not wipe anything before the second confirmation.
+    await page.getByRole("button", { name: /delete all records permanently/i }).click();
+    await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Delete absolutely everything on this device?", exact: true }).click();
+    await expect(page.getByRole("button", { name: /skip setup/i })).toBeVisible();
     await page.getByRole("button", { name: /skip setup/i }).click();
+    await settingsSaved(page, { onboarded: true });
+
+    await page.goto("/#/timeline");
+    await page.getByRole("button", { name: "Everything" }).click();
+    await page.getByRole("button", { name: "All time" }).click();
+    await expect(page.getByText("Nothing on the timeline for this view.", { exact: true })).toBeVisible();
 
     // The empty record says so; then import the archive back.
     await page.goto("/#/settings");
+    await expect(page.getByText("This record has never been exported. It holds 0 records.", { exact: true })).toBeVisible();
     await page.locator('input[type="file"]').first().setInputFiles({
       name: "afterlight-export.json", mimeType: "application/json", buffer: bytes,
     });
-    await page.waitForTimeout(800);
+    // The import preview modal must appear and offer the merge — a silent read is a defect.
     const merge = page.getByRole("button", { name: /merge into my record/i });
-    if (await merge.isVisible().catch(() => false)) {
-      await merge.click();
-        // The app reloads itself ~1.2s after importing; wait it out.
-      await page.waitForTimeout(3000);
-      await page.reload(); // settle the app's own post-merge reload before navigating
-      await page.waitForTimeout(800);
-      await page.evaluate(() => { location.hash = "#/timeline"; });
-      await page.waitForTimeout(400);
-      await page.getByRole("button", { name: "Everything" }).click();
-      await page.getByRole("button", { name: "All time" }).click();
-      await expect(page.getByText(/no change today/i).first()).toBeVisible();
-    }
+    await expect(merge).toBeVisible();
+    const reloaded = page.waitForEvent("load");
+    await merge.click();
+    await expect(page.getByRole("status")).toContainText("Import complete — 1 added");
+    await reloaded;
+    await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+    await page.goto("/#/timeline");
+    await page.getByRole("button", { name: "Everything" }).click();
+    await page.getByRole("button", { name: "All time" }).click();
+    await expect(page.getByText(/no change today/i).first()).toBeVisible();
     expect(errors).toEqual([]);
   });
 

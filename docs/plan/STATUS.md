@@ -31,6 +31,25 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-09-23** — Existing-feature reliability and usability pass finished. Fixed committed-write
+  visibility and reload behavior, made Today’s timeline action show the saved observations (including
+  older entries), prevented 3D drag/cancel from selecting anatomy, hid fullscreen where unsupported,
+  and raised form inputs to the 44px target. `npm run verify`: 591 tests passed; focused desktop and
+  mobile journeys: 82 passed, 2 expected skips; the My Eyes, checks, imaging, palette and Visualize
+  run recorded 41 passes and 7 skips. Its two initial failures were the Amsler test clicking below
+  the viewport instead of drawing; after fixing the test to scroll and drag, all 6 self-check runs
+  passed across desktop and mobile. Handoff, phone-shell, offline, release, onboarding and drawing
+  journeys recorded 49 passes and 5 expected skips; PDF/share/print assertions passed on both
+  projects. The complete isolated desktop 3D engine file passed 8/8 in 5.3 minutes, including the
+  standalone explorer offline check. All nine desktop route-control sweeps and the mobile shell
+  sweep later passed when run separately. The combined 224-test run was interrupted after 10.8
+  minutes, and physical-device, full screen-reader and print review remain open. No new feature,
+  release, or clinical-review change.
+
+- **2026-09-23** — Existing-feature reliability and usability pass started at the user’s request. No new features. Preserve current uncommitted persistence and verification work; rerun the gate and browser journeys, fix observed interaction defects, and record remaining limits.
+
+- **2026-09-17** — Isolated desktop `e2e/engine.spec.ts` test “inspects structures from the accessible list and resets” passed (1 test, 36.8s) with `--output=/tmp/verified-out --trace=retain-on-failure`; `.last-run.json` records success and no trace ZIP is retained on a pass by design; the prior trace-archive ENOENT is consistent with a harness file-race during overlapping runs, not an app assertion failure, but the precise cause is not proven; the full-suite rerun was stopped and whole-app verification remains partial.
+
 - **2026-09-13** — **Phase 16 done, one capture-tooling gap recorded.** The cutaway defect
   from the earlier phases was real and is fixed at the source: the muscle cone's annulus sat
   10 mm nasal (disc direction ≠ orbital apex), so the lateral rectus crossed the vitreous and

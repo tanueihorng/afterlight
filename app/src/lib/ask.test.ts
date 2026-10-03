@@ -147,6 +147,13 @@ describe("askRecords — prescriptions", () => {
 });
 
 describe("askRecords — measurements", () => {
+  it("does not answer with an unchecked document value", () => {
+    const data = anAllData({ measurements: [aMeasurement({
+      kind: "iop", value: "14.6", source_type: "document_extracted", confirmed: false,
+    })] });
+    expect(askRecords(data, "What is my eye pressure?").lines).toEqual([NOT_FOUND]);
+  });
+
   it("lists pressures most recent first", () => {
     const data = anAllData({
       measurements: [
@@ -332,5 +339,25 @@ describe("askRecords — never invents", () => {
         }
       }
     }
+  });
+});
+
+describe("askRecords — keyword fallback", () => {
+  const data = anAllData({ diagnoses: [aDiagnosis({ name: "Lattice degeneration" })] });
+
+  it("finds a record when the question is phrased as a question, not just keywords", () => {
+    for (const q of [
+      "What do I have recorded about lattice degeneration?",
+      "Is there anything about lattice?",
+      "lattice degeneration",
+    ]) {
+      const a = askRecords(data, q);
+      expect(a.found, q).toBe(true);
+      expect(a.lines.join(" "), q).toMatch(/Lattice degeneration/);
+    }
+  });
+
+  it("does not find anything when the question has no subject left to search for", () => {
+    expect(askRecords(data, "What do I have recorded?").found).toBe(false);
   });
 });

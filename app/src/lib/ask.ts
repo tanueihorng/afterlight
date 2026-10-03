@@ -381,6 +381,7 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
   if (/(pressure|iop|acuity|thickness|measurement)/.test(q)) {
     const kind = /pressure|iop/.test(q) ? "iop" : /acuity/.test(q) ? "visual_acuity" : /thickness|cct/.test(q) ? "cct" : undefined;
     const list = data.measurements
+      .filter((m) => m.source_type !== "document_extracted" || m.confirmed === true)
       .filter((m) => (kind ? m.kind === kind : true))
       .filter((m) => (eye ? m.eye === eye || m.eye === "both" : true))
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -420,7 +421,11 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
   }
 
   // ---- Fallback: keyword search over the whole record ----------------------
-  const hits = searchRecords(data, rawQuestion, 8);
+  // Search wants every word to match, so the question's own words ("what do I have recorded
+  // about…") are dropped first and only the subject is searched for.
+  const keywords = questionKeywords(rawQuestion);
+  if (!keywords) return notFound("Keyword search across all records");
+  const hits = searchRecords(data, keywords, 8);
   if (!hits.length) return notFound("Keyword search across all records");
   return {
     lines: [
@@ -434,6 +439,26 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     found: true,
     interpretation: "Keyword search across all records",
   };
+}
+
+/** Words that shape a question rather than name what it is about. */
+const QUESTION_WORDS = new Set(
+  (
+    "what whats when where which who whom why how do does did done i me my mine we our you your " +
+    "have has had is are was were be been am can could would should will please tell show find " +
+    "give list see anything something everything any all about on in of for to from with at a an " +
+    "the this that these those there it its recorded record records stored saved written down " +
+    "wrote noted note notes mention mentioned mentions say says said know"
+  ).split(" "),
+);
+
+/** The subject of a question, for the keyword fallback: "what do I have about X?" → "X". */
+export function questionKeywords(rawQuestion: string): string {
+  return rawQuestion
+    .toLowerCase()
+    .split(/[^a-z0-9/+.-]+/)
+    .filter((w) => w && !QUESTION_WORDS.has(w))
+    .join(" ");
 }
 
 /* --------------------------------------------------------- intent grammar */
