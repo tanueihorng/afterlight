@@ -62,7 +62,12 @@ export const EN = {
   "charts.elsewhere":
     "This page shows generic illustrations, not your eye. Charts of the numbers in your own record are on My Eyes.",
   "charts.empty":
-    "No measurements are recorded yet. Once you add one with “+ Measurement” above, it is charted here with its date and how it was taken.",
+    "No measurements or prescriptions are recorded yet. Once you add one with “+ Measurement” above or “+ Add prescription” below, it is charted here with its date and how it was taken.",
+  "charts.rx_title": "Glasses and contact prescriptions",
+  "charts.rx_intro":
+    "Sphere and cylinder from each prescription, in dioptres, as written. Axis is listed in the table below rather than charted, because it is an angle that wraps round at 180°.",
+  "charts.rx_mixed_cylinder":
+    "Some of these cylinders are written as plus and some as minus. They are plotted as written; the same lens can be written either way, so ask your optometrist how they compare.",
   "eye.preparing": "Preparing the 3D view…",
 
   "nav.today": "Today",

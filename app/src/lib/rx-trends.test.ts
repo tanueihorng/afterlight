@@ -1,0 +1,67 @@
+import { describe, expect, it } from "vitest";
+import {
+  allPrescriptionSeries,
+  describe as describeSeries,
+  mixesCylinderForms,
+  prescriptionSeries,
+  signedDioptres,
+} from "./trends";
+import { anAllData, aPrescription } from "../test/factories";
+
+const history = [
+  aPrescription({ date: "2024-03-01", right_eye: { sphere: -1.5, cylinder: -0.5, axis: 175 }, left_eye: { sphere: -1.25 } }),
+  aPrescription({ date: "2019-05-12", right_eye: { sphere: -0.75, cylinder: -0.25, axis: 5 }, left_eye: {} }),
+  aPrescription({ date: "2026-08-20", right_eye: { sphere: 0.5 }, left_eye: { sphere: -2 } }),
+];
+
+describe("prescription series", () => {
+  it("charts each eye separately, oldest first, signed as written", () => {
+    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right");
+    expect(right.points.map((p) => [p.date, p.raw])).toEqual([
+      ["2019-05-12", "-0.75"],
+      ["2024-03-01", "-1.50"],
+      ["2026-08-20", "+0.50"],
+    ]);
+    const left = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "left");
+    expect(left.points.map((p) => p.value)).toEqual([-1.25, -2]);
+    expect(left.eye).toBe("left");
+  });
+
+  it("leaves out what was not written, rather than plotting it as zero", () => {
+    const cyl = prescriptionSeries(anAllData({ prescriptions: history }), "cylinder", "left");
+    expect(cyl.points).toEqual([]);
+    const kinds = allPrescriptionSeries(anAllData({ prescriptions: history })).map(
+      (s) => `${s.kind}-${s.eye}`,
+    );
+    expect(kinds).toEqual(["rx_sphere-right", "rx_sphere-left", "rx_cylinder-right"]);
+  });
+
+  it("never charts axis", () => {
+    const all = allPrescriptionSeries(anAllData({ prescriptions: history }));
+    expect(all.some((s) => /axis/i.test(s.label) || /axis/.test(s.kind))).toBe(false);
+  });
+
+  it("is described in numbers only", () => {
+    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right");
+    const text = [describeSeries(right).summary, ...describeSeries(right).notes].join(" ");
+    expect(text).toMatch(/3 readings from/);
+    expect(text).not.toMatch(/worse|better|improv|declin|stable|normal/i);
+  });
+
+  it("notices when plus and minus cylinders are mixed", () => {
+    const mixed = anAllData({
+      prescriptions: [
+        aPrescription({ date: "2020-01-01", right_eye: { cylinder: -1 } }),
+        aPrescription({ date: "2022-01-01", right_eye: { cylinder: 1 } }),
+      ],
+    });
+    expect(mixesCylinderForms(prescriptionSeries(mixed, "cylinder", "right"))).toBe(true);
+    expect(mixesCylinderForms(prescriptionSeries(anAllData({ prescriptions: history }), "cylinder", "right"))).toBe(false);
+  });
+
+  it("signs dioptres the way a prescription does", () => {
+    expect(signedDioptres(1.25)).toBe("+1.25");
+    expect(signedDioptres(-0.5)).toBe("-0.50");
+    expect(signedDioptres(0)).toBe("0.00");
+  });
+});

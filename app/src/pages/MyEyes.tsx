@@ -7,12 +7,13 @@ import {
   type Eye,
   type Measurement,
   type Medication,
+  type Prescription,
   type Procedure,
   MODALITY_LABELS,
 } from "../lib/models";
 import { ConfirmButton, Field, Modal, NeedsCheckingBadge, PageHeader, ProvenanceBadge, StatusBadge } from "../components/ui";
 import Trends from "../components/Trends";
-import { formatDate, isoToDateOnly, todayLocal } from "../lib/util";
+import { formatDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
 import { t } from "../lib/i18n";
 import { routeParams } from "../lib/router";
 
@@ -22,6 +23,7 @@ type ModalKind = "baseline" | "diagnosis" | "procedure" | "medication" | "measur
 export default function MyEyes() {
   const [modal, setModal] = useState<ModalKind>(null);
   const [editEye, setEditEye] = useState<EyeSide>("right");
+  const [editRx, setEditRx] = useState<Prescription | undefined>(undefined);
   const wantsCharts = routeParams()[0] === "trends";
 
   // `#/my-eyes/trends` lands on the charts, which otherwise sit below both eye profiles.
@@ -55,13 +57,24 @@ export default function MyEyes() {
         <EyeProfile eye="left" onEditBaseline={() => { setEditEye("left"); setModal("baseline"); }} onAdd={(k) => setModal(k)} />
       </div>
       <Trends />
-      <PrescriptionsCard onAdd={() => setModal("prescription")} />
+      <PrescriptionsCard
+        onAdd={() => {
+          setEditRx(undefined);
+          setModal("prescription");
+        }}
+        onEdit={(rx) => {
+          setEditRx(rx);
+          setModal("prescription");
+        }}
+      />
       {modal === "baseline" && <BaselineModal eye={editEye} onClose={() => setModal(null)} />}
       {modal === "diagnosis" && <DiagnosisModal onClose={() => setModal(null)} />}
       {modal === "procedure" && <ProcedureModal onClose={() => setModal(null)} />}
       {modal === "medication" && <MedicationModal onClose={() => setModal(null)} />}
       {modal === "measurement" && <MeasurementModal onClose={() => setModal(null)} />}
-      {modal === "prescription" && <PrescriptionModal onClose={() => setModal(null)} />}
+      {modal === "prescription" && (
+        <PrescriptionModal existing={editRx} onClose={() => setModal(null)} />
+      )}
     </>
   );
 }
@@ -262,7 +275,13 @@ function daysBack(n: number): string {
 
 /* ---------------- prescriptions card ---------------- */
 
-function PrescriptionsCard({ onAdd }: { onAdd: () => void }) {
+function PrescriptionsCard({
+  onAdd,
+  onEdit,
+}: {
+  onAdd: () => void;
+  onEdit: (rx: Prescription) => void;
+}) {
   const store = useStore();
   const list = [...store.prescriptions.list].sort((a, b) => (a.date < b.date ? 1 : -1));
   return (
@@ -297,7 +316,17 @@ function PrescriptionsCard({ onAdd }: { onAdd: () => void }) {
                   <td className="mono">{fmtRx(p.left_eye)}</td>
                   <td>{p.provider ?? "—"}</td>
                   <td>
-                    <ConfirmButton label="Delete" onConfirm={() => store.prescriptions.del(p.id)} className="btn danger" />
+                    <div className="btn-row" style={{ flexWrap: "nowrap" }}>
+                      <button
+                        className="btn subtle"
+                        style={{ minHeight: "var(--target)" }}
+                        onClick={() => onEdit(p)}
+                        aria-label={`Edit the prescription from ${formatDate(p.date)}`}
+                      >
+                        Edit
+                      </button>
+                      <ConfirmButton label="Delete" onConfirm={() => store.prescriptions.del(p.id)} className="btn danger" />
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -614,17 +643,27 @@ function MeasurementModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function PrescriptionModal({ onClose }: { onClose: () => void }) {
+function PrescriptionModal({ existing, onClose }: { existing?: Prescription; onClose: () => void }) {
   const store = useStore();
   const num = (v: string) => (v === "" ? undefined : Number(v));
+  const str = (v?: number) => (v == null ? "" : String(v));
   const [p, setP] = useState({
-    date: todayLocal(),
-    rs: "", rc: "", ra: "", rAcuity: "",
-    ls: "", lc: "", la: "", lAcuity: "",
-    provider: "",
+    date: existing?.date ?? todayLocal(),
+    rs: str(existing?.right_eye.sphere),
+    rc: str(existing?.right_eye.cylinder),
+    ra: str(existing?.right_eye.axis),
+    rAcuity: existing?.right_eye.acuity ?? "",
+    ls: str(existing?.left_eye.sphere),
+    lc: str(existing?.left_eye.cylinder),
+    la: str(existing?.left_eye.axis),
+    lAcuity: existing?.left_eye.acuity ?? "",
+    provider: existing?.provider ?? "",
   });
   return (
-    <Modal title="Add glasses / contact prescription" onClose={onClose}>
+    <Modal
+      title={existing ? "Edit glasses / contact prescription" : "Add glasses / contact prescription"}
+      onClose={onClose}
+    >
       <Field label="Date"><input type="date" value={p.date} onChange={(e) => setP({ ...p, date: e.target.value })} /></Field>
       <div className="grid-2">
         <div>
@@ -648,12 +687,16 @@ function PrescriptionModal({ onClose }: { onClose: () => void }) {
         <button
           className="btn primary"
           onClick={async () => {
-            const rec = newRecord({
+            const fields = {
               date: p.date,
               right_eye: { sphere: num(p.rs), cylinder: num(p.rc), axis: num(p.ra), acuity: p.rAcuity || undefined },
               left_eye: { sphere: num(p.ls), cylinder: num(p.lc), axis: num(p.la), acuity: p.lAcuity || undefined },
               provider: p.provider || undefined,
-            });
+            };
+            // An edit keeps the record's identity, creation time, notes and demo flag.
+            const rec: Prescription = existing
+              ? { ...existing, ...fields, updated_at: nowISO() }
+              : newRecord(fields);
             await store.prescriptions.put(rec);
             onClose();
           }}

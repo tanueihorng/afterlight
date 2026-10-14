@@ -28,8 +28,11 @@ export interface SeriesPoint {
   numeric: boolean;
 }
 
+/** Prescription components are charted alongside measurements but are not measurement kinds. */
+export type RxComponent = "sphere" | "cylinder";
+
 export interface Series {
-  kind: MeasurementKind;
+  kind: MeasurementKind | `rx_${RxComponent}`;
   label: string;
   eye: Eye;
   unit?: string;
@@ -103,6 +106,72 @@ export function allSeries(data: AllData, eyes: Eye[] = ["right", "left"]): Serie
     }
   }
   return out;
+}
+
+/** Signed the way a prescription is written, so "+1.25" never reads as "1.25". */
+export function signedDioptres(value: number): string {
+  const fixed = value.toFixed(2);
+  return value > 0 ? `+${fixed}` : fixed;
+}
+
+const RX_LABELS: Record<RxComponent, string> = {
+  sphere: "Glasses prescription — sphere",
+  cylinder: "Glasses prescription — cylinder",
+};
+
+/**
+ * One component of the glasses and contact prescriptions for one eye, oldest first.
+ *
+ * Axis is deliberately not offered: it is an angle that wraps at 180°, so 175° and 5° are nearly
+ * the same and a line between them would draw a change that is not there.
+ */
+export function prescriptionSeries(
+  data: AllData,
+  component: RxComponent,
+  eye: "right" | "left",
+): Series {
+  const rows = select(data, "prescriptions").order("asc").all();
+  const points: SeriesPoint[] = [];
+  for (const row of rows) {
+    const value = (eye === "right" ? row.right_eye : row.left_eye)?.[component];
+    if (value == null || !Number.isFinite(value)) continue;
+    points.push({
+      date: isoToDateOnly(row.date),
+      value,
+      raw: signedDioptres(value),
+      unit: "D",
+      source: "clinician_reported",
+      provenance: "clinic",
+      method: "from a written prescription",
+      numeric: true,
+    });
+  }
+  return {
+    kind: `rx_${component}`,
+    label: RX_LABELS[component],
+    eye,
+    unit: "D",
+    points,
+    invertForDisplay: false,
+  };
+}
+
+/** Sphere and cylinder for each eye, keeping only those with something recorded. */
+export function allPrescriptionSeries(data: AllData): Series[] {
+  const out: Series[] = [];
+  for (const component of ["sphere", "cylinder"] as RxComponent[]) {
+    for (const eye of ["right", "left"] as const) {
+      const series = prescriptionSeries(data, component, eye);
+      if (series.points.length > 0) out.push(series);
+    }
+  }
+  return out;
+}
+
+/** True when a series mixes plus and minus cylinders, which are two ways of writing one lens. */
+export function mixesCylinderForms(series: Series): boolean {
+  if (series.kind !== "rx_cylinder") return false;
+  return series.points.some((p) => p.value > 0) && series.points.some((p) => p.value < 0);
 }
 
 /* ------------------------------------------------------------ describing */
