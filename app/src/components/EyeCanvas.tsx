@@ -26,6 +26,7 @@ export default function EyeCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<EyeScene | null>(null);
   const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(true);
 
   // Serialised so a new object literal with the same values does not rebuild the scene.
   // Appearance changes retune materials in place; the scene is built once per mount.
@@ -59,6 +60,11 @@ export default function EyeCanvas({
     }
 
     sceneRef.current = scene;
+    let live = true;
+    setPreparing(true);
+    void Promise.resolve(scene.ready).then(() => {
+      if (live) setPreparing(false);
+    });
     // diagnostics hook: e2e resource tests read renderer.info through it (no page API surface)
     (window as unknown as { __eyeScene?: EyeScene }).__eyeScene = scene;
     scene.onContextLoss(() =>
@@ -133,6 +139,7 @@ export default function EyeCanvas({
     else scene.start();
 
     return () => {
+      live = false;
       delete (window as unknown as { __eyeScene?: EyeScene }).__eyeScene;
       observer.disconnect();
       canvas.removeEventListener("pointerdown", onDown);
@@ -227,6 +234,11 @@ export default function EyeCanvas({
         role="img"
         aria-label={`${GENERIC_MODEL_BOUNDARY} Drag, or use the arrow keys, to turn it.`}
       />
+      {preparing && (
+        <p className="eye-preparing" role="status">
+          {t("eye.preparing")}
+        </p>
+      )}
       {supportsFullscreen && (
         <button
           type="button"

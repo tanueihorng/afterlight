@@ -2789,6 +2789,16 @@ a:hover {
   font-size: var(--fs-lg);
   cursor: pointer;
 }
+.eye-preparing {
+  position: absolute;
+  inset: 0 0 auto 0;
+  margin: 0;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  pointer-events: none;
+}
 .eye-full-btn:hover { color: var(--text); border-color: var(--border); }
 .eye-shell:fullscreen .eye-full-btn { position: fixed; }
 

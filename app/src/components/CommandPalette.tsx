@@ -5,6 +5,7 @@ import { toAllData, useStore } from "../lib/store";
 import type { Route } from "../lib/router";
 import { formatDate } from "../lib/util";
 import { DemoBadge, EyeBadge, ProvenanceBadge } from "./ui";
+import { t } from "../lib/i18n";
 
 type Mode = "search" | "ask";
 
@@ -20,13 +21,35 @@ const ROUTE_LABELS: Record<Route, string> = {
   settings: "Settings",
 };
 
+/** Places people search for by what they want to see, not by a record's words. */
+const SHORTCUTS: { words: string[]; label: () => string; route: Route; params: string[] }[] = [
+  {
+    words: ["chart", "graph", "trend", "plot", "visual", "number", "measurement", "over time"],
+    label: () => t("charts.jump"),
+    route: "my-eyes",
+    params: ["trends"],
+  },
+  {
+    words: ["3d", "anatomy", "model", "explorer", "atlas", "illustration", "procedure"],
+    label: () => t("nav.visualize"),
+    route: "visualize",
+    params: [],
+  },
+];
+
+export function shortcutsFor(q: string) {
+  const query = q.trim().toLowerCase();
+  if (query.length < 2) return [];
+  return SHORTCUTS.filter((s) => s.words.some((w) => w.startsWith(query) || query.includes(w)));
+}
+
 export default function CommandPalette({
   onClose,
   onNavigate,
   initialMode = "search",
 }: {
   onClose: () => void;
-  onNavigate: (r: Route) => void;
+  onNavigate: (r: Route, ...params: string[]) => void;
   initialMode?: Mode;
 }) {
   const store = useStore();
@@ -68,8 +91,8 @@ export default function CommandPalette({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, mode, hits.length]);
 
-  const go = (r: Route) => {
-    onNavigate(r);
+  const go = (r: Route, ...params: string[]) => {
+    onNavigate(r, ...params);
     onClose();
   };
 
@@ -119,6 +142,10 @@ export default function CommandPalette({
             e.preventDefault();
             if (mode === "ask") submitAsk();
             else if (hits[cursor]) go(hits[cursor].route);
+            else {
+              const shortcut = shortcutsFor(q)[0];
+              if (shortcut) go(shortcut.route, ...shortcut.params);
+            }
           }}
         >
           <span className="palette-icon" aria-hidden>
@@ -157,7 +184,23 @@ export default function CommandPalette({
 
         <div className="palette-body">
           {mode === "search" ? (
-            <SearchResults hits={hits} q={q} cursor={cursor} onGo={go} />
+            <>
+              {shortcutsFor(q).map((s) => (
+                <button
+                  key={s.route}
+                  className="palette-result"
+                  onClick={() => go(s.route, ...s.params)}
+                >
+                  <span className="palette-result-main">
+                    <span className="palette-result-title">{s.label()}</span>
+                  </span>
+                  <span className="palette-result-meta">
+                    <span className="muted">→ {ROUTE_LABELS[s.route]}</span>
+                  </span>
+                </button>
+              ))}
+              <SearchResults hits={hits} q={q} cursor={cursor} onGo={go} />
+            </>
           ) : (
             <AskPanel asked={asked} onExample={(t) => { setQ(t); setAsked({ question: t, answer: askRecords(data, t) }); }} onGo={go} />
           )}

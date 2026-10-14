@@ -55,6 +55,16 @@ export const EN = {
   "app.more": "More",
   "app.opening": "Opening…",
 
+  /* ------------------------------------------------------- record charts */
+
+  "charts.title": "Recorded numbers over time",
+  "charts.jump": "Charts of my recorded numbers",
+  "charts.elsewhere":
+    "This page shows generic illustrations, not your eye. Charts of the numbers in your own record are on My Eyes.",
+  "charts.empty":
+    "No measurements are recorded yet. Once you add one with “+ Measurement” above, it is charted here with its date and how it was taken.",
+  "eye.preparing": "Preparing the 3D view…",
+
   "nav.today": "Today",
   "nav.what_i_see": "What I See",
   "nav.timeline": "Timeline",

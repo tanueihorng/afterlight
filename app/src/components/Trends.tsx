@@ -3,6 +3,7 @@ import Chart from "./Chart";
 import { allSeries, describe } from "../lib/trends";
 import { toAllData, useStore } from "../lib/store";
 import { EyeBadge } from "./ui";
+import { t } from "../lib/i18n";
 
 /**
  * Recorded numbers over time, described and not judged.
@@ -14,11 +15,26 @@ export default function Trends() {
   const store = useStore();
   const series = useMemo(() => allSeries(toAllData(store)), [store]);
 
-  if (series.length === 0) return null;
+  // An empty record still gets the section, so someone looking for their charts finds where they
+  // will be rather than nothing at all.
+  if (series.length === 0) {
+    return (
+      <section className="card" id="trends" tabIndex={-1} aria-labelledby="trends-title">
+        <h2 className="card-title" id="trends-title">
+          {t("charts.title")}
+        </h2>
+        <p className="muted" style={{ margin: 0 }}>
+          {t("charts.empty")}
+        </p>
+      </section>
+    );
+  }
 
   return (
-    <section className="card">
-      <h2 className="card-title">Recorded numbers over time</h2>
+    <section className="card" id="trends" tabIndex={-1} aria-labelledby="trends-title">
+      <h2 className="card-title" id="trends-title">
+        {t("charts.title")}
+      </h2>
       <p className="muted" style={{ marginTop: 0 }}>
         Values as they were recorded, with how each was taken. Afterlight does not interpret these
         or say whether a change matters — that is for your clinician.

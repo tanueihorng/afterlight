@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore, newRecord } from "../lib/store";
 import {
   EYE_LABELS,
@@ -14,6 +14,7 @@ import { ConfirmButton, Field, Modal, NeedsCheckingBadge, PageHeader, Provenance
 import Trends from "../components/Trends";
 import { formatDate, isoToDateOnly, todayLocal } from "../lib/util";
 import { t } from "../lib/i18n";
+import { routeParams } from "../lib/router";
 
 type EyeSide = "right" | "left";
 type ModalKind = "baseline" | "diagnosis" | "procedure" | "medication" | "measurement" | "prescription" | null;
@@ -21,12 +22,33 @@ type ModalKind = "baseline" | "diagnosis" | "procedure" | "medication" | "measur
 export default function MyEyes() {
   const [modal, setModal] = useState<ModalKind>(null);
   const [editEye, setEditEye] = useState<EyeSide>("right");
+  const wantsCharts = routeParams()[0] === "trends";
+
+  // `#/my-eyes/trends` lands on the charts, which otherwise sit below both eye profiles.
+  useEffect(() => {
+    // Arriving from another page: jump, since a smooth scroll is cut short while the page settles.
+    if (wantsCharts) showCharts(false);
+  }, [wantsCharts]);
 
   return (
     <>
       <PageHeader
         title="My Eyes"
         sub="A longitudinal profile for each eye: your baseline, what clinicians documented, and what treatment happened. Missing values are shown as “Not recorded” — never as normal."
+        actions={
+          <a
+            className="btn subtle no-print"
+            href="#/my-eyes/trends"
+            style={{ minHeight: "var(--target)" }}
+            onClick={(e) => {
+              // Same hash already in the bar would not fire hashchange, so scroll directly.
+              e.preventDefault();
+              showCharts();
+            }}
+          >
+            {t("charts.jump")}
+          </a>
+        }
       />
       <div className="grid-2">
         <EyeProfile eye="right" onEditBaseline={() => { setEditEye("right"); setModal("baseline"); }} onAdd={(k) => setModal(k)} />
@@ -42,6 +64,14 @@ export default function MyEyes() {
       {modal === "prescription" && <PrescriptionModal onClose={() => setModal(null)} />}
     </>
   );
+}
+
+function showCharts(smooth = true) {
+  const section = document.getElementById("trends");
+  if (!section) return;
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  section.scrollIntoView?.({ behavior: smooth && !reduce ? "smooth" : "auto", block: "start" });
+  section.focus({ preventScroll: true });
 }
 
 /* ---------------- profile column ---------------- */

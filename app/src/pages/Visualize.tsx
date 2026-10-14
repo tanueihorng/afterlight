@@ -13,6 +13,7 @@ import EyeStudio from "../components/EyeStudio";
 import Atlas from "../components/Atlas";
 import { routeParams, useHashRoute } from "../lib/router";
 import { formatDate } from "../lib/util";
+import { t } from "../lib/i18n";
 
 type Tab = "eye" | "explorer" | "retina" | "procedures" | "atlas";
 
@@ -36,6 +37,18 @@ export default function Visualize() {
         title="Visualize"
         sub="Generic, educational illustrations of eye anatomy, retinal conditions and the procedures used to treat them — to help you follow what your clinician describes."
       />
+
+      {/* People come here looking for pictures of their own record; say plainly where those are. */}
+      <div className="card no-print" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <p style={{ margin: 0, flex: "1 1 260px" }}>{t("charts.elsewhere")}</p>
+        <button
+          className="btn"
+          style={{ minHeight: "var(--target)" }}
+          onClick={() => nav("my-eyes", "trends")}
+        >
+          {t("charts.jump")}
+        </button>
+      </div>
 
       <div className="btn-row no-print" style={{ marginBottom: 16 }}>
         {TABS.map((t) => (
