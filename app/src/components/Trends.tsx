@@ -61,7 +61,7 @@ export default function Trends() {
             {t("charts.rx_intro")}
           </p>
           {rx.map((s) => (
-            <SeriesBlock key={`${s.kind}-${s.eye}`} series={s} />
+            <SeriesBlock key={`${s.lens}-${s.kind}-${s.eye}`} series={s} />
           ))}
         </>
       )}

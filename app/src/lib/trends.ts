@@ -10,7 +10,7 @@
 import type { AllData } from "./db";
 import { acuityForms } from "./acuity";
 import { select } from "./query";
-import type { Eye, MeasurementKind, SourceType } from "./models";
+import type { Eye, LensType, MeasurementKind, SourceType } from "./models";
 import { MEASUREMENT_LABELS, METHOD_LABELS } from "./models";
 import { formatDate, isoToDateOnly } from "./util";
 
@@ -48,6 +48,8 @@ export interface Series {
    * of one lens differ in both sphere and cylinder. The arithmetic notes are then left out.
    */
   mixedCylinderForms?: boolean;
+  /** For prescriptions: glasses and contact lenses are separate series, never one line. */
+  lens?: LensType;
 }
 
 /** logMAR runs the opposite way to how people read acuity, so the axis is flipped for display. */
@@ -123,11 +125,12 @@ export function signedDioptres(value: number): string {
   return value > 0 ? `+${fixed}` : fixed;
 }
 
-// The record does not say whether a prescription is for glasses or contact lenses, so neither is
-// claimed here.
-const RX_LABELS: Record<RxComponent, string> = {
-  sphere: "Prescription — sphere",
-  cylinder: "Prescription — cylinder",
+const RX_COMPONENT: Record<RxComponent, string> = { sphere: "sphere", cylinder: "cylinder" };
+
+const RX_LENS: Record<LensType, string> = {
+  glasses: "Glasses",
+  contact_lenses: "Contact lenses",
+  not_recorded: "Prescription, type not recorded",
 };
 
 const RX_NOUN = { one: "entry", many: "entries" };
@@ -142,8 +145,12 @@ export function prescriptionSeries(
   data: AllData,
   component: RxComponent,
   eye: "right" | "left",
+  lens: LensType,
 ): Series {
-  const rows = select(data, "prescriptions").order("asc").all();
+  const rows = select(data, "prescriptions")
+    .where((row) => (row.lens ?? "not_recorded") === lens)
+    .order("asc")
+    .all();
   const cylinders = rows
     .map((row) => (eye === "right" ? row.right_eye : row.left_eye)?.cylinder)
     .filter((c): c is number => c != null && Number.isFinite(c));
@@ -167,23 +174,26 @@ export function prescriptionSeries(
   }
   return {
     kind: `rx_${component}`,
-    label: RX_LABELS[component],
+    label: `${RX_LENS[lens]} — ${RX_COMPONENT[component]}`,
     eye,
     unit: "D",
     points,
     invertForDisplay: false,
     noun: RX_NOUN,
     mixedCylinderForms,
+    lens,
   };
 }
 
-/** Sphere and cylinder for each eye, keeping only those with something recorded. */
+/** Sphere and cylinder for each lens type and eye, keeping only those with something recorded. */
 export function allPrescriptionSeries(data: AllData): Series[] {
   const out: Series[] = [];
-  for (const component of ["sphere", "cylinder"] as RxComponent[]) {
-    for (const eye of ["right", "left"] as const) {
-      const series = prescriptionSeries(data, component, eye);
-      if (series.points.length > 0) out.push(series);
+  for (const lens of ["glasses", "contact_lenses", "not_recorded"] as LensType[]) {
+    for (const component of ["sphere", "cylinder"] as RxComponent[]) {
+      for (const eye of ["right", "left"] as const) {
+        const series = prescriptionSeries(data, component, eye, lens);
+        if (series.points.length > 0) out.push(series);
+      }
     }
   }
   return out;

@@ -67,11 +67,11 @@ export default function Chart({ series, height = 160 }: { series: Series; height
         {/* Two gridlines only: the extremes, labelled. Anything more is noise.
             Labelled with the value as it was written — "20/200", not the logMAR the axis uses,
             which means nothing to the person whose record this is. */}
-        {[min, max].map((value, i) => {
+        {(min === max ? [min] : [min, max]).map((value, i) => {
           const yy = pad.top + (series.invertForDisplay === (i === 0) ? 0 : height - pad.top - pad.bottom);
           const label = points.find((p) => p.value === value)?.raw ?? String(value);
           return (
-            <g key={value}>
+            <g key={i}>
               <line x1={pad.left} x2={width - pad.right} y1={yy} y2={yy} stroke="var(--border-soft)" />
               <text x={4} y={yy + 4} fontSize="11" fill="var(--text-3)">
                 {label}

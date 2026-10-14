@@ -11,7 +11,7 @@ import {
 import { EMPTY_DATA, dbDelete, dbPatch, dbPut, loadMigrated, type AllData } from "./db";
 import { indexesOf, type RecordIndexes } from "./indexes";
 import type { AppMeta, EyeBaseline, StoredFile, SymptomEntry, TimelineEvent } from "./models";
-import { MEASUREMENT_LABELS, MODALITY_LABELS, SELF_TEST_LABELS } from "./models";
+import { LENS_LABELS, MEASUREMENT_LABELS, MODALITY_LABELS, SELF_TEST_LABELS } from "./models";
 import { isoToDateOnly, nowISO, todayLocal } from "./util";
 
 export type EntityLists = AllData;
@@ -308,7 +308,7 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       entity_id: p.id,
       date_time: p.date,
       eye: "both",
-      title: "Glasses / contact prescription",
+      title: `Prescription — ${LENS_LABELS[p.lens ?? "not_recorded"]}`,
       summary: p.provider,
       source_type: "clinician_reported",
       demo: p.demo,

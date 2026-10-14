@@ -15,24 +15,28 @@ const history = [
 
 describe("prescription series", () => {
   it("charts each eye separately, oldest first, signed as written", () => {
-    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right");
+    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right", "glasses");
     expect(right.points.map((p) => [p.date, p.raw])).toEqual([
       ["2019-05-12", "-0.75"],
       ["2024-03-01", "-1.50"],
       ["2026-08-20", "+0.50"],
     ]);
-    const left = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "left");
+    const left = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "left", "glasses");
     expect(left.points.map((p) => p.value)).toEqual([-1.25, -2]);
     expect(left.eye).toBe("left");
   });
 
   it("leaves out what was not written, rather than plotting it as zero", () => {
-    const cyl = prescriptionSeries(anAllData({ prescriptions: history }), "cylinder", "left");
+    const cyl = prescriptionSeries(anAllData({ prescriptions: history }), "cylinder", "left", "glasses");
     expect(cyl.points).toEqual([]);
     const kinds = allPrescriptionSeries(anAllData({ prescriptions: history })).map(
-      (s) => `${s.kind}-${s.eye}`,
+      (s) => `${s.lens}-${s.kind}-${s.eye}`,
     );
-    expect(kinds).toEqual(["rx_sphere-right", "rx_sphere-left", "rx_cylinder-right"]);
+    expect(kinds).toEqual([
+      "glasses-rx_sphere-right",
+      "glasses-rx_sphere-left",
+      "glasses-rx_cylinder-right",
+    ]);
   });
 
   it("never charts axis", () => {
@@ -41,7 +45,7 @@ describe("prescription series", () => {
   });
 
   it("is described in numbers only", () => {
-    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right");
+    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right", "glasses");
     const text = [describeSeries(right).summary, ...describeSeries(right).notes].join(" ");
     expect(text).toMatch(/3 entries from/);
     expect(text).not.toMatch(/worse|better|improv|declin|stable|normal/i);
@@ -56,21 +60,37 @@ describe("prescription series", () => {
       ],
     });
     for (const component of ["sphere", "cylinder"] as const) {
-      const series = prescriptionSeries(mixed, component, "right");
+      const series = prescriptionSeries(mixed, component, "right", "glasses");
       expect(series.mixedCylinderForms).toBe(true);
       const notes = describeSeries(series).notes.join(" ");
       expect(notes).not.toMatch(/higher|lower|vary/);
     }
-    expect(prescriptionSeries(mixed, "sphere", "left").mixedCylinderForms).toBe(false);
+    expect(prescriptionSeries(mixed, "sphere", "left", "glasses").mixedCylinderForms).toBe(false);
   });
 
   it("says the person copied it, never that a clinic measured it", () => {
-    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right");
+    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right", "glasses");
     for (const p of right.points) {
       expect(p.source).toBe("patient_reported");
       expect(p.howLabel).toMatch(/copied by you/i);
     }
-    expect(right.label).not.toMatch(/glasses|contact/i);
+    expect(right.label).toBe("Glasses — sphere");
+  });
+
+  it("keeps glasses, contact lenses and unknown types apart, never on one line", () => {
+    const data = anAllData({
+      prescriptions: [
+        aPrescription({ date: "2020-01-01", lens: "glasses", right_eye: { sphere: -3.25 } }),
+        aPrescription({ date: "2021-01-01", lens: "contact_lenses", right_eye: { sphere: -3 } }),
+        aPrescription({ date: "2022-01-01", lens: "not_recorded", right_eye: { sphere: -3.5 } }),
+      ],
+    });
+    const right = allPrescriptionSeries(data).filter((s) => s.eye === "right" && s.kind === "rx_sphere");
+    expect(right.map((s) => [s.label, s.points.map((p) => p.value)])).toEqual([
+      ["Glasses — sphere", [-3.25]],
+      ["Contact lenses — sphere", [-3]],
+      ["Prescription, type not recorded — sphere", [-3.5]],
+    ]);
   });
 
   it("signs dioptres the way a prescription does", () => {

@@ -132,6 +132,7 @@ export function aPrescription(over: Partial<Prescription> = {}): Prescription {
   return {
     id: id("rx"),
     date: "2026-07-10",
+    lens: "glasses",
     right_eye: { sphere: -0.5, cylinder: -1, acuity: "20/25" },
     left_eye: { sphere: -3.25, cylinder: -0.5, acuity: "20/20" },
     ...stamps(),

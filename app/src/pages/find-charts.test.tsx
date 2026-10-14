@@ -102,6 +102,18 @@ describe("review fixes", () => {
     expect(within(dialog).getByRole("button", { name: /save prescription/i })).toBeDisabled();
   });
 
+  it("a new prescription cannot be saved until glasses or contact lenses is chosen", async () => {
+    await renderWithStore(<MyEyes />, {});
+    fireEvent.click(await screen.findByRole("button", { name: /add prescription/i }));
+    const dialog = await screen.findByRole("dialog", { name: /add glasses/i });
+    const save = within(dialog).getByRole("button", { name: /save prescription/i });
+    expect(save).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/glasses or contact lenses/i), {
+      target: { value: "contact_lenses" },
+    });
+    expect(save).toBeEnabled();
+  });
+
   it("an edited demo prescription is no longer demo data, so removing the demo keeps it", async () => {
     const rx = aPrescription({ demo: true, right_eye: { sphere: -1 } });
     await renderWithStore(<MyEyes />, { prescriptions: [rx] });

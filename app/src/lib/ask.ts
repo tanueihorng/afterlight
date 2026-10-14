@@ -7,7 +7,7 @@
 import type { AllData } from "./db";
 import { generateBrief } from "./brief";
 import type { Eye, SymptomEntry } from "./models";
-import { EYE_SHORT, MEASUREMENT_LABELS, SOURCE_LABELS } from "./models";
+import { EYE_SHORT, LENS_LABELS, MEASUREMENT_LABELS, SOURCE_LABELS } from "./models";
 import type { Route } from "./router";
 import { searchRecords, parseQuery } from "./search";
 import { dateOf, select, type Entity } from "./query";
@@ -280,8 +280,11 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     const rx = [...data.prescriptions].sort((a, b) => b.date.localeCompare(a.date));
     if (!rx.length) return notFound("Prescriptions");
     if (/compar|change|differ/.test(q)) {
-      if (rx.length < 2) return notFound("Comparison of the two most recent prescriptions");
-      const [now, before] = rx;
+      // Glasses and contact lens powers are written differently, so only like is compared.
+      const lens = rx[0].lens ?? "not_recorded";
+      const same = rx.filter((p) => (p.lens ?? "not_recorded") === lens);
+      if (same.length < 2) return notFound("Comparison of the two most recent prescriptions");
+      const [now, before] = same;
       const line = (label: string, a?: number, b?: number, unit = "D") => {
         if (a === undefined && b === undefined) return `${label}: not recorded.`;
         if (a === undefined || b === undefined) return `${label}: ${b ?? "—"} → ${a ?? "—"}`;
@@ -290,7 +293,7 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
       };
       return {
         lines: [
-          `Comparing ${formatDate(before.date)} with ${formatDate(now.date)}:`,
+          `Comparing ${formatDate(before.date)} with ${formatDate(now.date)} (${LENS_LABELS[lens].toLowerCase()}):`,
           `Right eye (OD) — ${line("sphere", now.right_eye.sphere, before.right_eye.sphere)}; ${line("cylinder", now.right_eye.cylinder, before.right_eye.cylinder)}; acuity ${before.right_eye.acuity ?? "—"} → ${now.right_eye.acuity ?? "—"}.`,
           `Left eye (OS) — ${line("sphere", now.left_eye.sphere, before.left_eye.sphere)}; ${line("cylinder", now.left_eye.cylinder, before.left_eye.cylinder)}; acuity ${before.left_eye.acuity ?? "—"} → ${now.left_eye.acuity ?? "—"}.`,
           "These are the recorded values only. Whether a change is clinically meaningful is for your clinician to say.",

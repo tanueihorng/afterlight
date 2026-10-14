@@ -8,8 +8,8 @@ import {
   schemaVersionOf,
   type Snapshot,
 } from "./migrations";
-import type { FloaterObject } from "./models";
-import { anAllData, aFloater, aMeasurement, aSymptom } from "../test/factories";
+import type { FloaterObject, Prescription } from "./models";
+import { anAllData, aFloater, aMeasurement, aPrescription, aSymptom } from "../test/factories";
 
 const snapshotAt = (over: Partial<Snapshot> = {}): Snapshot => ({
   data: anAllData(),
@@ -105,6 +105,22 @@ describe("migrate", () => {
     const result = migrate(snap, 4);
     expect(result.snapshot.data.measurements.map((m) => m.confirmed)).toEqual([false, true]);
     expect(snap.data.measurements.every((m) => m.confirmed === undefined)).toBe(true);
+  });
+});
+
+describe("lens type (5 → 6)", () => {
+  it("marks existing prescriptions as type not recorded, never guessing, and keeps a set type", () => {
+    const old = { ...aPrescription({ id: "rx-old" }) } as Partial<Prescription>;
+    delete old.lens;
+    const set = aPrescription({ id: "rx-set", lens: "contact_lenses" });
+    const result = migrate(
+      snapshotAt({ data: anAllData({ prescriptions: [old as Prescription, set] }) }),
+      5,
+    );
+    const byId = new Map(result.snapshot.data.prescriptions.map((p) => [p.id, p]));
+    expect(byId.get("rx-old")).toEqual({ ...old, lens: "not_recorded" });
+    expect(byId.get("rx-set")).toEqual(set);
+    expect(result.to).toBe(6);
   });
 });
 

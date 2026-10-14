@@ -7,6 +7,8 @@ import {
   type Eye,
   type Measurement,
   type Medication,
+  LENS_LABELS,
+  type LensType,
   type Prescription,
   type Procedure,
   MODALITY_LABELS,
@@ -300,6 +302,7 @@ function PrescriptionsCard({
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Type</th>
                 <th>Right (OD) SPH / CYL / AXIS</th>
                 <th>Left (OS) SPH / CYL / AXIS</th>
                 <th>Provider</th>
@@ -312,6 +315,7 @@ function PrescriptionsCard({
               {list.map((p) => (
                 <tr key={p.id}>
                   <td>{formatDate(p.date)}</td>
+                  <td>{LENS_LABELS[p.lens ?? "not_recorded"]}</td>
                   <td className="mono">{fmtRx(p.right_eye)}</td>
                   <td className="mono">{fmtRx(p.left_eye)}</td>
                   <td>{p.provider ?? "—"}</td>
@@ -649,6 +653,8 @@ function PrescriptionModal({ existing, onClose }: { existing?: Prescription; onC
   const str = (v?: number) => (v == null ? "" : String(v));
   const [p, setP] = useState({
     date: existing?.date ?? todayLocal(),
+    // A new entry starts unchosen: the type is never assumed.
+    lens: (existing?.lens ?? "") as LensType | "",
     rs: str(existing?.right_eye.sphere),
     rc: str(existing?.right_eye.cylinder),
     ra: str(existing?.right_eye.axis),
@@ -665,6 +671,16 @@ function PrescriptionModal({ existing, onClose }: { existing?: Prescription; onC
       onClose={onClose}
     >
       <Field label="Date"><input type="date" value={p.date} onChange={(e) => setP({ ...p, date: e.target.value })} /></Field>
+      <Field label="Glasses or contact lenses">
+        <select value={p.lens} onChange={(e) => setP({ ...p, lens: e.target.value as LensType | "" })}>
+          <option value="" disabled>
+            Choose one
+          </option>
+          <option value="glasses">{LENS_LABELS.glasses}</option>
+          <option value="contact_lenses">{LENS_LABELS.contact_lenses}</option>
+          <option value="not_recorded">I'm not sure</option>
+        </select>
+      </Field>
       <div className="grid-2">
         <fieldset className="plain-fieldset">
           <legend className="card-title">Right eye (OD)</legend>
@@ -687,11 +703,12 @@ function PrescriptionModal({ existing, onClose }: { existing?: Prescription; onC
         <button
           className="btn primary"
           // Without a date the entry cannot be placed on the chart, and an edit must not erase one.
-          disabled={!p.date}
+          disabled={!p.date || !p.lens}
           onClick={async () => {
-            if (!p.date) return;
+            if (!p.date || !p.lens) return;
             const fields = {
               date: p.date,
+              lens: p.lens,
               right_eye: { sphere: num(p.rs), cylinder: num(p.rc), axis: num(p.ra), acuity: p.rAcuity || undefined },
               left_eye: { sphere: num(p.ls), cylinder: num(p.lc), axis: num(p.la), acuity: p.lAcuity || undefined },
               provider: p.provider || undefined,

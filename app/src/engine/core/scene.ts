@@ -137,6 +137,7 @@ export class EyeScene {
   private sceneModel: Map<string, StructureMesh> | null = null;
   /** True until the shader programs are compiled; nothing is drawn before then. */
   private compiling = true;
+  private disposed = false;
   /** Settles once the first frame can be drawn without blocking the page. */
   readonly ready: Promise<void>;
 
@@ -196,7 +197,7 @@ export class EyeScene {
     // compileAsync lets the driver compile them in parallel; drawing waits until it has.
     const finish = () => {
       this.compiling = false;
-      if (this.renderer) this.renderOnce();
+      if (this.renderer && !this.disposed) this.renderOnce();
     };
     this.ready = this.renderer.compileAsync(this.scene, this.camera).then(finish, finish);
   }
@@ -998,10 +999,17 @@ export class EyeScene {
    * memory, so this is tested rather than assumed.
    */
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     this.stop();
     this.canvas.removeEventListener("webglcontextlost", this.handleContextLost);
     this.canvas.removeEventListener("webglcontextrestored", this.handleContextRestored);
+    // three keeps polling materials while compileAsync runs; releasing them underneath it throws.
+    if (this.compiling) void this.ready.then(() => this.release());
+    else this.release();
+  }
 
+  private release(): void {
     this.scene.traverse((object: Object3D) => {
       const mesh = object as Mesh;
       if (mesh.geometry) mesh.geometry.dispose();

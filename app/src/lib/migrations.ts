@@ -6,10 +6,10 @@
 // has been written — a schema upgrade must never be a one-way door.
 
 import type { AllData } from "./db";
-import type { AppMeta, FloaterObject, StoredFile } from "./models";
+import type { AppMeta, FloaterObject, Prescription, StoredFile } from "./models";
 
 /** Bump this whenever a migration is added. */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export interface Snapshot {
   data: AllData;
@@ -96,6 +96,22 @@ export const MIGRATIONS: Migration[] = [
           ...m,
           confirmed: m.confirmed ?? m.source_type !== "document_extracted",
         })),
+      },
+    }),
+  },
+  {
+    from: 5,
+    to: 6,
+    describe:
+      "Record whether each prescription is for glasses or contact lenses. Existing ones are marked “type not recorded” until you set it.",
+    migrate: (s) => ({
+      ...s,
+      data: {
+        ...s.data,
+        // The type was never asked, so it is not guessed from the provider or the numbers.
+        prescriptions: s.data.prescriptions.map((p: Prescription) =>
+          p.lens ? p : { ...p, lens: "not_recorded" as const },
+        ),
       },
     }),
   },

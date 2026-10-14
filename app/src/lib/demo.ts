@@ -629,6 +629,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
     newRecord({
       ...demo,
       date: ago(730),
+      lens: "glasses" as const,
       right_eye: { sphere: -0.5, cylinder: -1.0, axis: 90, acuity: "20/25" },
       left_eye: { sphere: -3.25, cylinder: -0.5, axis: 175, acuity: "20/20" },
       provider: "University Eye Hospital optometry",
@@ -637,9 +638,20 @@ export async function seedDemo(store: StoreShape): Promise<void> {
     newRecord({
       ...demo,
       date: ago(60),
+      lens: "glasses" as const,
       right_eye: { sphere: -0.25, cylinder: -0.75, axis: 95, acuity: "20/25" },
       left_eye: { sphere: -3.5, cylinder: -0.5, axis: 175, acuity: "20/20" },
       provider: "High Street Opticians",
+    }),
+    // Contact lens powers are written differently from glasses, so they chart as their own series.
+    newRecord({
+      ...demo,
+      date: ago(400),
+      lens: "contact_lenses" as const,
+      right_eye: { sphere: -0.5 },
+      left_eye: { sphere: -3.0 },
+      provider: "High Street Opticians",
+      notes: "Daily disposables for sport.",
     }),
   ];
   for (const r of rx) await store.prescriptions.put(r);
