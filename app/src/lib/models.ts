@@ -293,9 +293,20 @@ export interface Medication {
   updated_at: string;
 }
 
+/** Glasses and contact lenses are prescribed differently and are never compared as one series. */
+export type LensType = "glasses" | "contact_lenses" | "not_recorded";
+
+export const LENS_LABELS: Record<LensType, string> = {
+  glasses: "Glasses",
+  contact_lenses: "Contact lenses",
+  not_recorded: "Type not recorded",
+};
+
 export interface Prescription {
   id: string;
   date: string;
+  /** "not_recorded" for anything entered before the type was asked; never guessed. */
+  lens: LensType;
   right_eye: { sphere?: number; cylinder?: number; axis?: number; acuity?: string };
   left_eye: { sphere?: number; cylinder?: number; axis?: number; acuity?: string };
   provider?: string;

@@ -2789,6 +2789,35 @@ a:hover {
   font-size: var(--fs-lg);
   cursor: pointer;
 }
+.plain-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.plain-fieldset > legend {
+  padding: 0;
+}
+#trends {
+  /* Clears the sticky header when the charts are jumped to. */
+  scroll-margin-top: calc(var(--target) + 56px);
+}
+.eye-preparing {
+  /* Its own surface: the canvas is black until drawn, so theme text alone fails contrast. */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 2 * (var(--target) + 20px));
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  text-align: center;
+  pointer-events: none;
+}
 .eye-full-btn:hover { color: var(--text); border-color: var(--border); }
 .eye-shell:fullscreen .eye-full-btn { position: fixed; }
 

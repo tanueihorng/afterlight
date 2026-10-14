@@ -1,6 +1,7 @@
 import { useId } from "react";
 import type { Series } from "../lib/trends";
 import { formatDate } from "../lib/util";
+import { EYE_LABELS } from "../lib/models";
 
 /**
  * A small series chart, and the same data as a table.
@@ -58,18 +59,19 @@ export default function Chart({ series, height = 160 }: { series: Series; height
         aria-describedby={`${id}-table`}
       >
         <title id={`${id}-title`}>
-          {series.label}, {series.points.length} readings from {formatDate(points[0].date)} to{" "}
+          {series.label}, {EYE_LABELS[series.eye]}, {series.points.length}{" "}
+          {series.noun?.many ?? "readings"} from {formatDate(points[0].date)} to{" "}
           {formatDate(points[points.length - 1].date)}
         </title>
 
         {/* Two gridlines only: the extremes, labelled. Anything more is noise.
             Labelled with the value as it was written — "20/200", not the logMAR the axis uses,
             which means nothing to the person whose record this is. */}
-        {[min, max].map((value, i) => {
+        {(min === max ? [min] : [min, max]).map((value, i) => {
           const yy = pad.top + (series.invertForDisplay === (i === 0) ? 0 : height - pad.top - pad.bottom);
           const label = points.find((p) => p.value === value)?.raw ?? String(value);
           return (
-            <g key={value}>
+            <g key={i}>
               <line x1={pad.left} x2={width - pad.right} y1={yy} y2={yy} stroke="var(--border-soft)" />
               <text x={4} y={yy + 4} fontSize="11" fill="var(--text-3)">
                 {label}
@@ -119,7 +121,7 @@ export default function Chart({ series, height = 160 }: { series: Series; height
         </summary>
         <table className="table" id={`${id}-table`}>
           <caption className="visually-hidden">
-            {series.label} readings, with the date, value and how each was taken
+            {series.label}, {EYE_LABELS[series.eye]}: the date, value and how each was taken
           </caption>
           <thead>
             <tr>
@@ -134,7 +136,8 @@ export default function Chart({ series, height = 160 }: { series: Series; height
                 <td>{formatDate(p.date)}</td>
                 <td>{p.unit ? `${p.raw} ${p.unit}` : p.raw}</td>
                 <td>
-                  {p.provenance === "home" ? "Check done at home" : "Measured at a clinic"}
+                  {p.howLabel ??
+                    (p.provenance === "home" ? "Check done at home" : "Measured at a clinic")}
                   {p.method ? ` — ${p.method}` : ""}
                 </td>
               </tr>

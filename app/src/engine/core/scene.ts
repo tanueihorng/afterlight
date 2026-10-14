@@ -135,6 +135,11 @@ export class EyeScene {
    * caps both read from here, so a cut always matches the walls on screen.
    */
   private sceneModel: Map<string, StructureMesh> | null = null;
+  /** True until the shader programs are compiled; nothing is drawn before then. */
+  private compiling = true;
+  private disposed = false;
+  /** Settles once the first frame can be drawn without blocking the page. */
+  readonly ready: Promise<void>;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -187,6 +192,14 @@ export class EyeScene {
     this.currentPupil = pupilRadiusMm(this.options.iris);
     this.targetPupil = this.currentPupil;
     this.updatePupil();
+
+    // Compiling every shader program on the first draw blocked the whole page for up to a second.
+    // compileAsync lets the driver compile them in parallel; drawing waits until it has.
+    const finish = () => {
+      this.compiling = false;
+      if (this.renderer && !this.disposed) this.renderOnce();
+    };
+    this.ready = this.renderer.compileAsync(this.scene, this.camera).then(finish, finish);
   }
 
   /* ------------------------------------------------------------ building */
@@ -931,7 +944,7 @@ export class EyeScene {
     }
 
     this.updateSectionPlane();
-    this.renderer.render(this.scene, this.camera);
+    if (!this.compiling) this.renderer.render(this.scene, this.camera);
     const turning =
       this.eyeGroup &&
       (Math.abs(this.eyeGroup.rotation.x - this.rotationTarget.x) > 0.0001 ||
@@ -962,7 +975,7 @@ export class EyeScene {
 
   renderOnce(): void {
     this.updateSectionPlane();
-    this.renderer?.render(this.scene, this.camera);
+    if (!this.compiling) this.renderer?.render(this.scene, this.camera);
   }
 
   onContextLoss(handler: () => void): void {
@@ -986,10 +999,17 @@ export class EyeScene {
    * memory, so this is tested rather than assumed.
    */
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     this.stop();
     this.canvas.removeEventListener("webglcontextlost", this.handleContextLost);
     this.canvas.removeEventListener("webglcontextrestored", this.handleContextRestored);
+    // three keeps polling materials while compileAsync runs; releasing them underneath it throws.
+    if (this.compiling) void this.ready.then(() => this.release());
+    else this.release();
+  }
 
+  private release(): void {
     this.scene.traverse((object: Object3D) => {
       const mesh = object as Mesh;
       if (mesh.geometry) mesh.geometry.dispose();

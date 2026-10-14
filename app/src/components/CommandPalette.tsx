@@ -5,6 +5,7 @@ import { toAllData, useStore } from "../lib/store";
 import type { Route } from "../lib/router";
 import { formatDate } from "../lib/util";
 import { DemoBadge, EyeBadge, ProvenanceBadge } from "./ui";
+import { t } from "../lib/i18n";
 
 type Mode = "search" | "ask";
 
@@ -20,13 +21,37 @@ const ROUTE_LABELS: Record<Route, string> = {
   settings: "Settings",
 };
 
+/** Places people search for by what they want to see, not by a record's words. */
+const SHORTCUTS: { words: string[]; label: () => string; route: Route; params: string[] }[] = [
+  {
+    words: ["chart", "graph", "trend", "plot", "visual", "number", "measurement", "over time"],
+    label: () => t("charts.jump"),
+    route: "my-eyes",
+    params: ["trends"],
+  },
+  {
+    words: ["3d", "anatomy", "model", "explorer", "atlas", "illustration", "procedure"],
+    label: () => t("nav.visualize"),
+    route: "visualize",
+    params: [],
+  },
+];
+
+type Shortcut = (typeof SHORTCUTS)[number];
+
+export function shortcutsFor(q: string): Shortcut[] {
+  const query = q.trim().toLowerCase();
+  if (query.length < 2) return [];
+  return SHORTCUTS.filter((s) => s.words.some((w) => w.startsWith(query) || query.includes(w)));
+}
+
 export default function CommandPalette({
   onClose,
   onNavigate,
   initialMode = "search",
 }: {
   onClose: () => void;
-  onNavigate: (r: Route) => void;
+  onNavigate: (r: Route, ...params: string[]) => void;
   initialMode?: Mode;
 }) {
   const store = useStore();
@@ -41,6 +66,9 @@ export default function CommandPalette({
     () => (mode === "search" && q.trim().length > 1 ? searchRecords(data, q) : []),
     [mode, q, data],
   );
+  // Shortcuts lead the same list the arrow keys move through, so Enter opens what is highlighted.
+  const shortcuts = useMemo(() => (mode === "search" ? shortcutsFor(q) : []), [mode, q]);
+  const total = shortcuts.length + hits.length;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -54,10 +82,10 @@ export default function CommandPalette({
         e.preventDefault();
         onClose();
       }
-      if (mode === "search" && hits.length) {
+      if (mode === "search" && total) {
         if (e.key === "ArrowDown") {
           e.preventDefault();
-          setCursor((c) => Math.min(c + 1, hits.length - 1));
+          setCursor((c) => Math.min(c + 1, total - 1));
         } else if (e.key === "ArrowUp") {
           e.preventDefault();
           setCursor((c) => Math.max(c - 1, 0));
@@ -66,10 +94,10 @@ export default function CommandPalette({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, mode, hits.length]);
+  }, [onClose, mode, total]);
 
-  const go = (r: Route) => {
-    onNavigate(r);
+  const go = (r: Route, ...params: string[]) => {
+    onNavigate(r, ...params);
     onClose();
   };
 
@@ -118,7 +146,8 @@ export default function CommandPalette({
           onSubmit={(e) => {
             e.preventDefault();
             if (mode === "ask") submitAsk();
-            else if (hits[cursor]) go(hits[cursor].route);
+            else if (cursor < shortcuts.length) go(shortcuts[cursor].route, ...shortcuts[cursor].params);
+            else if (hits[cursor - shortcuts.length]) go(hits[cursor - shortcuts.length].route);
           }}
         >
           <span className="palette-icon" aria-hidden>
@@ -147,7 +176,7 @@ export default function CommandPalette({
           {mode === "search"
             ? q.trim().length < 2
               ? ""
-              : `${hits.length} record${hits.length === 1 ? "" : "s"} match ${q}`
+              : `${shortcuts.map((sc) => `Page: ${sc.label()}, press Enter to open. `).join("")}${hits.length} record${hits.length === 1 ? "" : "s"} match ${q}`
             : asked
               ? asked.answer.found
                 ? `Answered, with ${asked.answer.citations.length} source${asked.answer.citations.length === 1 ? "" : "s"}`
@@ -157,7 +186,7 @@ export default function CommandPalette({
 
         <div className="palette-body">
           {mode === "search" ? (
-            <SearchResults hits={hits} q={q} cursor={cursor} onGo={go} />
+            <SearchResults hits={hits} shortcuts={shortcuts} q={q} cursor={cursor} onGo={go} />
           ) : (
             <AskPanel asked={asked} onExample={(t) => { setQ(t); setAsked({ question: t, answer: askRecords(data, t) }); }} onGo={go} />
           )}
@@ -173,14 +202,16 @@ export default function CommandPalette({
 
 function SearchResults({
   hits,
+  shortcuts,
   q,
   cursor,
   onGo,
 }: {
   hits: SearchHit[];
+  shortcuts: Shortcut[];
   q: string;
   cursor: number;
-  onGo: (r: Route) => void;
+  onGo: (r: Route, ...params: string[]) => void;
 }) {
   if (q.trim().length < 2) {
     return (
@@ -190,11 +221,50 @@ function SearchResults({
       </p>
     );
   }
-  if (!hits.length) {
-    return <p className="muted palette-empty">No records match “{q}”.</p>;
-  }
+  const offset = shortcuts.length;
   return (
-    <ul className="palette-results" role="listbox">
+    <>
+      {offset > 0 && (
+        <ul className="palette-results" role="listbox" aria-label="Pages">
+          {shortcuts.map((sc, i) => (
+            <li key={sc.route}>
+              <button
+                className={`palette-result ${i === cursor ? "active" : ""}`}
+                onClick={() => onGo(sc.route, ...sc.params)}
+                role="option"
+                aria-selected={i === cursor}
+              >
+                <span className="palette-result-main">
+                  <span className="palette-result-title">{sc.label()}</span>
+                </span>
+                <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>
+                  <span aria-hidden>→</span> {ROUTE_LABELS[sc.route]}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {hits.length === 0 ? (
+        <p className="muted palette-empty">No records match “{q}”.</p>
+      ) : (
+        <RecordHits hits={hits} cursor={cursor - offset} onGo={onGo} />
+      )}
+    </>
+  );
+}
+
+function RecordHits({
+  hits,
+  cursor,
+  onGo,
+}: {
+  hits: SearchHit[];
+  cursor: number;
+  onGo: (r: Route) => void;
+}) {
+  return (
+    <ul className="palette-results" role="listbox" aria-label="Records">
       {hits.map((h, i) => (
         <li key={h.id}>
           <button

@@ -3,7 +3,7 @@
 
 import type { AllData } from "./db";
 import type { Eye, SourceType } from "./models";
-import { EYE_SHORT, MEASUREMENT_LABELS } from "./models";
+import { EYE_SHORT, LENS_LABELS, MEASUREMENT_LABELS } from "./models";
 import type { Route } from "./router";
 import { formatDate, isoToDateOnly } from "./util";
 
@@ -372,7 +372,7 @@ export function buildIndex(s: AllData): IndexRow[] {
       {
         id: `prescription:${x.id}`,
         kind: "Prescription",
-        title: "Glasses prescription",
+        title: `Prescription — ${LENS_LABELS[x.lens ?? "not_recorded"]}`,
         snippet: `OD ${fmt(x.right_eye) || "—"} / OS ${fmt(x.left_eye) || "—"}`,
         date: x.date,
         eye: "both",

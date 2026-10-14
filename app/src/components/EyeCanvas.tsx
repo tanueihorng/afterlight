@@ -26,6 +26,7 @@ export default function EyeCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<EyeScene | null>(null);
   const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(true);
 
   // Serialised so a new object literal with the same values does not rebuild the scene.
   // Appearance changes retune materials in place; the scene is built once per mount.
@@ -59,6 +60,11 @@ export default function EyeCanvas({
     }
 
     sceneRef.current = scene;
+    let live = true;
+    setPreparing(true);
+    void Promise.resolve(scene.ready).then(() => {
+      if (live) setPreparing(false);
+    });
     // diagnostics hook: e2e resource tests read renderer.info through it (no page API surface)
     (window as unknown as { __eyeScene?: EyeScene }).__eyeScene = scene;
     scene.onContextLoss(() =>
@@ -133,6 +139,7 @@ export default function EyeCanvas({
     else scene.start();
 
     return () => {
+      live = false;
       delete (window as unknown as { __eyeScene?: EyeScene }).__eyeScene;
       observer.disconnect();
       canvas.removeEventListener("pointerdown", onDown);
@@ -212,7 +219,12 @@ export default function EyeCanvas({
   }
 
   return (
-    <figure className="eye-shell" ref={shellRef} style={{ margin: 0, position: "relative" }}>
+    <figure
+      className="eye-shell"
+      ref={shellRef}
+      style={{ margin: 0, position: "relative" }}
+      aria-busy={preparing}
+    >
       <canvas
         ref={canvasRef}
         style={{
@@ -227,6 +239,10 @@ export default function EyeCanvas({
         role="img"
         aria-label={`${GENERIC_MODEL_BOUNDARY} Drag, or use the arrow keys, to turn it.`}
       />
+      {/* Stays mounted so the text change is announced; empty once the model is drawn. */}
+      <p className={preparing ? "eye-preparing" : "visually-hidden"} role="status">
+        {preparing ? t("eye.preparing") : ""}
+      </p>
       {supportsFullscreen && (
         <button
           type="button"

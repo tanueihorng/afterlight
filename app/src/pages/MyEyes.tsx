@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore, newRecord } from "../lib/store";
 import {
   EYE_LABELS,
@@ -7,13 +7,17 @@ import {
   type Eye,
   type Measurement,
   type Medication,
+  LENS_LABELS,
+  type LensType,
+  type Prescription,
   type Procedure,
   MODALITY_LABELS,
 } from "../lib/models";
 import { ConfirmButton, Field, Modal, NeedsCheckingBadge, PageHeader, ProvenanceBadge, StatusBadge } from "../components/ui";
 import Trends from "../components/Trends";
-import { formatDate, isoToDateOnly, todayLocal } from "../lib/util";
+import { formatDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
 import { t } from "../lib/i18n";
+import { routeParams } from "../lib/router";
 
 type EyeSide = "right" | "left";
 type ModalKind = "baseline" | "diagnosis" | "procedure" | "medication" | "measurement" | "prescription" | null;
@@ -21,27 +25,68 @@ type ModalKind = "baseline" | "diagnosis" | "procedure" | "medication" | "measur
 export default function MyEyes() {
   const [modal, setModal] = useState<ModalKind>(null);
   const [editEye, setEditEye] = useState<EyeSide>("right");
+  const [editRx, setEditRx] = useState<Prescription | undefined>(undefined);
+  const wantsCharts = routeParams()[0] === "trends";
+
+  // `#/my-eyes/trends` lands on the charts, which otherwise sit below both eye profiles.
+  useEffect(() => {
+    // Arriving from another page: jump, since a smooth scroll is cut short while the page settles.
+    if (wantsCharts) showCharts(false);
+  }, [wantsCharts]);
 
   return (
     <>
       <PageHeader
         title="My Eyes"
         sub="A longitudinal profile for each eye: your baseline, what clinicians documented, and what treatment happened. Missing values are shown as “Not recorded” — never as normal."
+        actions={
+          <a
+            className="btn subtle no-print"
+            href="#/my-eyes/trends"
+            style={{ minHeight: "var(--target)" }}
+            onClick={(e) => {
+              // Same hash already in the bar would not fire hashchange, so scroll directly.
+              e.preventDefault();
+              showCharts();
+            }}
+          >
+            {t("charts.jump")}
+          </a>
+        }
       />
       <div className="grid-2">
         <EyeProfile eye="right" onEditBaseline={() => { setEditEye("right"); setModal("baseline"); }} onAdd={(k) => setModal(k)} />
         <EyeProfile eye="left" onEditBaseline={() => { setEditEye("left"); setModal("baseline"); }} onAdd={(k) => setModal(k)} />
       </div>
       <Trends />
-      <PrescriptionsCard onAdd={() => setModal("prescription")} />
+      <PrescriptionsCard
+        onAdd={() => {
+          setEditRx(undefined);
+          setModal("prescription");
+        }}
+        onEdit={(rx) => {
+          setEditRx(rx);
+          setModal("prescription");
+        }}
+      />
       {modal === "baseline" && <BaselineModal eye={editEye} onClose={() => setModal(null)} />}
       {modal === "diagnosis" && <DiagnosisModal onClose={() => setModal(null)} />}
       {modal === "procedure" && <ProcedureModal onClose={() => setModal(null)} />}
       {modal === "medication" && <MedicationModal onClose={() => setModal(null)} />}
       {modal === "measurement" && <MeasurementModal onClose={() => setModal(null)} />}
-      {modal === "prescription" && <PrescriptionModal onClose={() => setModal(null)} />}
+      {modal === "prescription" && (
+        <PrescriptionModal existing={editRx} onClose={() => setModal(null)} />
+      )}
     </>
   );
+}
+
+function showCharts(smooth = true) {
+  const section = document.getElementById("trends");
+  if (!section) return;
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  section.scrollIntoView?.({ behavior: smooth && !reduce ? "smooth" : "auto", block: "start" });
+  section.focus({ preventScroll: true });
 }
 
 /* ---------------- profile column ---------------- */
@@ -232,13 +277,19 @@ function daysBack(n: number): string {
 
 /* ---------------- prescriptions card ---------------- */
 
-function PrescriptionsCard({ onAdd }: { onAdd: () => void }) {
+function PrescriptionsCard({
+  onAdd,
+  onEdit,
+}: {
+  onAdd: () => void;
+  onEdit: (rx: Prescription) => void;
+}) {
   const store = useStore();
   const list = [...store.prescriptions.list].sort((a, b) => (a.date < b.date ? 1 : -1));
   return (
     <section className="card" style={{ marginTop: 16 }}>
       <div className="eye-heading">
-        <span className="card-title" style={{ marginBottom: 0 }}>Glasses & contact prescription history</span>
+        <h2 className="card-title" style={{ marginBottom: 0 }}>Glasses & contact prescription history</h2>
         <button className="btn subtle" style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }} onClick={onAdd}>
           + Add prescription
         </button>
@@ -251,6 +302,7 @@ function PrescriptionsCard({ onAdd }: { onAdd: () => void }) {
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Type</th>
                 <th>Right (OD) SPH / CYL / AXIS</th>
                 <th>Left (OS) SPH / CYL / AXIS</th>
                 <th>Provider</th>
@@ -263,11 +315,22 @@ function PrescriptionsCard({ onAdd }: { onAdd: () => void }) {
               {list.map((p) => (
                 <tr key={p.id}>
                   <td>{formatDate(p.date)}</td>
+                  <td>{LENS_LABELS[p.lens ?? "not_recorded"]}</td>
                   <td className="mono">{fmtRx(p.right_eye)}</td>
                   <td className="mono">{fmtRx(p.left_eye)}</td>
                   <td>{p.provider ?? "—"}</td>
                   <td>
-                    <ConfirmButton label="Delete" onConfirm={() => store.prescriptions.del(p.id)} className="btn danger" />
+                    <div className="btn-row" style={{ flexWrap: "nowrap" }}>
+                      <button
+                        className="btn subtle"
+                        style={{ minHeight: "var(--target)" }}
+                        onClick={() => onEdit(p)}
+                        aria-label={`Edit the prescription from ${formatDate(p.date)}`}
+                      >
+                        Edit
+                      </button>
+                      <ConfirmButton label="Delete" onConfirm={() => store.prescriptions.del(p.id)} className="btn danger" />
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -584,46 +647,77 @@ function MeasurementModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function PrescriptionModal({ onClose }: { onClose: () => void }) {
+function PrescriptionModal({ existing, onClose }: { existing?: Prescription; onClose: () => void }) {
   const store = useStore();
   const num = (v: string) => (v === "" ? undefined : Number(v));
+  const str = (v?: number) => (v == null ? "" : String(v));
   const [p, setP] = useState({
-    date: todayLocal(),
-    rs: "", rc: "", ra: "", rAcuity: "",
-    ls: "", lc: "", la: "", lAcuity: "",
-    provider: "",
+    date: existing?.date ?? todayLocal(),
+    // A new entry starts unchosen: the type is never assumed.
+    lens: (existing?.lens ?? "") as LensType | "",
+    rs: str(existing?.right_eye.sphere),
+    rc: str(existing?.right_eye.cylinder),
+    ra: str(existing?.right_eye.axis),
+    rAcuity: existing?.right_eye.acuity ?? "",
+    ls: str(existing?.left_eye.sphere),
+    lc: str(existing?.left_eye.cylinder),
+    la: str(existing?.left_eye.axis),
+    lAcuity: existing?.left_eye.acuity ?? "",
+    provider: existing?.provider ?? "",
   });
   return (
-    <Modal title="Add glasses / contact prescription" onClose={onClose}>
+    <Modal
+      title={existing ? "Edit glasses / contact prescription" : "Add glasses / contact prescription"}
+      onClose={onClose}
+    >
       <Field label="Date"><input type="date" value={p.date} onChange={(e) => setP({ ...p, date: e.target.value })} /></Field>
+      <Field label="Glasses or contact lenses">
+        <select value={p.lens} onChange={(e) => setP({ ...p, lens: e.target.value as LensType | "" })}>
+          <option value="" disabled>
+            Choose one
+          </option>
+          <option value="glasses">{LENS_LABELS.glasses}</option>
+          <option value="contact_lenses">{LENS_LABELS.contact_lenses}</option>
+          <option value="not_recorded">I'm not sure</option>
+        </select>
+      </Field>
       <div className="grid-2">
-        <div>
-          <div className="card-title">Right eye (OD)</div>
+        <fieldset className="plain-fieldset">
+          <legend className="card-title">Right eye (OD)</legend>
           <Field label="Sphere"><input type="number" step="0.25" value={p.rs} onChange={(e) => setP({ ...p, rs: e.target.value })} /></Field>
           <Field label="Cylinder"><input type="number" step="0.25" value={p.rc} onChange={(e) => setP({ ...p, rc: e.target.value })} /></Field>
           <Field label="Axis"><input type="number" step="1" value={p.ra} onChange={(e) => setP({ ...p, ra: e.target.value })} /></Field>
           <Field label="Acuity"><input type="text" value={p.rAcuity} onChange={(e) => setP({ ...p, rAcuity: e.target.value })} placeholder="e.g. 20/25" /></Field>
-        </div>
-        <div>
-          <div className="card-title">Left eye (OS)</div>
+        </fieldset>
+        <fieldset className="plain-fieldset">
+          <legend className="card-title">Left eye (OS)</legend>
           <Field label="Sphere"><input type="number" step="0.25" value={p.ls} onChange={(e) => setP({ ...p, ls: e.target.value })} /></Field>
           <Field label="Cylinder"><input type="number" step="0.25" value={p.lc} onChange={(e) => setP({ ...p, lc: e.target.value })} /></Field>
           <Field label="Axis"><input type="number" step="1" value={p.la} onChange={(e) => setP({ ...p, la: e.target.value })} /></Field>
           <Field label="Acuity"><input type="text" value={p.lAcuity} onChange={(e) => setP({ ...p, lAcuity: e.target.value })} placeholder="e.g. 20/20" /></Field>
-        </div>
+        </fieldset>
       </div>
       <Field label="Provider"><input type="text" value={p.provider} onChange={(e) => setP({ ...p, provider: e.target.value })} /></Field>
       <div className="modal-actions">
         <button className="btn" onClick={onClose}>Cancel</button>
         <button
           className="btn primary"
+          // Without a date the entry cannot be placed on the chart, and an edit must not erase one.
+          disabled={!p.date || !p.lens}
           onClick={async () => {
-            const rec = newRecord({
+            if (!p.date || !p.lens) return;
+            const fields = {
               date: p.date,
+              lens: p.lens,
               right_eye: { sphere: num(p.rs), cylinder: num(p.rc), axis: num(p.ra), acuity: p.rAcuity || undefined },
               left_eye: { sphere: num(p.ls), cylinder: num(p.lc), axis: num(p.la), acuity: p.lAcuity || undefined },
               provider: p.provider || undefined,
-            });
+            };
+            // An edit keeps the record's identity, creation time and notes. It drops the demo flag:
+            // once someone has typed their own values in, removing demo data must not delete them.
+            const rec: Prescription = existing
+              ? { ...existing, ...fields, demo: undefined, updated_at: nowISO() }
+              : newRecord(fields);
             await store.prescriptions.put(rec);
             onClose();
           }}

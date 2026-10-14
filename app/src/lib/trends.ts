@@ -10,7 +10,7 @@
 import type { AllData } from "./db";
 import { acuityForms } from "./acuity";
 import { select } from "./query";
-import type { Eye, MeasurementKind, SourceType } from "./models";
+import type { Eye, LensType, MeasurementKind, SourceType } from "./models";
 import { MEASUREMENT_LABELS, METHOD_LABELS } from "./models";
 import { formatDate, isoToDateOnly } from "./util";
 
@@ -26,16 +26,30 @@ export interface SeriesPoint {
   method?: string;
   /** Values that cannot be compared numerically (CF, HM, LP) are carried but not plotted. */
   numeric: boolean;
+  /** Overrides the clinic/home wording where neither is true, e.g. a copied prescription. */
+  howLabel?: string;
 }
 
+/** Prescription components are charted alongside measurements but are not measurement kinds. */
+export type RxComponent = "sphere" | "cylinder";
+
 export interface Series {
-  kind: MeasurementKind;
+  kind: MeasurementKind | `rx_${RxComponent}`;
   label: string;
   eye: Eye;
   unit?: string;
   points: SeriesPoint[];
   /** Whether higher numbers mean "more of the thing"; used only for axis direction, not judgement. */
   invertForDisplay: boolean;
+  /** What one point is called. Defaults to "reading"; a prescription is an entry, not a reading. */
+  noun?: { one: string; many: string };
+  /**
+   * Set when differences between points may not be real changes — plus- and minus-cylinder forms
+   * of one lens differ in both sphere and cylinder. The arithmetic notes are then left out.
+   */
+  mixedCylinderForms?: boolean;
+  /** For prescriptions: glasses and contact lenses are separate series, never one line. */
+  lens?: LensType;
 }
 
 /** logMAR runs the opposite way to how people read acuity, so the axis is flipped for display. */
@@ -105,6 +119,86 @@ export function allSeries(data: AllData, eyes: Eye[] = ["right", "left"]): Serie
   return out;
 }
 
+/** Signed the way a prescription is written, so "+1.25" never reads as "1.25". */
+export function signedDioptres(value: number): string {
+  const fixed = value.toFixed(2);
+  return value > 0 ? `+${fixed}` : fixed;
+}
+
+const RX_COMPONENT: Record<RxComponent, string> = { sphere: "sphere", cylinder: "cylinder" };
+
+const RX_LENS: Record<LensType, string> = {
+  glasses: "Glasses",
+  contact_lenses: "Contact lenses",
+  not_recorded: "Prescription, type not recorded",
+};
+
+const RX_NOUN = { one: "entry", many: "entries" };
+
+/**
+ * One component of the glasses and contact prescriptions for one eye, oldest first.
+ *
+ * Axis is deliberately not offered: it is an angle that wraps at 180°, so 175° and 5° are nearly
+ * the same and a line between them would draw a change that is not there.
+ */
+export function prescriptionSeries(
+  data: AllData,
+  component: RxComponent,
+  eye: "right" | "left",
+  lens: LensType,
+): Series {
+  const rows = select(data, "prescriptions")
+    .where((row) => (row.lens ?? "not_recorded") === lens)
+    .order("asc")
+    .all();
+  const cylinders = rows
+    .map((row) => (eye === "right" ? row.right_eye : row.left_eye)?.cylinder)
+    .filter((c): c is number => c != null && Number.isFinite(c));
+  const mixedCylinderForms = cylinders.some((c) => c > 0) && cylinders.some((c) => c < 0);
+  const points: SeriesPoint[] = [];
+  for (const row of rows) {
+    const value = (eye === "right" ? row.right_eye : row.left_eye)?.[component];
+    if (value == null || !Number.isFinite(value)) continue;
+    points.push({
+      date: isoToDateOnly(row.date),
+      value,
+      raw: signedDioptres(value),
+      unit: "D",
+      // Prescriptions carry no source of their own: the person typed these in. "clinic" here only
+      // means the points are one kind and may be joined; the wording comes from howLabel.
+      source: "patient_reported",
+      provenance: "clinic",
+      howLabel: "Copied by you from a written prescription",
+      numeric: true,
+    });
+  }
+  return {
+    kind: `rx_${component}`,
+    label: `${RX_LENS[lens]} — ${RX_COMPONENT[component]}`,
+    eye,
+    unit: "D",
+    points,
+    invertForDisplay: false,
+    noun: RX_NOUN,
+    mixedCylinderForms,
+    lens,
+  };
+}
+
+/** Sphere and cylinder for each lens type and eye, keeping only those with something recorded. */
+export function allPrescriptionSeries(data: AllData): Series[] {
+  const out: Series[] = [];
+  for (const lens of ["glasses", "contact_lenses", "not_recorded"] as LensType[]) {
+    for (const component of ["sphere", "cylinder"] as RxComponent[]) {
+      for (const eye of ["right", "left"] as const) {
+        const series = prescriptionSeries(data, component, eye, lens);
+        if (series.points.length > 0) out.push(series);
+      }
+    }
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------ describing */
 
 export interface SeriesDescription {
@@ -136,10 +230,11 @@ export function describe(series: Series): SeriesDescription {
   const last = series.points[series.points.length - 1];
   const unit = series.unit ? ` ${series.unit}` : "";
 
+  const noun = series.noun ?? { one: "reading", many: "readings" };
   const summary =
     series.points.length === 1
-      ? `${series.label}: one reading, ${first.raw}${unit} on ${formatDate(first.date)}.`
-      : `${series.label}: ${series.points.length} readings from ${formatDate(first.date)} to ${formatDate(last.date)} — ${series.points.map((p) => p.raw).join(", ")}${unit}.`;
+      ? `${series.label}: one ${noun.one}, ${first.raw}${unit} on ${formatDate(first.date)}.`
+      : `${series.label}: ${series.points.length} ${noun.many} from ${formatDate(first.date)} to ${formatDate(last.date)} — ${series.points.map((p) => p.raw).join(", ")}${unit}.`;
 
   if (mixedProvenance) {
     notes.push(
@@ -154,7 +249,7 @@ export function describe(series: Series): SeriesDescription {
     );
   }
 
-  if (numeric.length >= 2) {
+  if (numeric.length >= 2 && !series.mixedCylinderForms) {
     const values = numeric.map((p) => p.value);
     const min = Math.min(...values);
     const max = Math.max(...values);
