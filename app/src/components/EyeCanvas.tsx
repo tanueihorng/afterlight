@@ -219,7 +219,12 @@ export default function EyeCanvas({
   }
 
   return (
-    <figure className="eye-shell" ref={shellRef} style={{ margin: 0, position: "relative" }}>
+    <figure
+      className="eye-shell"
+      ref={shellRef}
+      style={{ margin: 0, position: "relative" }}
+      aria-busy={preparing}
+    >
       <canvas
         ref={canvasRef}
         style={{
@@ -234,11 +239,10 @@ export default function EyeCanvas({
         role="img"
         aria-label={`${GENERIC_MODEL_BOUNDARY} Drag, or use the arrow keys, to turn it.`}
       />
-      {preparing && (
-        <p className="eye-preparing" role="status">
-          {t("eye.preparing")}
-        </p>
-      )}
+      {/* Stays mounted so the text change is announced; empty once the model is drawn. */}
+      <p className={preparing ? "eye-preparing" : "visually-hidden"} role="status">
+        {preparing ? t("eye.preparing") : ""}
+      </p>
       {supportsFullscreen && (
         <button
           type="button"

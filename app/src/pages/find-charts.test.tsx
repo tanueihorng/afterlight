@@ -1,8 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { renderWithStore } from "../test/renderWithStore";
 import { aMeasurement, aPrescription } from "../test/factories";
-import { shortcutsFor } from "../components/CommandPalette";
+import CommandPalette, { shortcutsFor } from "../components/CommandPalette";
+import { dbGet } from "../lib/db";
+import type { Prescription } from "../lib/models";
 import MyEyes from "./MyEyes";
 import Visualize from "./Visualize";
 
@@ -65,7 +67,7 @@ describe("editing a prescription moves its chart", () => {
       notes: "kept through an edit",
     });
     await renderWithStore(<MyEyes />, { prescriptions: [rx] });
-    expect(await screen.findByText(/sphere: one reading, -1\.50 D/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sphere: one entry, -1\.50 D/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /edit the prescription from/i }));
     const dialog = await screen.findByRole("dialog", { name: /edit glasses/i });
@@ -73,8 +75,42 @@ describe("editing a prescription moves its chart", () => {
     fireEvent.change(spheres[0], { target: { value: "-2.25" } });
     fireEvent.click(within(dialog).getByRole("button", { name: /save prescription/i }));
 
-    expect(await screen.findByText(/sphere: one reading, -2\.25 D/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sphere: one entry, -2\.25 D/i)).toBeInTheDocument();
     expect(screen.queryByText(/-1\.50 D/)).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /edit the prescription from/i })).toHaveLength(1);
+  });
+});
+
+describe("review fixes", () => {
+  it("search: Enter opens the highlighted page shortcut and it is announced", async () => {
+    const onNavigate = vi.fn();
+    await renderWithStore(<CommandPalette onClose={() => {}} onNavigate={onNavigate} />, {});
+    const input = await screen.findByRole("textbox", { name: /search query/i });
+    fireEvent.change(input, { target: { value: "graph" } });
+    const option = screen.getByRole("option", { name: /charts of my recorded numbers/i });
+    expect(option).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("status")).toHaveTextContent(/page: charts of my recorded numbers/i);
+    fireEvent.submit(input.closest("form")!);
+    expect(onNavigate).toHaveBeenCalledWith("my-eyes", "trends");
+  });
+
+  it("editing cannot erase a prescription's date", async () => {
+    await renderWithStore(<MyEyes />, { prescriptions: [aPrescription({ date: "2024-03-01" })] });
+    fireEvent.click(await screen.findByRole("button", { name: /edit the prescription from/i }));
+    const dialog = await screen.findByRole("dialog", { name: /edit glasses/i });
+    fireEvent.change(within(dialog).getByLabelText(/^date$/i), { target: { value: "" } });
+    expect(within(dialog).getByRole("button", { name: /save prescription/i })).toBeDisabled();
+  });
+
+  it("an edited demo prescription is no longer demo data, so removing the demo keeps it", async () => {
+    const rx = aPrescription({ demo: true, right_eye: { sphere: -1 } });
+    await renderWithStore(<MyEyes />, { prescriptions: [rx] });
+    fireEvent.click(await screen.findByRole("button", { name: /edit the prescription from/i }));
+    const dialog = await screen.findByRole("dialog", { name: /edit glasses/i });
+    fireEvent.click(within(dialog).getByRole("button", { name: /save prescription/i }));
+    await waitFor(async () => {
+      const stored = await dbGet<Prescription>("prescriptions", rx.id);
+      expect(stored?.demo).toBeUndefined();
+    });
   });
 });

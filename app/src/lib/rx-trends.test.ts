@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   allPrescriptionSeries,
   describe as describeSeries,
-  mixesCylinderForms,
   prescriptionSeries,
   signedDioptres,
 } from "./trends";
@@ -44,19 +43,34 @@ describe("prescription series", () => {
   it("is described in numbers only", () => {
     const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right");
     const text = [describeSeries(right).summary, ...describeSeries(right).notes].join(" ");
-    expect(text).toMatch(/3 readings from/);
+    expect(text).toMatch(/3 entries from/);
     expect(text).not.toMatch(/worse|better|improv|declin|stable|normal/i);
   });
 
-  it("notices when plus and minus cylinders are mixed", () => {
+  it("does not report a change between plus- and minus-cylinder forms of one lens", () => {
+    // -1.00 / -1.00 x 90 and -2.00 / +1.00 x 180 are the same lens written two ways.
     const mixed = anAllData({
       prescriptions: [
-        aPrescription({ date: "2020-01-01", right_eye: { cylinder: -1 } }),
-        aPrescription({ date: "2022-01-01", right_eye: { cylinder: 1 } }),
+        aPrescription({ date: "2020-01-01", right_eye: { sphere: -1, cylinder: -1, axis: 90 } }),
+        aPrescription({ date: "2022-01-01", right_eye: { sphere: -2, cylinder: 1, axis: 180 } }),
       ],
     });
-    expect(mixesCylinderForms(prescriptionSeries(mixed, "cylinder", "right"))).toBe(true);
-    expect(mixesCylinderForms(prescriptionSeries(anAllData({ prescriptions: history }), "cylinder", "right"))).toBe(false);
+    for (const component of ["sphere", "cylinder"] as const) {
+      const series = prescriptionSeries(mixed, component, "right");
+      expect(series.mixedCylinderForms).toBe(true);
+      const notes = describeSeries(series).notes.join(" ");
+      expect(notes).not.toMatch(/higher|lower|vary/);
+    }
+    expect(prescriptionSeries(mixed, "sphere", "left").mixedCylinderForms).toBe(false);
+  });
+
+  it("says the person copied it, never that a clinic measured it", () => {
+    const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right");
+    for (const p of right.points) {
+      expect(p.source).toBe("patient_reported");
+      expect(p.howLabel).toMatch(/copied by you/i);
+    }
+    expect(right.label).not.toMatch(/glasses|contact/i);
   });
 
   it("signs dioptres the way a prescription does", () => {

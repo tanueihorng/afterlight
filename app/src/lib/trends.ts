@@ -26,6 +26,8 @@ export interface SeriesPoint {
   method?: string;
   /** Values that cannot be compared numerically (CF, HM, LP) are carried but not plotted. */
   numeric: boolean;
+  /** Overrides the clinic/home wording where neither is true, e.g. a copied prescription. */
+  howLabel?: string;
 }
 
 /** Prescription components are charted alongside measurements but are not measurement kinds. */
@@ -39,6 +41,13 @@ export interface Series {
   points: SeriesPoint[];
   /** Whether higher numbers mean "more of the thing"; used only for axis direction, not judgement. */
   invertForDisplay: boolean;
+  /** What one point is called. Defaults to "reading"; a prescription is an entry, not a reading. */
+  noun?: { one: string; many: string };
+  /**
+   * Set when differences between points may not be real changes — plus- and minus-cylinder forms
+   * of one lens differ in both sphere and cylinder. The arithmetic notes are then left out.
+   */
+  mixedCylinderForms?: boolean;
 }
 
 /** logMAR runs the opposite way to how people read acuity, so the axis is flipped for display. */
@@ -114,10 +123,14 @@ export function signedDioptres(value: number): string {
   return value > 0 ? `+${fixed}` : fixed;
 }
 
+// The record does not say whether a prescription is for glasses or contact lenses, so neither is
+// claimed here.
 const RX_LABELS: Record<RxComponent, string> = {
-  sphere: "Glasses prescription — sphere",
-  cylinder: "Glasses prescription — cylinder",
+  sphere: "Prescription — sphere",
+  cylinder: "Prescription — cylinder",
 };
+
+const RX_NOUN = { one: "entry", many: "entries" };
 
 /**
  * One component of the glasses and contact prescriptions for one eye, oldest first.
@@ -131,6 +144,10 @@ export function prescriptionSeries(
   eye: "right" | "left",
 ): Series {
   const rows = select(data, "prescriptions").order("asc").all();
+  const cylinders = rows
+    .map((row) => (eye === "right" ? row.right_eye : row.left_eye)?.cylinder)
+    .filter((c): c is number => c != null && Number.isFinite(c));
+  const mixedCylinderForms = cylinders.some((c) => c > 0) && cylinders.some((c) => c < 0);
   const points: SeriesPoint[] = [];
   for (const row of rows) {
     const value = (eye === "right" ? row.right_eye : row.left_eye)?.[component];
@@ -140,9 +157,11 @@ export function prescriptionSeries(
       value,
       raw: signedDioptres(value),
       unit: "D",
-      source: "clinician_reported",
+      // Prescriptions carry no source of their own: the person typed these in. "clinic" here only
+      // means the points are one kind and may be joined; the wording comes from howLabel.
+      source: "patient_reported",
       provenance: "clinic",
-      method: "from a written prescription",
+      howLabel: "Copied by you from a written prescription",
       numeric: true,
     });
   }
@@ -153,6 +172,8 @@ export function prescriptionSeries(
     unit: "D",
     points,
     invertForDisplay: false,
+    noun: RX_NOUN,
+    mixedCylinderForms,
   };
 }
 
@@ -166,12 +187,6 @@ export function allPrescriptionSeries(data: AllData): Series[] {
     }
   }
   return out;
-}
-
-/** True when a series mixes plus and minus cylinders, which are two ways of writing one lens. */
-export function mixesCylinderForms(series: Series): boolean {
-  if (series.kind !== "rx_cylinder") return false;
-  return series.points.some((p) => p.value > 0) && series.points.some((p) => p.value < 0);
 }
 
 /* ------------------------------------------------------------ describing */
@@ -205,10 +220,11 @@ export function describe(series: Series): SeriesDescription {
   const last = series.points[series.points.length - 1];
   const unit = series.unit ? ` ${series.unit}` : "";
 
+  const noun = series.noun ?? { one: "reading", many: "readings" };
   const summary =
     series.points.length === 1
-      ? `${series.label}: one reading, ${first.raw}${unit} on ${formatDate(first.date)}.`
-      : `${series.label}: ${series.points.length} readings from ${formatDate(first.date)} to ${formatDate(last.date)} — ${series.points.map((p) => p.raw).join(", ")}${unit}.`;
+      ? `${series.label}: one ${noun.one}, ${first.raw}${unit} on ${formatDate(first.date)}.`
+      : `${series.label}: ${series.points.length} ${noun.many} from ${formatDate(first.date)} to ${formatDate(last.date)} — ${series.points.map((p) => p.raw).join(", ")}${unit}.`;
 
   if (mixedProvenance) {
     notes.push(
@@ -223,7 +239,7 @@ export function describe(series: Series): SeriesDescription {
     );
   }
 
-  if (numeric.length >= 2) {
+  if (numeric.length >= 2 && !series.mixedCylinderForms) {
     const values = numeric.map((p) => p.value);
     const min = Math.min(...values);
     const max = Math.max(...values);

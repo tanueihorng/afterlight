@@ -287,7 +287,7 @@ function PrescriptionsCard({
   return (
     <section className="card" style={{ marginTop: 16 }}>
       <div className="eye-heading">
-        <span className="card-title" style={{ marginBottom: 0 }}>Glasses & contact prescription history</span>
+        <h2 className="card-title" style={{ marginBottom: 0 }}>Glasses & contact prescription history</h2>
         <button className="btn subtle" style={{ minHeight: "var(--target)", fontSize: "var(--fs-sm)" }} onClick={onAdd}>
           + Add prescription
         </button>
@@ -666,36 +666,40 @@ function PrescriptionModal({ existing, onClose }: { existing?: Prescription; onC
     >
       <Field label="Date"><input type="date" value={p.date} onChange={(e) => setP({ ...p, date: e.target.value })} /></Field>
       <div className="grid-2">
-        <div>
-          <div className="card-title">Right eye (OD)</div>
+        <fieldset className="plain-fieldset">
+          <legend className="card-title">Right eye (OD)</legend>
           <Field label="Sphere"><input type="number" step="0.25" value={p.rs} onChange={(e) => setP({ ...p, rs: e.target.value })} /></Field>
           <Field label="Cylinder"><input type="number" step="0.25" value={p.rc} onChange={(e) => setP({ ...p, rc: e.target.value })} /></Field>
           <Field label="Axis"><input type="number" step="1" value={p.ra} onChange={(e) => setP({ ...p, ra: e.target.value })} /></Field>
           <Field label="Acuity"><input type="text" value={p.rAcuity} onChange={(e) => setP({ ...p, rAcuity: e.target.value })} placeholder="e.g. 20/25" /></Field>
-        </div>
-        <div>
-          <div className="card-title">Left eye (OS)</div>
+        </fieldset>
+        <fieldset className="plain-fieldset">
+          <legend className="card-title">Left eye (OS)</legend>
           <Field label="Sphere"><input type="number" step="0.25" value={p.ls} onChange={(e) => setP({ ...p, ls: e.target.value })} /></Field>
           <Field label="Cylinder"><input type="number" step="0.25" value={p.lc} onChange={(e) => setP({ ...p, lc: e.target.value })} /></Field>
           <Field label="Axis"><input type="number" step="1" value={p.la} onChange={(e) => setP({ ...p, la: e.target.value })} /></Field>
           <Field label="Acuity"><input type="text" value={p.lAcuity} onChange={(e) => setP({ ...p, lAcuity: e.target.value })} placeholder="e.g. 20/20" /></Field>
-        </div>
+        </fieldset>
       </div>
       <Field label="Provider"><input type="text" value={p.provider} onChange={(e) => setP({ ...p, provider: e.target.value })} /></Field>
       <div className="modal-actions">
         <button className="btn" onClick={onClose}>Cancel</button>
         <button
           className="btn primary"
+          // Without a date the entry cannot be placed on the chart, and an edit must not erase one.
+          disabled={!p.date}
           onClick={async () => {
+            if (!p.date) return;
             const fields = {
               date: p.date,
               right_eye: { sphere: num(p.rs), cylinder: num(p.rc), axis: num(p.ra), acuity: p.rAcuity || undefined },
               left_eye: { sphere: num(p.ls), cylinder: num(p.lc), axis: num(p.la), acuity: p.lAcuity || undefined },
               provider: p.provider || undefined,
             };
-            // An edit keeps the record's identity, creation time, notes and demo flag.
+            // An edit keeps the record's identity, creation time and notes. It drops the demo flag:
+            // once someone has typed their own values in, removing demo data must not delete them.
             const rec: Prescription = existing
-              ? { ...existing, ...fields, updated_at: nowISO() }
+              ? { ...existing, ...fields, demo: undefined, updated_at: nowISO() }
               : newRecord(fields);
             await store.prescriptions.put(rec);
             onClose();

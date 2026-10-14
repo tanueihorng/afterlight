@@ -4,7 +4,6 @@ import {
   allPrescriptionSeries,
   allSeries,
   describe,
-  mixesCylinderForms,
   type Series,
 } from "../lib/trends";
 import { toAllData, useStore } from "../lib/store";
@@ -85,7 +84,7 @@ function SeriesBlock({ series }: { series: Series }) {
           {note}
         </p>
       ))}
-      {mixesCylinderForms(series) && (
+      {series.mixedCylinderForms && (
         <p className="muted" style={{ fontSize: "var(--fs-sm)", margin: "4px 0" }}>
           {t("charts.rx_mixed_cylinder")}
         </p>
