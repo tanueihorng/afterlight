@@ -113,18 +113,16 @@ export function ShareBrief({
 
   return (
     <Modal title="Share part of my record" onClose={onClose} wide>
-      <div className="pill-tabs" role="tablist" aria-label="How to share">
+      <div className="pill-tabs" role="group" aria-label="How to share">
         <button
-          role="tab"
-          aria-selected={tab === "file"}
+          aria-pressed={tab === "file"}
           className={tab === "file" ? "active" : ""}
           onClick={() => setTab("file")}
         >
           Encrypted file
         </button>
         <button
-          role="tab"
-          aria-selected={tab === "card"}
+          aria-pressed={tab === "card"}
           className={tab === "card" ? "active" : ""}
           onClick={() => setTab("card")}
         >

@@ -5,7 +5,7 @@ import type { TimelineEvent } from "../lib/models";
 import { EYE_SHORT, MODALITY_LABELS, SOURCE_LABELS, type SymptomEntry } from "../lib/models";
 import SameAsLastTime from "../components/SameAsLastTime";
 import { DemoBadge, EmptyState, EyeBadge, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
-import { formatDate, formatTime, isoToDateOnly, todayLocal, daysAgoISO } from "../lib/util";
+import { formatDate, formatTime, isoToDateOnly, localNaiveNow, todayLocal, daysAgoISO } from "../lib/util";
 import { inLens, weightOf, type StoryLens } from "../lib/timeline-story";
 // Lazy: these forms are needed only when someone adds an event, so they stay out of the first download.
 const DiagnosisModal = lazy(() => import("../components/RecordModals").then((m) => ({ default: m.DiagnosisModal })));
@@ -112,7 +112,7 @@ export default function TimelinePage() {
         return daysAgoISO(365);
       case "since_appt": {
         const past = store.appointments.list
-          .filter((a) => a.date_time <= new Date().toISOString())
+          .filter((a) => a.date_time <= localNaiveNow())
           .sort((a, b) => (a.date_time < b.date_time ? 1 : -1));
         return past[0] ? isoToDateOnly(past[0].date_time) : daysAgoISO(30);
       }

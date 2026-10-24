@@ -84,6 +84,38 @@ describe("latestAcuity", () => {
   it("returns nothing when nothing was recorded, so the screen can say so", () => {
     expect(latestAcuity(empty(), "left")).toBeUndefined();
   });
+
+  it("does not present an unchecked document extraction as the last value", () => {
+    const data = empty();
+    data.measurements.push({
+      id: "x",
+      date: "2026-02-01",
+      eye: "right",
+      kind: "visual_acuity",
+      value: "6/60",
+      source_type: "document_extracted",
+      confirmed: false,
+      created_at: T,
+      updated_at: T,
+    });
+    expect(latestAcuity(data, "right")).toBeUndefined();
+  });
+
+  it("counts a record covering both eyes for each eye, as My Eyes does", () => {
+    const data = empty();
+    data.measurements.push({
+      id: "c",
+      date: "2026-03-01",
+      eye: "both",
+      kind: "visual_acuity",
+      value: "6/9",
+      source_type: "clinician_reported",
+      created_at: T,
+      updated_at: T,
+    });
+    expect(latestAcuity(data, "right")?.value).toBe("6/9");
+    expect(latestAcuity(data, "left")?.value).toBe("6/9");
+  });
 });
 
 describe("nextAppointment", () => {

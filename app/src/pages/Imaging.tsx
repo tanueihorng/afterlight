@@ -26,7 +26,7 @@ export default function Imaging() {
         title="Imaging & Documents"
         sub="Keep your scans, photographs and clinical paperwork together. Original files are preserved untouched; you choose what details to record."
       />
-      <div className="pill-tabs" role="tablist" aria-label="Imaging sections">
+      <div className="pill-tabs" role="group" aria-label="Imaging sections">
         {(
           [
             ["oct", "OCT vault"],
@@ -34,7 +34,7 @@ export default function Imaging() {
             ["documents", "Documents"],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)} role="tab" aria-selected={tab === id}>
+          <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)} aria-pressed={tab === id}>
             {label}
           </button>
         ))}
@@ -428,7 +428,11 @@ function AddRecordModal({
     setSaveError("");
     try {
     if (isDocument) {
-      if (!doc.title.trim()) return setSaving(false);
+      // Say why the press did nothing — a silent return reads as data loss to someone anxious.
+      if (!doc.title.trim()) {
+        setSaveError("Give the document a title before saving.");
+        return setSaving(false);
+      }
       let fileId = "";
       if (files[0]) {
         const sf = await fileToStoredFile(files[0]);

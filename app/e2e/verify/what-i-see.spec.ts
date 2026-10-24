@@ -32,7 +32,7 @@ test.describe("what I see — drawings", () => {
 
     // Delete it again, two-click confirm.
     await page.goto("/#/what-i-see");
-    await page.getByRole("tab", { name: /visual history/i }).click();
+    await page.getByRole("button", { name: /visual history/i }).click();
     await page.waitForTimeout(300);
     await page.locator(".gallery-item").first().click();
     const dialog = page.getByRole("dialog");
@@ -65,7 +65,7 @@ test.describe("what I see — drawings", () => {
     await asReturningUser(page);
     await loadDemo(page);
     await page.goto("/#/what-i-see");
-    await page.getByRole("tab", { name: /compare two dates/i }).click();
+    await page.getByRole("button", { name: /compare two dates/i }).click();
     await page.waitForTimeout(400);
 
     const items = page.locator(".gallery-item");

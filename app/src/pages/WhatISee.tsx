@@ -56,7 +56,7 @@ export default function WhatISee() {
         title="What I See"
         sub="Draw floaters, flashes, shadows, blur or anything else you notice. Each drawing becomes a dated snapshot you can compare later."
       />
-      <div className="pill-tabs" role="tablist" aria-label="What I See sections">
+      <div className="pill-tabs" role="group" aria-label="What I See sections">
         {(
           [
             ["draw", "Draw"],
@@ -64,7 +64,9 @@ export default function WhatISee() {
             ["compare", "Compare two dates"],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)} role="tab" aria-selected={tab === id}>
+          // Plain toggles, not ARIA tabs: these are separate Tab stops whose panels are
+          // unlabelled siblings, so announcing a tablist would promise arrow keys that do nothing.
+          <button key={id} className={tab === id ? "active" : ""} onClick={() => setTab(id)} aria-pressed={tab === id}>
             {label}
           </button>
         ))}
@@ -406,9 +408,12 @@ function DrawTab({ onSaved }: { onSaved: () => void }) {
                   key={i.id}
                   onClick={() => setInk(i.id)}
                   aria-pressed={ink === i.id}
+                  // The only content is an aria-hidden colour dot, so the name must be a real
+                  // label — title is a hover tooltip a keyboard or screen-reader user never sees.
+                  aria-label={i.label}
                   title={i.label}
                   className={`tool-btn ${ink === i.id ? "selected" : ""}`}
-                  style={{ width: 42, minHeight: "var(--target)" }}
+                  style={{ width: 44, minHeight: "var(--target)" }}
                 >
                   <span style={{ display: "block", width: 16, height: 16, borderRadius: "50%", background: i.css }} aria-hidden />
                 </button>

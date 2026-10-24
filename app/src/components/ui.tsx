@@ -1,6 +1,77 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type RefObject } from "react";
 import { SOURCE_LABELS, type Eye, type SourceType } from "../lib/models";
 import { t } from "../lib/i18n";
+
+/** Open dialogs, innermost last. Escape belongs to the innermost, so a dialog stacked over
+ *  another does not close both at once. */
+const dialogStack: object[] = [];
+
+/**
+ * The dialog contract Modal implements: focus moves in, Tab stays inside, Escape closes the
+ * innermost dialog, and focus returns to whatever opened it. Overlays built outside Modal
+ * (the command palette, presentation mode, onboarding) use this so they cannot quietly opt
+ * out of the keyboard.
+ */
+export function useDialogFocus(
+  ref: RefObject<HTMLElement | null>,
+  onClose: () => void,
+  opts?: { escape?: boolean },
+) {
+  const openerRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    // Mount/unmount only. Re-running on every parent render would yank focus back to the
+    // first field while someone is halfway through typing.
+    openerRef.current = document.activeElement as HTMLElement | null;
+    const token = {};
+    dialogStack.push(token);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (opts?.escape === false) return;
+        if (dialogStack[dialogStack.length - 1] !== token) return;
+        e.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== "Tab" || !ref.current) return;
+      // Keep Tab inside the dialog: a modal the keyboard can wander out of is not modal.
+      const focusable = Array.from(
+        ref.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+
+    const first = ref.current?.querySelector<HTMLElement>(
+      "input, textarea, select, button:not(.modal-close)",
+    );
+    (first ?? ref.current)?.focus();
+
+    return () => {
+      dialogStack.splice(dialogStack.indexOf(token), 1);
+      window.removeEventListener("keydown", onKey);
+      const opener = openerRef.current;
+      if (opener && document.body.contains(opener)) opener.focus();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref]);
+}
 
 export function ProvenanceBadge({ source }: { source: SourceType }) {
   return <span className={`badge source-${source}`}>{t(`source.${source}`)}</span>;
@@ -86,49 +157,7 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    // Remember what opened this, so closing returns the keyboard where it came from rather than
-    // dropping it at the top of the page.
-    openerRef.current = document.activeElement as HTMLElement | null;
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab" || !ref.current) return;
-      // Keep Tab inside the dialog: a modal the keyboard can wander out of is not modal.
-      const focusable = Array.from(
-        ref.current.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-
-    const first = ref.current?.querySelector<HTMLElement>(
-      "input, textarea, select, button:not(.modal-close)",
-    );
-    (first ?? ref.current)?.focus();
-
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      const opener = openerRef.current;
-      if (opener && document.body.contains(opener)) opener.focus();
-    };
-  }, [onClose]);
+  useDialogFocus(ref, onClose);
 
   return (
     <div className="modal-backdrop">

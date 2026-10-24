@@ -104,7 +104,7 @@ test.describe("appointments and the brief", () => {
     await expect(dialog.getByText(/what it will not/i).first()).toBeVisible();
 
     // The QR tab: the code renders and says what it is.
-    await dialog.getByRole("tab", { name: /code in the room/i }).click();
+    await dialog.getByRole("button", { name: /code in the room/i }).click();
     await expect(dialog.locator("svg").first()).toBeVisible();
   });
 

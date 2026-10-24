@@ -23,6 +23,11 @@ the clinical wording has been reviewed by a qualified clinician — see `docs/cl
 - Prescriptions can be edited, and sphere and cylinder for each eye can be shown as a chart over time.
 - The charts of your recorded numbers are easier to find from My Eyes.
 - Opening Visualize no longer freezes the page.
+- An appointment stays under “Next appointment” for the whole of its day, wherever in the world you are — previously the visit could move to the past before it happened, and take the brief with it.
+- When Ask quotes your records back to you, each quote is now labelled with where it actually came from — your own notes are no longer presented as something a clinician wrote, and text read out of a file that nobody has checked is left out.
+- A file whose date cannot be read is still dated today, but now says so next to it, so a wrong date is easier to catch before you confirm it.
+- The keyboard and screen-reader paths through the search panel, the full-screen brief and first-run set-up now work properly: focus enters and stays inside each of them and returns to where you were.
+- A document saved without a title now says so instead of doing nothing.
 
 > The clinical wording in the condition atlas, the home checks and the safety messages has not yet been reviewed by an ophthalmologist or optometrist. Until it has, treat every explanation in the app as background reading, not as advice about your eyes.
 

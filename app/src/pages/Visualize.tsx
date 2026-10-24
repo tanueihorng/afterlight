@@ -296,6 +296,7 @@ function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
               <li key={i} style={{ marginBottom: 6 }}>
                 <button
                   onClick={() => setStep(i)}
+                  aria-pressed={i === step}
                   style={{
                     background: "none",
                     border: "none",
@@ -303,6 +304,8 @@ function ExplainerBlock({ e }: { e: ProcedureExplainer }) {
                     textAlign: "left",
                     font: "inherit",
                     cursor: "pointer",
+                    // Colour alone must not carry which step is showing.
+                    fontWeight: i === step ? 600 : "inherit",
                     color: i === step ? "var(--text)" : "var(--text-2)",
                     fontSize: "var(--fs-base)",
                     lineHeight: 1.55,

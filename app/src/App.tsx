@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { t, type MessageKey } from "./lib/i18n";
 import { useHashRoute, type Route } from "./lib/router";
 import { useStore } from "./lib/store";
@@ -47,7 +47,16 @@ export default function App() {
   const store = useStore();
   const [palette, setPalette] = useState<null | "search" | "ask">(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const shellRef = useRef<HTMLDivElement>(null);
   useFluidSurfaces();
+
+  const onboarded = store.meta?.onboarded ?? false;
+
+  // aria-hidden alone still leaves every dock button and input focusable behind the welcome
+  // dialog; inert removes them from the keyboard and the accessibility tree entirely.
+  useEffect(() => {
+    if (shellRef.current) shellRef.current.inert = !onboarded;
+  }, [onboarded]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -99,8 +108,6 @@ export default function App() {
     );
   }
 
-  const onboarded = store.meta?.onboarded ?? false;
-
   return (
     <>
       {!onboarded && <Onboarding />}
@@ -113,7 +120,7 @@ export default function App() {
         <i />
         <i />
       </div>
-      <div className="shell" aria-hidden={!onboarded}>
+      <div className="shell" aria-hidden={!onboarded} ref={shellRef}>
         <header className="app-header">
           <div className="brand">
             <BrandMark />

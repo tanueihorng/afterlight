@@ -213,3 +213,38 @@ describe("unreviewed extractions", () => {
     expect(generateBrief(data, range).clinicalEvents).toHaveLength(1);
   });
 });
+
+describe("generateBrief — home checks", () => {
+  const withCheck = () =>
+    anAllData({
+      selfTests: [
+        {
+          id: "st1",
+          kind: "amsler",
+          date_time: "2026-06-01T09:00:00",
+          eye: "right",
+          result: { marks: 2 },
+          conditions: { correction: "none" },
+          source_type: "patient_reported",
+          created_at: "2026-06-01T09:00:00",
+          updated_at: "2026-06-01T09:00:00",
+        },
+      ],
+    });
+
+  it("appears once when the home-checks section is on — not also as a clinical event", () => {
+    const p = generateBrief(withCheck(), {
+      range_start: "2026-05-01",
+      range_end: "2026-06-30",
+      sections: { selfTests: true },
+    });
+    expect(p.selfTestNotes).toHaveLength(1);
+    expect(p.clinicalEvents).toHaveLength(0);
+  });
+
+  it("stays in the record when the section is off, badged as done by the patient", () => {
+    const p = generateBrief(withCheck(), { range_start: "2026-05-01", range_end: "2026-06-30" });
+    expect(p.selfTestNotes).toBeUndefined();
+    expect(p.clinicalEvents.some((e) => e.kind === "Check done by patient")).toBe(true);
+  });
+});

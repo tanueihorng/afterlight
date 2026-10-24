@@ -1690,7 +1690,8 @@ input[type="range"] {
   border-radius: 99px;
   cursor: pointer;
   font-size: var(--fs-sm);
-  min-height: 36px;
+  /* These are the primary section switches; the 44px target applies to them too. */
+  min-height: var(--target);
 }
 
 .pill-tabs button.active {

@@ -51,11 +51,19 @@ export function recentDays(data: AllData, today: string, n = 14): DayCell[] {
   });
 }
 
-/** The most recent visual acuity for one eye, from any source, with that source kept. */
+/**
+ * The most recent visual acuity for one eye, with that source kept. Matches the My Eyes rule:
+ * a record covering both eyes counts, and an extraction nobody has checked is not a value —
+ * it lives in the unchecked list until a person confirms it.
+ */
 export function latestAcuity(data: AllData, eye: "right" | "left"): Measurement | undefined {
   return select(data, "measurements")
     .type("visual_acuity")
-    .where((m) => m.eye === eye)
+    .where(
+      (m) =>
+        (m.eye === eye || m.eye === "both") &&
+        (m.source_type !== "document_extracted" || m.confirmed === true),
+    )
     .latest();
 }
 

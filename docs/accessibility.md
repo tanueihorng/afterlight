@@ -27,7 +27,10 @@ meaning on its own.
 content. Focus is always visible, at 3px (4px in high contrast) and never removed. Dialogs take
 focus when they open, keep Tab inside while they are open, close with Escape, and return focus to
 whatever opened them. A test walks the full daily entry, opens dialogs and generates an appointment
-brief using only the keyboard.
+brief using only the keyboard. That dialog contract lives in `useDialogFocus` (`components/ui.tsx`),
+which `Modal` uses and which the overlays built outside `Modal` — the command palette, presentation
+mode and first-run set-up — are required to use as well; with several dialogs open, Escape closes
+only the innermost one.
 
 **Targets.** Every interactive control is at least 44×44px — larger than WCAG 2.5.8 requires,
 because of who is using it.

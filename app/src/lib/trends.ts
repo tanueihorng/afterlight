@@ -237,8 +237,10 @@ export function describe(series: Series): SeriesDescription {
       : `${series.label}: ${series.points.length} ${noun.many} from ${formatDate(first.date)} to ${formatDate(last.date)} — ${series.points.map((p) => p.raw).join(", ")}${unit}.`;
 
   if (mixedProvenance) {
+    // "Shown separately" is only true of the chart; in the brief this lands as prose, so the
+    // sentence must not claim a separation the reader cannot see there.
     notes.push(
-      "Some of these were measured at a clinic and some were done at home. They are not the same kind of measurement and are shown separately.",
+      "Some of these were measured at a clinic and some were done at home. They are not the same kind of measurement.",
     );
   }
 

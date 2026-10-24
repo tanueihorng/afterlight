@@ -118,7 +118,7 @@ test.describe("sharing part of the record", () => {
     await openBrief(page);
     await page.getByRole("button", { name: /^share…$/i }).click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByRole("tab", { name: /show a code in the room/i }).click();
+    await dialog.getByRole("button", { name: /show a code in the room/i }).click();
 
     await expect(dialog.getByText(/not encrypted/i)).toBeVisible();
     const qr = dialog.getByRole("img");

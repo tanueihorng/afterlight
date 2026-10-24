@@ -231,18 +231,20 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     for (const i of data.imaging) {
       const text = i.clinician_interpretation || i.findings;
       if (i.source_type !== "patient_reported" && hit(text)) {
-        matches.push({ label: `${i.modality} report — ${formatDate(i.date)}`, text: text!, route: "imaging", date: i.date });
+        matches.push({ label: `${i.modality} report — ${formatDate(i.date)} (${SOURCE_LABELS[i.source_type]})`, text: text!, route: "imaging", date: i.date });
       }
     }
     for (const d of data.documents) {
+      // An extraction nobody has checked may be machine-read text, so it is not quotable here.
+      if (d.source_type === "document_extracted" && d.confirmed !== true) continue;
       if (hit(d.summary)) {
-        matches.push({ label: `${d.title} — ${formatDate(d.date)}`, text: d.summary!, route: "imaging", date: d.date });
+        matches.push({ label: `${d.title} — ${formatDate(d.date)} (${SOURCE_LABELS[d.source_type]})`, text: d.summary!, route: "imaging", date: d.date });
       }
     }
     for (const a of data.appointments) {
       if (hit(a.notes)) {
         matches.push({
-          label: `${a.reason || "Appointment"} notes — ${formatDate(isoToDateOnly(a.date_time))}`,
+          label: `${a.reason || "Appointment"} notes — ${formatDate(isoToDateOnly(a.date_time))} (${SOURCE_LABELS[a.source_type]})`,
           text: a.notes!,
           route: "appointments",
           date: isoToDateOnly(a.date_time),
@@ -252,7 +254,7 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     for (const dx of data.diagnoses) {
       if (hit(dx.notes) || hit(dx.name)) {
         matches.push({
-          label: `Diagnosis: ${dx.name} — ${formatDate(dx.first_documented)}`,
+          label: `Diagnosis: ${dx.name} — ${formatDate(dx.first_documented)} (${SOURCE_LABELS[dx.source_type]})`,
           text: dx.notes || dx.name,
           route: "my-eyes",
           date: dx.first_documented,
@@ -260,18 +262,24 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
       }
     }
 
-    if (!matches.length) return notFound(`Clinician-documented content${topics.length ? ` about "${topics.join(" ")}"` : ""}`);
+    if (!matches.length) return notFound(`Records${topics.length ? ` about "${topics.join(" ")}"` : ""}`);
     matches.sort((a, b) => b.date.localeCompare(a.date));
+    // These matches can include notes the person typed themselves, so the answer never calls
+    // them clinician-documented: each one is labelled with the source it actually came from.
     return {
       lines: [
-        `${matches.length} clinician-documented record${matches.length === 1 ? "" : "s"}${
-          topics.length ? ` mention "${topics.join(" ")}"` : ""
-        }. Quoted as documented, without interpretation:`,
+        `${matches.length} record${matches.length === 1 ? "" : "s"}${
+          topics.length
+            ? matches.length === 1
+              ? ` mentions "${topics.join(" ")}"`
+              : ` mention "${topics.join(" ")}"`
+            : ""
+        }, quoted as written and labelled with where each came from, without interpretation:`,
         ...matches.slice(0, 8).map((m) => `• ${m.label} — "${m.text}"`),
       ],
       citations: matches.slice(0, 8).map((m) => ({ label: m.label, route: m.route })),
       found: true,
-      interpretation: `Clinician-documented records${topics.length ? ` about "${topics.join(" ")}"` : ""}`,
+      interpretation: `Records${topics.length ? ` about "${topics.join(" ")}"` : ""}`,
     };
   }
 

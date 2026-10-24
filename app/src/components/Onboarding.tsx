@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "../lib/store";
-import { Field } from "./ui";
+import { Field, useDialogFocus } from "./ui";
 import { todayLocal } from "../lib/util";
 import type { Eye } from "../lib/models";
 
@@ -15,6 +15,7 @@ export default function Onboarding() {
   const [dxText, setDxText] = useState("");
   const [baselineRight, setBaselineRight] = useState("");
   const [baselineLeft, setBaselineLeft] = useState("");
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const finish = async () => {
     if (hadSurgery === "yes" && surgeryType) {
@@ -65,15 +66,24 @@ export default function Onboarding() {
     await store.setMeta({ onboarded: true });
   };
 
+  // Focus moves into the wizard and Tab stays inside. Escape must not call finish() — that
+  // writes records; leaving set-up is the explicit "Skip setup" button's job.
+  useDialogFocus(dialogRef, () => finish(), { escape: false });
+
   return (
     <div
       className="modal-backdrop"
       style={{ background: "rgba(4,6,10,0.88)", zIndex: 100 }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Welcome to Afterlight"
     >
-      <div className="modal" style={{ maxWidth: 560 }}>
+      <div
+        className="modal"
+        style={{ maxWidth: 560 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Welcome to Afterlight"
+        ref={dialogRef}
+        tabIndex={-1}
+      >
         {step === 0 && (
           <>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--fs-xl)" }}>

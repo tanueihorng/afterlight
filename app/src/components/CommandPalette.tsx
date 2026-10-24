@@ -4,7 +4,7 @@ import { searchRecords, type SearchHit } from "../lib/search";
 import { toAllData, useStore } from "../lib/store";
 import type { Route } from "../lib/router";
 import { formatDate } from "../lib/util";
-import { DemoBadge, EyeBadge, ProvenanceBadge } from "./ui";
+import { DemoBadge, EyeBadge, ProvenanceBadge, useDialogFocus } from "./ui";
 import { t } from "../lib/i18n";
 
 type Mode = "search" | "ask";
@@ -61,6 +61,9 @@ export default function CommandPalette({
   const [asked, setAsked] = useState<{ question: string; answer: AskAnswer } | null>(null);
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const paletteRef = useRef<HTMLDivElement>(null);
+  // Focus in, Tab trapped, Escape closes, focus returns to what opened the palette.
+  useDialogFocus(paletteRef, onClose);
 
   const hits: SearchHit[] = useMemo(
     () => (mode === "search" && q.trim().length > 1 ? searchRecords(data, q) : []),
@@ -77,11 +80,8 @@ export default function CommandPalette({
   useEffect(() => setCursor(0), [q, mode]);
 
   useEffect(() => {
+    // Escape is handled by useDialogFocus; these move the result cursor.
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
       if (mode === "search" && total) {
         if (e.key === "ArrowDown") {
           e.preventDefault();
@@ -94,7 +94,7 @@ export default function CommandPalette({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, mode, total]);
+  }, [mode, total]);
 
   const go = (r: Route, ...params: string[]) => {
     onNavigate(r, ...params);
@@ -122,6 +122,8 @@ export default function CommandPalette({
         role="dialog"
         aria-modal="true"
         aria-label={mode === "search" ? "Search my records" : "Ask my records"}
+        ref={paletteRef}
+        tabIndex={-1}
       >
         <div className="palette-tabs">
           {(["search", "ask"] as Mode[]).map((m) => (

@@ -14,7 +14,7 @@ import {
 import { ConfirmButton, Field, Modal, NeedsCheckingBadge, PageHeader, ProvenanceBadge, StatusBadge } from "../components/ui";
 import Trends from "../components/Trends";
 import { DiagnosisModal, MedicationModal, ProcedureModal } from "../components/RecordModals";
-import { formatDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
+import { formatDate, isoToDateOnly, localNaiveNow, nowISO, todayLocal } from "../lib/util";
 import { t } from "../lib/i18n";
 import { routeParams } from "../lib/router";
 
@@ -129,7 +129,7 @@ function EyeProfile({
     .filter((m) => (m.eye === eye || m.eye === "both") && m.source_type === "document_extracted" && m.confirmed !== true)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
   const nextAppt = store.appointments.list
-    .filter((a) => a.date_time >= new Date().toISOString())
+    .filter((a) => a.date_time >= localNaiveNow())
     .sort((a, b) => (a.date_time > b.date_time ? 1 : -1))[0];
 
   return (
@@ -182,7 +182,9 @@ function EyeProfile({
         <dd>
           {lastImaging ? (
             <>
-              {MODALITY_LABELS[lastImaging.modality]} · {formatDate(lastImaging.date)}
+              {MODALITY_LABELS[lastImaging.modality]} · {formatDate(lastImaging.date)}{" "}
+              <ProvenanceBadge source={lastImaging.source_type} />{" "}
+              <NeedsCheckingBadge source={lastImaging.source_type} confirmed={lastImaging.confirmed} />
               {lastImaging.thumb && (
                 <img src={lastImaging.thumb} alt={`${lastImaging.modality} thumbnail`} style={{ display: "block", marginTop: 6, maxWidth: 190, borderRadius: 8, border: "1px solid var(--border-soft)" }} />
               )}

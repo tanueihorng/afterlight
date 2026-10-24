@@ -24,7 +24,8 @@ test.describe("imaging & documents", () => {
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
     // The record exists and can be opened; it stores the file bytes.
-    await page.getByRole("button", { name: /sep 2026|oct/i }).first().click();
+    // The saved scan, not the "OCT vault" view toggle, which also has "OCT" in its name.
+    await page.getByRole("button", { name: /1 sep 2026.*eye: left/i }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.keyboard.press("Escape");
     expect(errors).toEqual([]);
@@ -63,7 +64,7 @@ test.describe("imaging & documents", () => {
     const errors = collectErrors(page);
     await asReturningUser(page);
     await page.goto("/#/imaging");
-    await page.getByRole("tab", { name: /documents/i }).click();
+    await page.getByRole("button", { name: /documents/i }).click();
     await page.getByRole("button", { name: /add one document/i }).click();
     const dialog = page.getByRole("dialog");
 

@@ -4,7 +4,7 @@
 import type { AllData } from "./db";
 import type { BriefBucket, BriefItem, BriefPayload, BriefSections, Eye, SourceType } from "./models";
 import { allSeries, describe as describeSeries } from "./trends";
-import { isoToDateOnly } from "./util";
+import { isoToDateOnly, localNaiveNow } from "./util";
 
 export interface BriefOptions {
   range_start: string; // YYYY-MM-DD inclusive
@@ -18,7 +18,7 @@ export function defaultBriefRange(s: AllData, opts?: { beforeApptId?: string }):
   const now = new Date();
   const nowISODate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const appts = [...s.appointments].sort((a, b) => (a.date_time < b.date_time ? 1 : -1));
-  let upcoming = appts.find((a) => a.date_time >= now.toISOString());
+  let upcoming = appts.find((a) => a.date_time >= localNaiveNow(now));
   if (opts?.beforeApptId) {
     const target = s.appointments.find((a) => a.id === opts.beforeApptId);
     if (target) {
@@ -273,7 +273,10 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
   }
 
   // Checks the patient did themselves, always badged as such and never mixed with clinic results.
-  for (const t of s.selfTests) {
+  // When the dedicated home-checks section is on, they are printed there — listing them twice
+  // made the same check appear as two checks.
+  if (!opts.sections?.selfTests) {
+    for (const t of s.selfTests) {
     if (!inRange(t.date_time)) continue;
     payload.clinicalEvents.push({
       date: isoToDateOnly(t.date_time),
@@ -283,6 +286,7 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
       }`,
       source_type: t.source_type,
     });
+    }
   }
 
   payload.questions = s.questions
