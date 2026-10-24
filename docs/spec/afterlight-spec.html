@@ -1,0 +1,1342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Afterlight — Product &amp; Technical Specification</title>
+<style>
+@font-face { font-family: "Bricolage"; src: url("bricolage-grotesque.woff2") format("woff2"); font-weight: 200 800; }
+@font-face { font-family: "DM Sans"; src: url("dm-sans.woff2") format("woff2"); font-weight: 100 1000; }
+
+:root {
+  --ink: #171a33; --ink2: #464b69; --ink3: #7a7f9c; --line: #dfe1ee; --line2: #eceef6;
+  --accent: #4f46b8; --accent2: #8a4f9a; --peri: #bdc5ff; --lilac: #d3b5f5; --peach: #ffc6ae;
+  --tint: #f5f5fb; --tint2: #eeeffa;
+  --p-rep: #4f46b8; --p-draw: #8a4f9a; --p-clin: #2f7d6d; --p-dev: #4d6080; --p-ext: #b0602c; --p-ai: #8a8fa8;
+}
+
+@page { size: A4; margin: 17mm 17mm 19mm 17mm;
+  @bottom-left { content: "Afterlight · Product & Technical Specification · v0.10.0"; font: 500 7.5pt "DM Sans"; color: #8a8fa8; }
+  @bottom-right { content: counter(page); font: 600 7.5pt "DM Sans"; color: #4f46b8; }
+}
+@page cover { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+
+* { box-sizing: border-box; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; font-family: "DM Sans", sans-serif; font-size: 9.4pt; line-height: 1.48; color: var(--ink); }
+h1, h2, h3, h4, .display { font-family: "Bricolage", sans-serif; letter-spacing: -0.01em; color: var(--ink); }
+p { margin: 0 0 7pt; }
+strong { font-weight: 650; }
+code, .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 0.86em; background: var(--tint2); padding: 0.5pt 3pt; border-radius: 3pt; color: #33307a; }
+
+/* ---------- cover ---------- */
+.cover { page: cover; height: 297mm; position: relative; overflow: hidden; color: #fff;
+  background: radial-gradient(120mm 120mm at 85% 12%, rgba(255,198,174,.55), transparent 70%),
+              radial-gradient(140mm 140mm at 8% 95%, rgba(211,181,245,.45), transparent 70%),
+              linear-gradient(160deg, #1b1d3a 0%, #2b2766 45%, #4f3f8f 100%); }
+.cover .rings { position: absolute; right: -62mm; top: -38mm; opacity: .9; }
+.cover .inner { position: absolute; left: 20mm; right: 20mm; top: 26mm; bottom: 22mm; display: flex; flex-direction: column; }
+.cover .brand { display: flex; align-items: center; gap: 9pt; font: 700 13pt "Bricolage"; letter-spacing: .01em; }
+.cover .kicker { margin-top: 64mm; font: 600 9pt "DM Sans"; letter-spacing: .22em; text-transform: uppercase; color: #ffd9c9; }
+.cover h1 { color: #fff; font-size: 46pt; line-height: 1.02; margin: 6pt 0 10pt; font-weight: 700; letter-spacing: -0.025em; }
+.cover .tag { font: 400 14pt "Bricolage"; color: #dfe0ff; max-width: 120mm; line-height: 1.35; }
+.cover .meta { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 1px solid rgba(255,255,255,.22); padding-top: 10pt; }
+.cover .meta div { padding-right: 8pt; }
+.cover .meta b { display: block; font: 600 7pt "DM Sans"; letter-spacing: .16em; text-transform: uppercase; color: #b9bcf0; margin-bottom: 2pt; }
+.cover .meta span { font: 500 10pt "DM Sans"; color: #fff; }
+.cover .notice { margin-top: 12pt; font-size: 8.4pt; color: #d8d9f5; line-height: 1.45; max-width: 160mm; }
+
+/* ---------- structure ---------- */
+.chapter { break-before: page; }
+.chapter-head { display: flex; align-items: baseline; gap: 10pt; border-bottom: 1.4pt solid var(--ink); padding-bottom: 6pt; margin-bottom: 12pt; }
+.chapter-head .num { font: 700 26pt "Bricolage"; color: var(--accent); line-height: 1; }
+.chapter-head h2 { font-size: 21pt; margin: 0; line-height: 1.1; font-weight: 650; }
+.chapter-head .sub { margin-left: auto; font: 600 7pt "DM Sans"; letter-spacing: .18em; text-transform: uppercase; color: var(--ink3); }
+h3 { font-size: 12.5pt; margin: 14pt 0 5pt; font-weight: 650; break-after: avoid; }
+h3 .n { color: var(--accent); margin-right: 5pt; }
+h4 { font-size: 10pt; margin: 9pt 0 3pt; font-weight: 650; break-after: avoid; }
+.lede { font-size: 11pt; line-height: 1.5; color: var(--ink2); margin-bottom: 10pt; }
+ul, ol { margin: 0 0 7pt; padding-left: 13pt; }
+li { margin-bottom: 2pt; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14pt; }
+.cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10pt; }
+.avoid { break-inside: avoid; }
+
+/* ---------- figures ---------- */
+figure { margin: 8pt 0 12pt; break-inside: avoid; }
+figure svg { width: 100%; height: auto; display: block; }
+figcaption { font-size: 7.8pt; color: var(--ink3); margin-top: 5pt; line-height: 1.45; }
+figcaption b { color: var(--accent); font-weight: 650; letter-spacing: .04em; white-space: nowrap; margin-right: 5pt; }
+.shot { border-radius: 7pt; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 2pt 8pt rgba(40,40,90,.08); }
+.shot img { display: block; width: 100%; }
+
+/* ---------- tables ---------- */
+table { width: 100%; border-collapse: collapse; margin: 4pt 0 10pt; font-size: 8.6pt; break-inside: auto; }
+thead th { text-align: left; font: 650 7pt "DM Sans"; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); border-bottom: 1.2pt solid var(--ink); padding: 4pt 6pt 4pt 0; }
+tbody td { border-bottom: 0.6pt solid var(--line); padding: 3.8pt 6pt 3.8pt 0; vertical-align: top; }
+tbody tr { break-inside: avoid; }
+td:first-child { font-weight: 600; }
+td.plain { font-weight: 400; }
+.k { color: var(--ink3); font-size: 7.6pt; }
+
+/* ---------- components ---------- */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7pt; margin: 6pt 0 12pt; }
+.stat { background: var(--tint); border: 0.6pt solid var(--line); border-radius: 7pt; padding: 8pt 9pt 7pt; }
+.stat .v { font: 700 19pt "Bricolage"; color: var(--accent); line-height: 1.05; letter-spacing: -0.02em; }
+.stat .l { font-size: 7.6pt; color: var(--ink2); margin-top: 2pt; line-height: 1.3; }
+.callout { border-left: 3pt solid var(--accent); background: var(--tint); padding: 8pt 11pt; border-radius: 0 6pt 6pt 0; margin: 8pt 0 11pt; font-size: 9pt; break-inside: avoid; }
+.callout.warn { border-color: #b0602c; background: #fff5ef; }
+.callout b.t { display: block; font: 650 7.4pt "DM Sans"; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 2pt; }
+.callout.warn b.t { color: #b0602c; }
+.rule-card { border: 0.6pt solid var(--line); border-radius: 8pt; padding: 9pt 11pt; break-inside: avoid; background: #fff; }
+.rule-card .n { font: 700 16pt "Bricolage"; color: var(--accent); line-height: 1; }
+.rule-card h4 { margin: 4pt 0 3pt; }
+.rule-card p { font-size: 8.5pt; color: var(--ink2); margin: 0; }
+.rule-card .enf { margin-top: 5pt; font-size: 7.6pt; color: var(--accent); font-weight: 600; }
+.badge { display: inline-block; font: 650 6.8pt "DM Sans"; letter-spacing: .06em; text-transform: uppercase; padding: 1.2pt 5pt; border-radius: 9pt; border: 0.7pt solid currentColor; white-space: nowrap; }
+.story { border-top: 0.6pt solid var(--line); padding: 5pt 0 4pt; break-inside: avoid; display: grid; grid-template-columns: 34pt 1fr; gap: 6pt; }
+.story .id { font: 650 7.6pt "DM Sans"; color: var(--accent); padding-top: 1pt; }
+.story .s { font-size: 8.8pt; }
+.story .ac { font-size: 7.9pt; color: var(--ink2); margin-top: 2pt; }
+
+/* ---------- toc ---------- */
+.toc { columns: 2; column-gap: 18pt; margin-top: 8pt; }
+.toc a { display: flex; align-items: baseline; gap: 6pt; color: var(--ink); text-decoration: none; padding: 4.2pt 0; border-bottom: 0.6pt solid var(--line); break-inside: avoid; }
+.toc .tn { font: 700 10pt "Bricolage"; color: var(--accent); width: 18pt; }
+.toc .tt { font-weight: 550; }
+.toc .td { margin-left: auto; font-size: 7.6pt; color: var(--ink3); text-align: right; }
+.toc .pg { font: 600 8.4pt "DM Sans"; color: var(--accent); min-width: 14pt; text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- ======================================================= COVER -->
+<section class="cover">
+  <svg class="rings" width="170mm" height="170mm" viewBox="0 0 200 200" aria-hidden="true">
+    <defs>
+      <radialGradient id="cv-iris" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#1b1d3a"/><stop offset=".18" stop-color="#1b1d3a"/>
+        <stop offset=".2" stop-color="#7d86ff"/><stop offset=".55" stop-color="#b9a4f2"/><stop offset=".9" stop-color="#ffc6ae"/><stop offset="1" stop-color="#ffc6ae" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="100" cy="100" r="96" fill="none" stroke="#fff" stroke-opacity=".07" stroke-width=".6"/>
+    <circle cx="100" cy="100" r="80" fill="none" stroke="#fff" stroke-opacity=".10" stroke-width=".6"/>
+    <circle cx="100" cy="100" r="64" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width=".6"/>
+    <circle cx="100" cy="100" r="46" fill="url(#cv-iris)" opacity=".85"/>
+    <g stroke="#fff" stroke-opacity=".16" stroke-width=".35">
+      <line x1="100" y1="58" x2="100" y2="72"/><line x1="100" y1="128" x2="100" y2="142"/><line x1="58" y1="100" x2="72" y2="100"/><line x1="128" y1="100" x2="142" y2="100"/>
+      <line x1="70" y1="70" x2="80" y2="80"/><line x1="120" y1="120" x2="130" y2="130"/><line x1="130" y1="70" x2="120" y2="80"/><line x1="70" y1="130" x2="80" y2="120"/>
+    </g>
+    <circle cx="88" cy="88" r="5" fill="#fff" opacity=".55"/>
+  </svg>
+  <div class="inner">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="12" cy="12" r="5" fill="#bdc5ff"/><circle cx="12" cy="12" r="2.2" fill="#1b1d3a"/></svg>
+      Afterlight
+    </div>
+    <div class="kicker">Product &amp; Technical Specification</div>
+    <h1>One record of<br>everything Afterlight is.</h1>
+    <div class="tag">A local-first visual diary for people living with eye disease: what it does, who it serves, the rules it never breaks, and how it is built.</div>
+    <div class="meta">
+      <div><b>App version</b><span>0.10.0 · schema 7</span></div>
+      <div><b>Document</b><span>Spec 2.0</span></div>
+      <div><b>Date</b><span>24 October 2026</span></div>
+      <div><b>Status</b><span>Clinical wording unreviewed</span></div>
+    </div>
+    <div class="notice">Afterlight organises and compares; it does not diagnose, score risk, interpret imaging or replace a clinician. Anything in this document that appears to do so is a defect. This edition supersedes the User Stories &amp; Technical Specification draft 1.0 of 9 September 2026. The repository remains the source of truth.</div>
+  </div>
+</section>
+
+<!-- ======================================================= CONTENTS -->
+<section class="chapter" style="break-before: page;">
+  <div class="chapter-head"><h2>Contents</h2><span class="sub">Afterlight · v0.10.0</span></div>
+  <div class="toc">
+    <a href="#c1"><span class="tn">1</span><span class="tt">At a glance</span><span class="td">facts &amp; figures</span><span class="pg">3</span></a>
+    <a href="#c2"><span class="tn">2</span><span class="tt">Problem, people, promise</span><span class="td">personas · loop</span><span class="pg">5</span></a>
+    <a href="#c3"><span class="tn">3</span><span class="tt">The seven non-negotiables</span><span class="td">and how each is enforced</span><span class="pg">7</span></a>
+    <a href="#c4"><span class="tn">4</span><span class="tt">The product, surface by surface</span><span class="td">nine routes</span><span class="pg">9</span></a>
+    <a href="#c5"><span class="tn">5</span><span class="tt">User stories</span><span class="td">nine epics</span><span class="pg">11</span></a>
+    <a href="#c6"><span class="tn">6</span><span class="tt">Architecture</span><span class="td">layers · privacy boundary</span><span class="pg">13</span></a>
+    <a href="#c7"><span class="tn">7</span><span class="tt">Data model &amp; provenance</span><span class="td">entities · sources</span><span class="pg">15</span></a>
+    <a href="#c8"><span class="tn">8</span><span class="tt">Persistence &amp; migrations</span><span class="td">IndexedDB · archive</span><span class="pg">17</span></a>
+    <a href="#c9"><span class="tn">9</span><span class="tt">The derived engines</span><span class="td">brief · search · ask · trends</span><span class="pg">18</span></a>
+    <a href="#c10"><span class="tn">10</span><span class="tt">Documents &amp; ingestion</span><span class="td">nothing read is a fact</span><span class="pg">19</span></a>
+    <a href="#c11"><span class="tn">11</span><span class="tt">Leaving the device</span><span class="td">three exits</span><span class="pg">20</span></a>
+    <a href="#c12"><span class="tn">12</span><span class="tt">The eye engine &amp; atlas</span><span class="td">anatomy · simulator</span><span class="pg">21</span></a>
+    <a href="#c13"><span class="tn">13</span><span class="tt">Accessibility &amp; design system</span><span class="td">themes · type</span><span class="pg">23</span></a>
+    <a href="#c14"><span class="tn">14</span><span class="tt">Performance</span><span class="td">budgets · benchmarks</span><span class="pg">24</span></a>
+    <a href="#c15"><span class="tn">15</span><span class="tt">Privacy &amp; security</span><span class="td">threat model</span><span class="pg">25</span></a>
+    <a href="#c16"><span class="tn">16</span><span class="tt">Quality gate &amp; release</span><span class="td">verify · sign-off</span><span class="pg">26</span></a>
+    <a href="#c17"><span class="tn">17</span><span class="tt">Open items &amp; recent changes</span><span class="td">since 0.10.0</span><span class="pg">27</span></a>
+    <a href="#c18"><span class="tn">18</span><span class="tt">Glossary</span><span class="td">terms</span><span class="pg">28</span></a>
+  </div>
+
+  <div class="callout warn" style="margin-top:18pt"><b class="t">Clinical review outstanding</b>
+  Every string that describes an eye condition, explains a home check or tells a person when to seek urgent care was drafted without clinical input. Until an ophthalmologist or optometrist signs off <code>docs/clinical-review.md</code>, the version stays below 1.0.0 and <code>npm run release</code> refuses to tag.</div>
+
+  <h3>How to read this document</h3>
+  <p>Chapters 1–5 describe the product: who it is for, what it promises, and what each screen does. Chapters 6–16 describe the system that keeps those promises. Chapter 17 lists what is unfinished. Figures are drawn for this document from the code as it stands on branch <code>fix/find-charts-and-3d-freeze</code>; numbers come from a clean <code>npm run verify</code> on 24 October 2026.</p>
+  <div class="cols" style="margin-top:6pt">
+    <div class="rule-card"><h4 style="margin-top:0">For product &amp; clinical readers</h4><p>Chapters 1–5, 11, 12 and 17. They cover the promise, the boundaries and the open sign-offs.</p></div>
+    <div class="rule-card"><h4 style="margin-top:0">For engineers &amp; agents</h4><p>Chapters 3 and 6–16. Read <code>AGENTS.md</code> before the first edit; this document summarises it but never overrides it.</p></div>
+  </div>
+</section>
+
+<!-- ======================================================= 1 AT A GLANCE -->
+<section class="chapter" id="c1">
+  <div class="chapter-head"><span class="num">01</span><h2>At a glance</h2><span class="sub">Facts &amp; figures</span></div>
+  <p class="lede">Afterlight is a patient-owned, longitudinal eye-health record. It captures what a person sees between clinic visits, keeps their clinical evidence on the same timeline, and turns that continuous record into a one-page brief a clinician can read in about a minute. It runs entirely in the browser, with no account and no server.</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">0</div><div class="l">network requests at runtime: no backend, account, analytics or CDN</div></div>
+    <div class="stat"><div class="v">&lt;30 s</div><div class="l">target for the daily check-in on Today</div></div>
+    <div class="stat"><div class="v">9</div><div class="l">routes, from Today to Settings</div></div>
+    <div class="stat"><div class="v">19</div><div class="l">IndexedDB stores, schema version 7</div></div>
+    <div class="stat"><div class="v">6</div><div class="l">provenance types, shown on every record</div></div>
+    <div class="stat"><div class="v">50</div><div class="l">conditions in the generic atlas, plus 13 condition profiles</div></div>
+    <div class="stat"><div class="v">685</div><div class="l">unit tests in 54 files, plus 106 end-to-end tests</div></div>
+    <div class="stat"><div class="v">95.5 KB</div><div class="l">initial JavaScript, gzipped, against a 120 KB budget</div></div>
+  </div>
+
+  <div class="shot"><img src="img/today.jpg" alt="The Today screen in the light theme: a greeting, four shortcuts, a backup reminder and the two large answers, Nothing different today and Something changed."></div>
+  <figcaption><b>FIG 1.1</b> Today, the screen people see every day. It asks one question with two large answers; everything else in the app is built from those answers.</figcaption>
+
+  <h3>The product in one paragraph per audience</h3>
+  <table>
+    <thead><tr><th style="width:22%">Audience</th><th>What Afterlight gives them</th></tr></thead>
+    <tbody>
+      <tr><td>The person with eye disease</td><td class="plain">A calm, thirty-second daily habit that turns "I think it's been a bit worse?" into a dated, eye-specific record. They can draw what they see, keep their scans and letters, and walk into an appointment with a one-page summary.</td></tr>
+      <tr><td>The clinician</td><td class="plain">A one-page brief, on paper, as a PDF or on screen, that separates what the patient reported from what a clinic documented. Nothing to install, no account, no AI reading of their imaging.</td></tr>
+      <tr><td>The engineer or agent</td><td class="plain">A React 18 + TypeScript + Vite single-page app with two runtime dependencies (React and Three.js). It has a single store, entities written once, everything else derived, and a <code>verify</code> gate that fails the build when a principle is broken.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Vital statistics</h3>
+  <table>
+    <thead><tr><th style="width:30%">Item</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Version</td><td class="plain">0.10.0 (held below 1.0.0 until clinical review) · data schema 7 · IndexedDB version 3</td></tr>
+      <tr><td>Runtime dependencies</td><td class="plain"><code>react</code> 18.3, <code>react-dom</code> 18.3, <code>three</code> 0.180 (only in the lazy Visualize chunk)</td></tr>
+      <tr><td>Platforms</td><td class="plain">Any modern browser on desktop and phone; installable PWA; fully offline once opened; single-file offline 3D explorer</td></tr>
+      <tr><td>Storage</td><td class="plain">IndexedDB on the device; files kept as original bytes; exports optionally encrypted with AES-GCM</td></tr>
+      <tr><td>Licence</td><td class="plain">MIT. Bundled fonts (Bricolage Grotesque, DM Sans) under the SIL Open Font License</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ======================================================= 2 PROBLEM -->
+<section class="chapter" id="c2">
+  <div class="chapter-head"><span class="num">02</span><h2>Problem, people, promise</h2><span class="sub">Why it exists</span></div>
+  <p class="lede">A person experiences their sight continuously; clinical care sees it in fifteen-minute snapshots twice a year. Between visits the patient is the only person watching their eyes, and by the time they are back in the chair their memory has collapsed into one sentence they do not trust.</p>
+
+  <div class="callout"><b class="t">The judging question for every feature</b>
+  When the clinician asks <em>"has it changed since last time?"</em>, does the patient have a real answer, a record instead of a guess?</div>
+
+  <h3>Personas</h3>
+  <div class="cols3">
+    <div class="rule-card"><div class="n" style="font-size:11pt">Primary</div><h4>Maya, 34</h4><p>Retinal detachment and vitrectomy at nineteen; persistent right-eye floaters; retina clinic twice a year. Anxious about new floaters and flashes. Logs on her phone at night and prepares for appointments on a laptop. Wants calm, not reassurance.</p></div>
+    <div class="rule-card"><div class="n" style="font-size:11pt">Secondary</div><h4>Sam, 68</h4><p>Bilateral AMD, injection series in the left eye. Low vision: needs large type and high contrast. Does Amsler checks at home and wants them compared only when the conditions match. Prefers print and present mode to share links.</p></div>
+    <div class="rule-card"><div class="n" style="font-size:11pt">Recipient</div><h4>Dr Ravi, retina clinician</h4><p>Has ten minutes and will not open an app. Needs one page that makes clear what the patient reported and what the clinic documented. Will not trust an AI summary of imaging.</p></div>
+  </div>
+
+  <h3>The daily loop</h3>
+  <p>Everything Afterlight can do six months from now depends on one habit today. That habit is designed as a decision, not a form: one tap on an ordinary day, and only the fields the answer requires on a day that differs.</p>
+  <figure>
+    <svg viewBox="0 0 680 230" font-family="DM Sans" font-size="11">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#464b69"/></marker>
+        <linearGradient id="g-pri" x1="0" x2="1"><stop offset="0" stop-color="#4f46b8"/><stop offset="1" stop-color="#8a4f9a"/></linearGradient>
+      </defs>
+      <!-- open -->
+      <rect x="6" y="88" width="92" height="52" rx="26" fill="#171a33"/>
+      <text x="52" y="111" text-anchor="middle" fill="#fff" font-weight="600">Open the app</text>
+      <text x="52" y="126" text-anchor="middle" fill="#b9bcf0" font-size="9">phone or laptop</text>
+      <!-- question -->
+      <path d="M152 114 L196 72 L240 114 L196 156 Z" fill="#fff" stroke="#4f46b8" stroke-width="1.6"/>
+      <text x="196" y="110" text-anchor="middle" font-weight="650" fill="#171a33" font-size="10">Anything</text>
+      <text x="196" y="123" text-anchor="middle" font-weight="650" fill="#171a33" font-size="10">different?</text>
+      <line x1="98" y1="114" x2="150" y2="114" stroke="#464b69" stroke-width="1.3" marker-end="url(#ar)"/>
+      <!-- no -->
+      <path d="M196 72 L196 40 L292 40" fill="none" stroke="#464b69" stroke-width="1.3" marker-end="url(#ar)"/>
+      <text x="206" y="33" fill="#4f46b8" font-weight="650" font-size="10">No</text>
+      <rect x="296" y="16" width="210" height="48" rx="10" fill="url(#g-pri)"/>
+      <text x="312" y="36" fill="#fff" font-weight="650">Nothing different today</text>
+      <text x="312" y="52" fill="#e7e3ff" font-size="9.5">one tap → DailyLog { overall: no_change }</text>
+      <!-- yes -->
+      <path d="M196 156 L196 190 L292 190" fill="none" stroke="#464b69" stroke-width="1.3" marker-end="url(#ar)"/>
+      <text x="206" y="204" fill="#4f46b8" font-weight="650" font-size="10">Yes</text>
+      <rect x="296" y="96" width="210" height="122" rx="10" fill="#fff" stroke="#bdc5ff" stroke-width="1.4"/>
+      <text x="312" y="116" fill="#171a33" font-weight="650">Something changed</text>
+      <g font-size="9.5" fill="#464b69">
+        <circle cx="315" cy="134" r="2.2" fill="#4f46b8"/><text x="323" y="137">Which eye: right · left · both (required)</text>
+        <circle cx="315" cy="152" r="2.2" fill="#4f46b8"/><text x="323" y="155">What: floaters, flashes, shadow, blur, glare…</text>
+        <circle cx="315" cy="170" r="2.2" fill="#4f46b8"/><text x="323" y="173">Compared with my usual: same · more · new…</text>
+        <circle cx="315" cy="188" r="2.2" fill="#8a4f9a"/><text x="323" y="191">Optional: severity 0–10, note, drawing</text>
+        <circle cx="315" cy="206" r="2.2" fill="#8a4f9a"/><text x="323" y="209">Dated by onset, e.g. "yesterday"</text>
+      </g>
+      <path d="M296 160 L280 160 L280 190" fill="none" stroke="none"/>
+      <!-- saved -->
+      <line x1="506" y1="40" x2="560" y2="98" stroke="#464b69" stroke-width="1.3" marker-end="url(#ar)"/>
+      <line x1="506" y1="157" x2="560" y2="128" stroke="#464b69" stroke-width="1.3" marker-end="url(#ar)"/>
+      <rect x="562" y="86" width="112" height="56" rx="10" fill="#f5f5fb" stroke="#171a33" stroke-width="1.2"/>
+      <text x="618" y="108" text-anchor="middle" font-weight="650" fill="#171a33">Logged, done</text>
+      <text x="618" y="124" text-anchor="middle" fill="#7a7f9c" font-size="9">committed to IndexedDB</text>
+      <!-- urgent -->
+      <rect x="520" y="166" width="154" height="52" rx="8" fill="#fff5ef" stroke="#b0602c" stroke-width="1" stroke-dasharray="3 2"/>
+      <text x="530" y="184" fill="#b0602c" font-weight="650" font-size="9.5">If sudden flashes, floaters,</text>
+      <text x="530" y="197" fill="#b0602c" font-size="9.5">curtain or vision drop: one calm</text>
+      <text x="530" y="210" fill="#b0602c" font-size="9.5">sentence pointing to a clinician</text>
+      <line x1="506" y1="192" x2="518" y2="192" stroke="#b0602c" stroke-width="1" stroke-dasharray="3 2"/>
+    </svg>
+    <figcaption><b>FIG 2.1</b> The daily loop. "No change" is a real data point, not an empty day. Suggestions on the form come only from the person's own history, never from a generic list.</figcaption>
+  </figure>
+
+  <h3>What the loop makes possible later</h3>
+  <div class="cols">
+    <div><h4>Within the record</h4><ul><li>A timeline of everything, labelled by source</li><li>Per-eye baselines and floaters tracked as persistent objects</li><li>Descriptive charts of measurements and prescriptions</li><li>Search and a deterministic "ask my records"</li></ul></div>
+    <div><h4>At the appointment</h4><ul><li>A one-page brief of what changed in each eye since the last visit</li><li>The person's own questions, carried forward until answered</li><li>Print, PDF, present mode, or an encrypted extract of chosen dates</li><li>A QR card readable with no signal</li></ul></div>
+  </div>
+</section>
+
+<!-- ======================================================= 3 NON-NEGOTIABLES -->
+<section class="chapter" id="c3">
+  <div class="chapter-head"><span class="num">03</span><h2>The seven non-negotiables</h2><span class="sub">Invariants</span></div>
+  <p class="lede">These are invariants, not preferences. Breaking one is a defect however good the feature is. Where a rule can be checked mechanically, the build checks it; where it cannot, the definition of done requires an explicit human check.</p>
+
+  <div class="cols" style="gap:9pt">
+    <div class="rule-card"><div class="n">1</div><h4>Local-first, no backend</h4><p>No account, telemetry, analytics, third-party request or CDN asset at runtime. Data leaves only by explicit export, print or share.</p><div class="enf">Enforced · guard (source) + nonetwork (built files)</div></div>
+    <div class="rule-card"><div class="n">2</div><h4>Provenance is never lost</h4><p>Every record carries <code>eye</code> and <code>source_type</code>. Patient, clinician, device and extracted content stay distinguishable everywhere, including print and export.</p><div class="enf">Enforced · types, brief tests, guard</div></div>
+    <div class="rule-card"><div class="n">3</div><h4>No diagnosis, no risk, no reassurance</h4><p>The app organises and compares; it never interprets. Emergency guidance is one restrained sentence pointing to a real clinician.</p><div class="enf">Enforced · guard bans verdict &amp; clinical copy</div></div>
+    <div class="rule-card"><div class="n">4</div><h4>Missing data is shown as missing</h4><p>"Not recorded" is never rendered as a normal result. A quiet log is never presented as a healthy eye.</p><div class="enf">Enforced · dashboard &amp; brief tests</div></div>
+    <div class="rule-card"><div class="n">5</div><h4>Nothing generic is the patient's anatomy</h4><p>Every visualisation carries an unmissable "generic, educational, not your eye" boundary, louder the more realistic the render.</p><div class="enf">Enforced · GENERIC_MODEL_BOUNDARY checks</div></div>
+    <div class="rule-card"><div class="n">6</div><h4>Calm</h4><p>No alarm colour as decoration, no streaks, no guilt, no notification that would frighten someone at 2am.</p><div class="enf">Enforced · copy review, streak tests, themes</div></div>
+    <div class="rule-card" style="grid-column: span 2"><div class="n">7</div><h4>The daily loop stays under 30 seconds</h4><p>Anything added to Today must remove equal friction elsewhere or be optional. Today is a decision before it is a form, and pages other than Today and Timeline are lazy-loaded so the loop opens fast.</p><div class="enf">Enforced · e2e daily-loop, bundle budget, lazy-route guard</div></div>
+  </div>
+
+  <h3>Enforcement map</h3>
+  <figure>
+    <svg viewBox="0 0 680 220" font-family="DM Sans" font-size="10">
+      <defs><marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa0bf"/></marker></defs>
+      <g font-weight="600">
+        <rect x="8" y="8" width="190" height="24" rx="12" fill="#eeeffa"/><text x="20" y="24" fill="#171a33">1 · Local-first</text>
+        <rect x="8" y="38" width="190" height="24" rx="12" fill="#eeeffa"/><text x="20" y="54" fill="#171a33">2 · Provenance</text>
+        <rect x="8" y="68" width="190" height="24" rx="12" fill="#eeeffa"/><text x="20" y="84" fill="#171a33">3 · No diagnosis</text>
+        <rect x="8" y="98" width="190" height="24" rx="12" fill="#eeeffa"/><text x="20" y="114" fill="#171a33">4 · Missing is missing</text>
+        <rect x="8" y="128" width="190" height="24" rx="12" fill="#eeeffa"/><text x="20" y="144" fill="#171a33">5 · Generic boundary</text>
+        <rect x="8" y="158" width="190" height="24" rx="12" fill="#eeeffa"/><text x="20" y="174" fill="#171a33">6 · Calm</text>
+        <rect x="8" y="188" width="190" height="24" rx="12" fill="#eeeffa"/><text x="20" y="204" fill="#171a33">7 · Under 30 seconds</text>
+      </g>
+      <g>
+        <rect x="430" y="10" width="240" height="38" rx="8" fill="#171a33"/><text x="444" y="27" fill="#fff" font-weight="650">npm run guard</text><text x="444" y="40" fill="#b9bcf0" font-size="8.5">reads source · 161 files · invariants</text>
+        <rect x="430" y="56" width="240" height="38" rx="8" fill="#171a33"/><text x="444" y="73" fill="#fff" font-weight="650">npm run nonetwork</text><text x="444" y="86" fill="#b9bcf0" font-size="8.5">reads built dist/ and site/ · zero third parties</text>
+        <rect x="430" y="102" width="240" height="38" rx="8" fill="#4f46b8"/><text x="444" y="119" fill="#fff" font-weight="650">npm run test</text><text x="444" y="132" fill="#dcdcff" font-size="8.5">685 unit · axe on every page, theme, type scale</text>
+        <rect x="430" y="148" width="240" height="30" rx="8" fill="#8a4f9a"/><text x="444" y="167" fill="#fff" font-weight="650">npm run bundle <tspan fill="#f1dcff" font-weight="400" font-size="8.5"> · 120 KB initial JS</tspan></text>
+        <rect x="430" y="184" width="240" height="30" rx="8" fill="#fff" stroke="#b0602c" stroke-dasharray="3 2"/><text x="444" y="203" fill="#b0602c" font-weight="650">Human review <tspan font-weight="400" font-size="8.5"> · clinical copy, calm, boundaries</tspan></text>
+      </g>
+      <g stroke="#9aa0bf" stroke-width="1" fill="none" marker-end="url(#ar3)">
+        <path d="M198 20 C310 20 320 29 428 29"/><path d="M198 20 C310 40 320 75 428 75"/>
+        <path d="M198 50 C310 50 320 29 428 29"/><path d="M198 50 C310 60 320 121 428 121"/>
+        <path d="M198 80 C310 80 320 29 428 29"/><path d="M198 80 C310 120 320 199 428 199"/>
+        <path d="M198 110 C310 110 320 121 428 121"/>
+        <path d="M198 140 C310 140 320 121 428 121"/><path d="M198 140 C310 150 320 199 428 199"/>
+        <path d="M198 170 C310 170 320 199 428 199"/><path d="M198 170 C310 150 320 121 428 121"/>
+        <path d="M198 200 C310 200 320 163 428 163"/>
+      </g>
+    </svg>
+    <figcaption><b>FIG 3.1</b> Which check holds which principle. Every rule except "calm" has at least one mechanical check; calm is held by tests that forbid streaks and verdict words plus a human reading of the copy.</figcaption>
+  </figure>
+</section>
+
+<!-- ======================================================= 4 SURFACES -->
+<section class="chapter" id="c4">
+  <div class="chapter-head"><span class="num">04</span><h2>The product, surface by surface</h2><span class="sub">Nine routes</span></div>
+  <p class="lede">The app is one hash-routed page with nine destinations. Today and Timeline are in the first download; everything else loads on demand. ⌘K search and the ? "ask my records" panel are available from every route.</p>
+
+  <figure>
+    <svg viewBox="0 0 680 250" font-family="DM Sans" font-size="10">
+      <defs><linearGradient id="g4" x1="0" x2="1"><stop offset="0" stop-color="#4f46b8"/><stop offset="1" stop-color="#8a4f9a"/></linearGradient></defs>
+      <rect x="230" y="8" width="220" height="38" rx="19" fill="#171a33"/>
+      <text x="340" y="25" text-anchor="middle" fill="#fff" font-weight="650" font-size="11">App shell · hash router</text>
+      <text x="340" y="38" text-anchor="middle" fill="#b9bcf0" font-size="8.5">⌘K search · ? ask · appearance · onboarding</text>
+      <g stroke="#bdc5ff" stroke-width="1.2" fill="none">
+        <path d="M340 46 V64 H72 V80"/><path d="M340 64 H608 V80"/><path d="M206 64 V80"/><path d="M474 64 V80"/><path d="M340 64 V80"/>
+        <path d="M72 140 V158 H608 V174"/><path d="M206 158 V174"/><path d="M340 158 V174"/><path d="M474 158 V174"/><path d="M72 158 V174"/>
+      </g>
+      <!-- row 1 -->
+      <g>
+        <rect x="12" y="80" width="120" height="60" rx="10" fill="url(#g4)"/><text x="24" y="99" fill="#fff" font-weight="650" font-size="11">Today</text><text x="24" y="114" fill="#ecebff" font-size="8.5">#/today · entry chunk</text><text x="24" y="127" fill="#ecebff" font-size="8.5">daily loop · dashboard</text>
+        <rect x="146" y="80" width="120" height="60" rx="10" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="158" y="99" fill="#171a33" font-weight="650" font-size="11">What I See</text><text x="158" y="114" fill="#7a7f9c" font-size="8.5">#/what-i-see · lazy</text><text x="158" y="127" fill="#7a7f9c" font-size="8.5">draw · overlay dates</text>
+        <rect x="280" y="80" width="120" height="60" rx="10" fill="url(#g4)"/><text x="292" y="99" fill="#fff" font-weight="650" font-size="11">Timeline</text><text x="292" y="114" fill="#ecebff" font-size="8.5">#/timeline · entry chunk</text><text x="292" y="127" fill="#ecebff" font-size="8.5">story &amp; list views</text>
+        <rect x="414" y="80" width="120" height="60" rx="10" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="426" y="99" fill="#171a33" font-weight="650" font-size="11">My Eyes</text><text x="426" y="114" fill="#7a7f9c" font-size="8.5">#/my-eyes · lazy</text><text x="426" y="127" fill="#7a7f9c" font-size="8.5">baselines · charts · Rx</text>
+        <rect x="548" y="80" width="120" height="60" rx="10" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="560" y="99" fill="#171a33" font-weight="650" font-size="11">Checks</text><text x="560" y="114" fill="#7a7f9c" font-size="8.5">#/self-tests · lazy</text><text x="560" y="127" fill="#7a7f9c" font-size="8.5">Amsler · acuity · contrast</text>
+      </g>
+      <!-- row 2 -->
+      <g>
+        <rect x="12" y="174" width="120" height="60" rx="10" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="24" y="193" fill="#171a33" font-weight="650" font-size="11">Imaging</text><text x="24" y="208" fill="#7a7f9c" font-size="8.5">#/imaging · lazy</text><text x="24" y="221" fill="#7a7f9c" font-size="8.5">scans · letters · ingest</text>
+        <rect x="146" y="174" width="120" height="60" rx="10" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="158" y="193" fill="#171a33" font-weight="650" font-size="11">Appointments</text><text x="158" y="208" fill="#7a7f9c" font-size="8.5">#/appointments · lazy</text><text x="158" y="221" fill="#7a7f9c" font-size="8.5">brief · questions · share</text>
+        <rect x="280" y="174" width="120" height="60" rx="10" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="292" y="193" fill="#171a33" font-weight="650" font-size="11">Visualize</text><text x="292" y="208" fill="#7a7f9c" font-size="8.5">#/visualize · lazy + three</text><text x="292" y="221" fill="#7a7f9c" font-size="8.5">3D · atlas · simulator</text>
+        <rect x="414" y="174" width="120" height="60" rx="10" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="426" y="193" fill="#171a33" font-weight="650" font-size="11">Settings</text><text x="426" y="208" fill="#7a7f9c" font-size="8.5">#/settings · lazy</text><text x="426" y="221" fill="#7a7f9c" font-size="8.5">themes · backup · demo</text>
+        <rect x="548" y="174" width="120" height="60" rx="10" fill="#f5f5fb" stroke="#9aa0bf" stroke-dasharray="3 2"/><text x="560" y="193" fill="#171a33" font-weight="650" font-size="11">Overlays</text><text x="560" y="208" fill="#7a7f9c" font-size="8.5">⌘K search · ? ask</text><text x="560" y="221" fill="#7a7f9c" font-size="8.5">present mode · sheets</text>
+      </g>
+    </svg>
+    <figcaption><b>FIG 4.1</b> Navigation map. The two filled routes ship in the initial chunk; the guard fails the build if any other page is pulled into it.</figcaption>
+  </figure>
+
+  <table>
+    <thead><tr><th style="width:17%">Surface</th><th>What it does</th><th style="width:30%">Key rules</th></tr></thead>
+    <tbody>
+      <tr><td>Today</td><td class="plain">The daily question with two large targets; a dashboard of the last fourteen days, latest acuity and quick routes to draw, check, add a document or open the model eye.</td><td class="plain">Missing days are "missing", never "fine". Calm continuity sentence or nothing.</td></tr>
+      <tr><td>What I See</td><td class="plain">Visual-field canvas with pen, dot, strand, ring, blob, shadow, flash and blur tools. Any two dated drawings for an eye overlay or sit side by side.</td><td class="plain"><code>patient_drawn</code>; labelled as a drawing, never a retinal image; described in words.</td></tr>
+      <tr><td>Timeline</td><td class="plain">Every record on one chronology, filterable by eye, type and dates. A story view weights the clinical spine (diagnoses, surgery, imaging, appointments) above daily observations.</td><td class="plain">Derived, never stored. Windowed with "show earlier".</td></tr>
+      <tr><td>My Eyes</td><td class="plain">Each eye as its own patient: baseline and revisions, diagnoses, procedures, medications, measurements, prescriptions, floaters as persistent objects, and descriptive charts.</td><td class="plain">Glasses and contact-lens prescriptions are never one series.</td></tr>
+      <tr><td>Checks</td><td class="plain">Amsler grid, card-calibrated distance vision and contrast checks, compared only with the person's own earlier attempts.</td><td class="plain">Cannot save without distance, lighting and correction.</td></tr>
+      <tr><td>Imaging</td><td class="plain">OCTs, fundus photos, clinic letters, operative notes. Bulk drop-in, metadata suggestions, two-OCT comparison.</td><td class="plain">Originals kept as bytes; extracted metadata unconfirmed until a person confirms it.</td></tr>
+      <tr><td>Appointments</td><td class="plain">Visits, a running list of questions, and the flagship <strong>Prepare for appointment</strong> brief with print, PDF, present mode, QR card and encrypted share.</td><td class="plain">Patient and clinic content never share a list.</td></tr>
+      <tr><td>Visualize</td><td class="plain">3D eye from real millimetre anatomy, retina states, procedures, a 50-condition atlas with a severity slider, and a patient-view simulator.</td><td class="plain">Generic boundary everywhere; atlas never ranked against symptoms.</td></tr>
+      <tr><td>Settings</td><td class="plain">Four themes, eight colour palettes, four type sizes, motion and glare comfort, export/import/test-backup, demo data, changelog, safety copy.</td><td class="plain">Preferences live in the record and survive export.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols" style="margin-top:6pt">
+    <figure style="margin:0"><div class="shot"><img src="img/drawing.jpg" alt="The What I See canvas with marks drawn on a visual field."></div><figcaption><b>FIG 4.2</b> What I See: marks on a visual-field canvas.</figcaption></figure>
+    <figure style="margin:0"><div class="shot"><img src="img/timeline.jpg" alt="The timeline story view with clinical events weighted above daily entries."></div><figcaption><b>FIG 4.3</b> Timeline story view: the clinical spine reads first.</figcaption></figure>
+    <figure style="margin:0"><div class="shot"><img src="img/brief.jpg" alt="Prepare for appointment: period chooser, optional sections and print heading."></div><figcaption><b>FIG 4.4</b> Preparing a brief: period, optional sections, print heading.</figcaption></figure>
+    <figure style="margin:0"><div class="shot"><img src="img/atlas.jpg" alt="The condition atlas inside Visualize."></div><figcaption><b>FIG 4.5</b> Condition atlas: a reference someone navigates, never a suggestion.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ======================================================= 5 USER STORIES -->
+<section class="chapter" id="c5">
+  <div class="chapter-head"><span class="num">05</span><h2>User stories</h2><span class="sub">Nine epics</span></div>
+  <p class="lede">Every story is written so its acceptance criteria can be checked by running the app or a test, not by opinion. All stories below are <strong>Must</strong> and implemented in 0.10.0.</p>
+
+  <h3><span class="n">E1</span>Daily record · Today</h3>
+  <div class="story"><div class="id">US-1.1</div><div><div class="s">Log an unchanged day in one tap, so that weeks of quiet days become evidence that a later change is new.</div><div class="ac">Two large targets · "Nothing different today" writes a dated <code>DailyLog</code> with <code>no_change</code> · no further fields · today shows as recorded after reload.</div></div></div>
+  <div class="story"><div class="id">US-1.2</div><div><div class="s">Record a change against my usual baseline: eye, symptom, comparison, optional severity and note.</div><div class="ac">Form appears only after "Something changed" · eye required · comparison scale same / slightly more / much more / fewer / different / new · severity labelled as the person's own number · suggestions only from own history.</div></div></div>
+  <div class="story"><div class="id">US-1.3</div><div><div class="s">Date an entry by when the change started, not when I typed it.</div><div class="ac">Yesterday and a date picker · stored <code>date_time</code> is onset.</div></div></div>
+  <div class="story"><div class="id">US-1.4</div><div><div class="s">See calm continuity without streak shame.</div><div class="ac">No streak, flame or badge · gaps described as fine · sentence is silent when there is nothing worth saying.</div></div></div>
+  <div class="story"><div class="id">US-1.5</div><div><div class="s">Receive restrained urgent-assessment guidance when I log a sudden symptom.</div><div class="ac">Sudden floaters, flashes, curtain or vision drop show one short notice pointing to an ophthalmologist or emergency eye service · no probability or diagnosis.</div></div></div>
+
+  <h3><span class="n">E2</span>Visual diary · What I See</h3>
+  <div class="story"><div class="id">US-2.1</div><div><div class="s">Draw what I see on a visual-field canvas.</div><div class="ac">Eight tools with size and opacity · tagged <code>patient_drawn</code> and an eye · labelled as a drawing, not a retinal image.</div></div></div>
+  <div class="story"><div class="id">US-2.2</div><div><div class="s">Overlay two dates so drift becomes visible.</div><div class="ac">Any two dated drawings per eye overlay or sit side by side · no verdict stated.</div></div></div>
+  <div class="story"><div class="id">US-2.3</div><div><div class="s">Read every drawing as words.</div><div class="ac">Automatic description (summary + per-mark detail) used as alt text, in search and in the brief.</div></div></div>
+
+  <h3><span class="n">E3</span>Timeline &nbsp;·&nbsp; <span class="n">E4</span>My Eyes</h3>
+  <div class="story"><div class="id">US-3.1</div><div><div class="s">See everything in one chronology.</div><div class="ac">Derived from entities · type, date, eye and provenance badge on every row · eye, type and date filters · windowed history.</div></div></div>
+  <div class="story"><div class="id">US-4.1</div><div><div class="s">Keep a separate baseline per eye, with history.</div><div class="ac">Independent right and left profiles · text and optional drawing · dated revisions.</div></div></div>
+  <div class="story"><div class="id">US-4.2</div><div><div class="s">Track diagnoses, procedures, medications, measurements and prescriptions per eye, with sources.</div><div class="ac">eye + source_type + timestamps on each · "Not recorded" for missing values · unit- and method-aware measurements · glasses and contact lenses charted apart.</div></div></div>
+  <div class="story"><div class="id">US-4.3</div><div><div class="s">Track a recurring floater as one object.</div><div class="ac"><code>FloaterObject</code> with first seen, appearance, status, baseline flag and drawings · new events link to it.</div></div></div>
+
+  <h3><span class="n">E5</span>Imaging &amp; documents</h3>
+  <div class="story"><div class="id">US-5.1</div><div><div class="s">Store the originals of scans and letters.</div><div class="ac">Original bytes in the <code>files</code> store · records link to files · object URLs released.</div></div></div>
+  <div class="story"><div class="id">US-5.2</div><div><div class="s">Confirm metadata before it becomes fact.</div><div class="ac">Hints are <code>document_extracted</code>, <code>confirmed: false</code> · ambiguous dates offer both readings · unconfirmed items stay out of the brief · unreadable files kept with a plain explanation.</div></div></div>
+  <div class="story"><div class="id">US-5.3</div><div><div class="s">Compare two OCTs side by side.</div><div class="ac">Same-eye selection · presentational only · no AI reading of the scan.</div></div></div>
+
+  <h3><span class="n">E6</span>Appointments &amp; the brief</h3>
+  <div class="story"><div class="id">US-6.1</div><div><div class="s">Prepare a one-page brief of what changed since the last visit.</div><div class="ac">Selectable period · per-eye new / more / unchanged / less · questions, drawings, clinical events · patient and clinic content never in one list · unconfirmed extracts excluded.</div></div></div>
+  <div class="story"><div class="id">US-6.2</div><div><div class="s">Carry a running list of questions for my doctor.</div><div class="ac">Questions are records with status pending / asked / answered / follow-up · appear on the brief.</div></div></div>
+  <div class="story"><div class="id">US-6.3</div><div><div class="s">Put the brief on paper or on a screen in the room.</div><div class="ac">Deterministic PDF, base-14 fonts · black-and-white print · present mode with wake lock · scoped share with counts shown first · patient-generated footer on every page.</div></div></div>
+
+  <h3><span class="n">E7</span>Search &amp; Ask &nbsp;·&nbsp; <span class="n">E8</span>Education &nbsp;·&nbsp; <span class="n">E9</span>Access &amp; backup</h3>
+  <div class="story"><div class="id">US-7.1</div><div><div class="s">Search every record from the keyboard.</div><div class="ac">⌘K · filters such as <code>eye:left type:floaters after:2026-06</code> · symmetric clinical ↔ everyday synonyms · typo tolerance on long words only.</div></div></div>
+  <div class="story"><div class="id">US-7.2</div><div><div class="s">Ask my own record and get cited answers.</div><div class="ac">Deterministic, no model · every answer cites entries · explicit "I could not find that in your stored records."</div></div></div>
+  <div class="story"><div class="id">US-8.1</div><div><div class="s">Explore generic anatomy and procedures.</div><div class="ac">Boundary on every view · cosmetic personalisation only · three loads only in Visualize.</div></div></div>
+  <div class="story"><div class="id">US-8.2</div><div><div class="s">Browse a condition atlas without being diagnosed.</div><div class="ac">Never surfaced from symptoms · field loss fades, never black · retinal location inverts to field location.</div></div></div>
+  <div class="story"><div class="id">US-9.1</div><div><div class="s">Use the app with low vision.</div><div class="ac">Four themes including two high-contrast · type to 200% with reflow · 44px targets · meaning never by colour alone.</div></div></div>
+  <div class="story"><div class="id">US-9.2</div><div><div class="s">Export and restore my whole record.</div><div class="ac">Checksum, counts and date span · preview before import · replace or merge · optional AES-GCM · test-backup without writing · calm weekly nudge.</div></div></div>
+  <div class="story"><div class="id">US-9.3</div><div><div class="s">Try demo data safely.</div><div class="ac">Every demo record has <code>demo: true</code> · removable in one action.</div></div></div>
+
+  <h3>Explicit refusals</h3>
+  <p>Not backlog items, and recorded so they are never re-argued as features: diagnosing or ranking conditions against symptoms · risk scores, probabilities or "your vision is declining" · interpreting OCT or fundus images · reassuring someone that a quiet log means healthy eyes · any backend, cloud sync or analytics · becoming a general EMR or telemedicine platform · bundling a runtime OCR or language model that fetches from the network.</p>
+</section>
+
+<!-- ======================================================= 6 ARCHITECTURE -->
+<section class="chapter" id="c6">
+  <div class="chapter-head"><span class="num">06</span><h2>Architecture</h2><span class="sub">Layers · boundary</span></div>
+  <p class="lede">A single-page React application with no server. Entities are written once to IndexedDB. Everything a person reads (timeline, indexes, briefs, search results, charts) is computed from those entities, never stored as a second copy of the truth.</p>
+
+  <figure>
+    <svg viewBox="0 0 680 380" font-family="DM Sans" font-size="10">
+      <defs>
+        <marker id="ar6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#464b69"/></marker>
+      </defs>
+      <!-- device boundary -->
+      <rect x="4" y="4" width="512" height="372" rx="14" fill="#fafaff" stroke="#171a33" stroke-width="1.3"/>
+      <text x="18" y="22" font-weight="650" fill="#171a33" font-size="10.5">The person's device · browser tab</text>
+      <text x="500" y="22" text-anchor="end" fill="#7a7f9c" font-size="8.5">nothing crosses this line unasked</text>
+
+      <!-- presentation -->
+      <rect x="18" y="32" width="484" height="62" rx="9" fill="#eeeffa"/>
+      <text x="30" y="49" font-weight="650" fill="#4f46b8" font-size="8.5" letter-spacing="1.2">PRESENTATION</text>
+      <g font-size="9" fill="#171a33">
+        <rect x="30" y="56" width="70" height="28" rx="6" fill="#fff" stroke="#bdc5ff"/><text x="65" y="74" text-anchor="middle">pages/ ×9</text>
+        <rect x="106" y="56" width="86" height="28" rx="6" fill="#fff" stroke="#bdc5ff"/><text x="149" y="74" text-anchor="middle">components/</text>
+        <rect x="198" y="56" width="92" height="28" rx="6" fill="#fff" stroke="#bdc5ff"/><text x="244" y="74" text-anchor="middle">styles · print.css</text>
+        <rect x="296" y="56" width="98" height="28" rx="6" fill="#fff" stroke="#bdc5ff"/><text x="345" y="74" text-anchor="middle">i18n · locales/en</text>
+        <rect x="400" y="56" width="92" height="28" rx="6" fill="#fff" stroke="#bdc5ff"/><text x="446" y="74" text-anchor="middle">router (hash)</text>
+      </g>
+
+      <!-- state -->
+      <rect x="18" y="104" width="484" height="44" rx="9" fill="#171a33"/>
+      <text x="30" y="121" font-weight="650" fill="#bdc5ff" font-size="8.5" letter-spacing="1.2">STATE</text>
+      <text x="30" y="138" fill="#fff" font-size="9"><tspan font-weight="650">store.tsx</tspan> one store, stable data identity · <tspan font-weight="650">indexes.ts</tspan> built once per change · <tspan font-weight="650">query.ts</tspan> select()</text>
+
+      <!-- domain engines -->
+      <rect x="18" y="158" width="484" height="100" rx="9" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/>
+      <text x="30" y="175" font-weight="650" fill="#4f46b8" font-size="8.5" letter-spacing="1.2">DERIVED ENGINES · PURE OVER DATA</text>
+      <g font-size="9" fill="#171a33">
+        <rect x="30" y="182" width="70" height="28" rx="6" fill="#f5f5fb"/><text x="65" y="200" text-anchor="middle">brief</text>
+        <rect x="106" y="182" width="70" height="28" rx="6" fill="#f5f5fb"/><text x="141" y="200" text-anchor="middle">search</text>
+        <rect x="182" y="182" width="70" height="28" rx="6" fill="#f5f5fb"/><text x="217" y="200" text-anchor="middle">ask</text>
+        <rect x="258" y="182" width="70" height="28" rx="6" fill="#f5f5fb"/><text x="293" y="200" text-anchor="middle">trends</text>
+        <rect x="334" y="182" width="76" height="28" rx="6" fill="#f5f5fb"/><text x="372" y="200" text-anchor="middle">dashboard</text>
+        <rect x="416" y="182" width="76" height="28" rx="6" fill="#f5f5fb"/><text x="454" y="200" text-anchor="middle">describe</text>
+        <rect x="30" y="216" width="70" height="28" rx="6" fill="#f5f5fb"/><text x="65" y="234" text-anchor="middle">ingest</text>
+        <rect x="106" y="216" width="70" height="28" rx="6" fill="#f5f5fb"/><text x="141" y="234" text-anchor="middle">pdf · qr</text>
+        <rect x="182" y="216" width="70" height="28" rx="6" fill="#f5f5fb"/><text x="217" y="234" text-anchor="middle">share</text>
+        <rect x="258" y="216" width="70" height="28" rx="6" fill="#f5f5fb"/><text x="293" y="234" text-anchor="middle">suggestions</text>
+        <rect x="334" y="216" width="76" height="28" rx="6" fill="#f5f5fb"/><text x="372" y="234" text-anchor="middle">timeline-story</text>
+        <rect x="416" y="216" width="76" height="28" rx="6" fill="#f5f5fb"/><text x="454" y="234" text-anchor="middle">render (canvas)</text>
+      </g>
+
+      <!-- persistence -->
+      <rect x="18" y="268" width="306" height="96" rx="9" fill="#eeeffa"/>
+      <text x="30" y="285" font-weight="650" fill="#4f46b8" font-size="8.5" letter-spacing="1.2">PERSISTENCE</text>
+      <g font-size="9" fill="#171a33">
+        <rect x="30" y="292" width="88" height="28" rx="6" fill="#fff" stroke="#bdc5ff"/><text x="74" y="310" text-anchor="middle">db.ts</text>
+        <rect x="124" y="292" width="92" height="28" rx="6" fill="#fff" stroke="#bdc5ff"/><text x="170" y="310" text-anchor="middle">migrations.ts</text>
+        <rect x="222" y="292" width="92" height="28" rx="6" fill="#fff" stroke="#bdc5ff"/><text x="268" y="310" text-anchor="middle">archive · backup</text>
+      </g>
+      <path d="M44 330 h120 v24 a60 9 0 0 1 -120 0 z" fill="#171a33"/>
+      <ellipse cx="104" cy="330" rx="60" ry="9" fill="#4f46b8"/>
+      <text x="104" y="350" text-anchor="middle" fill="#fff" font-size="8.5" font-weight="600">IndexedDB "afterlight"</text>
+      <text x="184" y="344" fill="#464b69" font-size="8.5">19 stores · files as bytes</text>
+      <text x="184" y="356" fill="#464b69" font-size="8.5">pre-migration backups</text>
+
+      <!-- workers -->
+      <rect x="334" y="268" width="168" height="96" rx="9" fill="#fff" stroke="#9aa0bf" stroke-dasharray="3 2"/>
+      <text x="346" y="285" font-weight="650" fill="#4f46b8" font-size="8.5" letter-spacing="1.2">BACKGROUND</text>
+      <text x="346" y="304" fill="#171a33" font-size="9"><tspan font-weight="650">image.worker</tspan> · thumbnails</text>
+      <text x="346" y="320" fill="#171a33" font-size="9"><tspan font-weight="650">service worker</tspan> · offline shell</text>
+      <text x="346" y="336" fill="#171a33" font-size="9"><tspan font-weight="650">engine/</tspan> · Three.js, lazy</text>
+      <text x="346" y="352" fill="#7a7f9c" font-size="8.5">content-hashed precache</text>
+
+      <!-- arrows -->
+      <g stroke="#464b69" stroke-width="1.2" fill="none">
+        <line x1="260" y1="94" x2="260" y2="104" marker-end="url(#ar6)"/>
+        <line x1="260" y1="148" x2="260" y2="158" marker-end="url(#ar6)"/>
+        <line x1="170" y1="258" x2="170" y2="268" marker-end="url(#ar6)" marker-start="url(#ar6)"/>
+      </g>
+
+      <!-- exits -->
+      <text x="528" y="28" font-weight="650" fill="#171a33" font-size="10.5">Only three ways out</text>
+      <g font-size="9.5">
+        <rect x="532" y="40" width="140" height="44" rx="9" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="544" y="58" font-weight="650" fill="#171a33">Print</text><text x="544" y="73" fill="#7a7f9c" font-size="8.5">print.css · black &amp; white</text>
+        <rect x="532" y="92" width="140" height="44" rx="9" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="544" y="110" font-weight="650" fill="#171a33">Generated PDF</text><text x="544" y="125" fill="#7a7f9c" font-size="8.5">deterministic writer</text>
+        <rect x="532" y="144" width="140" height="44" rx="9" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/><text x="544" y="162" font-weight="650" fill="#171a33">Encrypted extract</text><text x="544" y="177" fill="#7a7f9c" font-size="8.5">AES-GCM · chosen dates</text>
+      </g>
+      <g stroke="#4f46b8" stroke-width="1.2" fill="none" stroke-dasharray="4 3">
+        <path d="M502 62 H530" marker-end="url(#ar6)"/><path d="M502 114 H530" marker-end="url(#ar6)"/><path d="M502 166 H530" marker-end="url(#ar6)"/>
+      </g>
+      <!-- cloud -->
+      <g transform="translate(546,226)">
+        <path d="M20 60 a22 22 0 0 1 6 -43 a28 28 0 0 1 52 -6 a22 22 0 0 1 36 18 a18 18 0 0 1 -6 31 z" fill="#f5f5fb" stroke="#c7cad9"/>
+        <line x1="14" y1="64" x2="112" y2="4" stroke="#b0602c" stroke-width="2" stroke-linecap="round"/>
+        <text x="62" y="84" text-anchor="middle" fill="#b0602c" font-size="8.8" font-weight="650">No server</text>
+        <text x="62" y="97" text-anchor="middle" fill="#7a7f9c" font-size="8.3">no account · no analytics</text>
+      </g>
+    </svg>
+    <figcaption><b>FIG 6.1</b> System architecture. Pages talk only to the store; engines are pure functions over its data; the database layer is the only code that touches IndexedDB. The three exits on the right are the only paths by which data leaves, and each happens only when the person asks.</figcaption>
+  </figure>
+
+  <h3>The write path</h3>
+  <figure>
+    <svg viewBox="0 0 680 200" font-family="DM Sans" font-size="9.5">
+      <defs><marker id="ar6b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#464b69"/></marker></defs>
+      <g font-weight="650" font-size="10" fill="#171a33" text-anchor="middle">
+        <rect x="10" y="8" width="110" height="28" rx="14" fill="#eeeffa"/><text x="65" y="26">Page (Today)</text>
+        <rect x="150" y="8" width="110" height="28" rx="14" fill="#171a33"/><text x="205" y="26" fill="#fff">store.tsx</text>
+        <rect x="290" y="8" width="110" height="28" rx="14" fill="#eeeffa"/><text x="345" y="26">db.ts</text>
+        <rect x="430" y="8" width="110" height="28" rx="14" fill="#4f46b8"/><text x="485" y="26" fill="#fff">IndexedDB</text>
+        <rect x="570" y="8" width="100" height="28" rx="14" fill="#eeeffa"/><text x="620" y="26">indexes · views</text>
+      </g>
+      <g stroke="#c7cad9" stroke-dasharray="2 3"><line x1="65" y1="36" x2="65" y2="192"/><line x1="205" y1="36" x2="205" y2="192"/><line x1="345" y1="36" x2="345" y2="192"/><line x1="485" y1="36" x2="485" y2="192"/><line x1="620" y1="36" x2="620" y2="192"/></g>
+      <g stroke="#464b69" stroke-width="1.2" fill="none">
+        <line x1="65" y1="58" x2="203" y2="58" marker-end="url(#ar6b)"/>
+        <line x1="205" y1="82" x2="343" y2="82" marker-end="url(#ar6b)"/>
+        <line x1="345" y1="106" x2="483" y2="106" marker-end="url(#ar6b)"/>
+        <line x1="485" y1="130" x2="347" y2="130" marker-end="url(#ar6b)"/>
+        <line x1="345" y1="152" x2="207" y2="152" marker-end="url(#ar6b)"/>
+        <line x1="205" y1="174" x2="618" y2="174" marker-end="url(#ar6b)"/>
+        <line x1="205" y1="186" x2="67" y2="186" marker-end="url(#ar6b)"/>
+      </g>
+      <g fill="#464b69">
+        <text x="72" y="53">save(entry with eye + source_type)</text>
+        <text x="212" y="77">put(store, entity)</text>
+        <text x="352" y="101">readwrite transaction</text>
+        <text x="355" y="125" fill="#2f7d6d" font-weight="650">oncomplete: committed</text>
+        <text x="215" y="147">resolve only after commit</text>
+        <text x="350" y="169">new data identity → indexes rebuilt once, cached</text>
+        <text x="72" y="182" font-weight="650" fill="#4f46b8">UI confirms "saved"</text>
+      </g>
+    </svg>
+    <figcaption><b>FIG 6.2</b> A save resolves at the IndexedDB commit, not before it (verification item V-009). Rows on screen change only after the data is durable, so a crash can never show a record that was not stored.</figcaption>
+  </figure>
+
+  <h3>Module map</h3>
+  <table style="break-inside: avoid">
+    <thead><tr><th style="width:20%">Layer</th><th>Modules</th></tr></thead>
+    <tbody>
+      <tr><td>Presentation</td><td class="plain"><code>pages/</code> Today, WhatISee, TimelinePage, MyEyes, SelfTests, Imaging, Appointments, Visualize, Settings · <code>components/</code> Chart, Trends, Atlas, EyeCanvas, EyeStudio, VisionSim, CommandPalette, ShareBrief, QrCode, Sheet, Onboarding, Lumi</td></tr>
+      <tr><td>State &amp; query</td><td class="plain"><code>store.tsx</code>, <code>indexes.ts</code>, <code>query.ts</code>, <code>router.ts</code>, <code>prefs.ts</code></td></tr>
+      <tr><td>Domain</td><td class="plain"><code>models.ts</code>, <code>brief.ts</code>, <code>search.ts</code>, <code>ask.ts</code>, <code>trends.ts</code>, <code>dashboard.ts</code>, <code>describe.ts</code>, <code>suggestions.ts</code>, <code>streak.ts</code>, <code>timeline-story.ts</code>, <code>acuity.ts</code>, <code>selftest.ts</code>, <code>conditions.ts</code>, <code>education.ts</code></td></tr>
+      <tr><td>Persistence</td><td class="plain"><code>db.ts</code>, <code>migrations.ts</code>, <code>archive.ts</code>, <code>backup.ts</code>, <code>thumbs.ts</code> + <code>workers/image.worker</code></td></tr>
+      <tr><td>Handoff</td><td class="plain"><code>pdf.ts</code>, <code>briefpdf.ts</code>, <code>briefexport.ts</code>, <code>share.ts</code>, <code>qr.ts</code>, <code>ingest.ts</code></td></tr>
+      <tr><td>Engine</td><td class="plain"><code>engine/anatomy</code>, <code>engine/conditions</code>, <code>engine/simulate</code>, <code>engine/materials</code>, <code>engine/core</code>: framework-agnostic Three.js</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ======================================================= 7 DATA MODEL -->
+<section class="chapter" id="c7">
+  <div class="chapter-head"><span class="num">07</span><h2>Data model &amp; provenance</h2><span class="sub">models.ts</span></div>
+  <p class="lede">Every record type lives in <code>lib/models.ts</code>, and every clinical or observation record stores the same spine: <code>id</code>, <code>created_at</code>, <code>updated_at</code>, <code>eye</code>, <code>source_type</code> and an optional <code>demo</code> flag. The timeline, search and the brief read the stored value; none of them infers provenance from a record's type. The guard fails the build if a dated record type is added without <code>source_type</code>.</p>
+
+  <figure>
+    <svg viewBox="0 0 680 422" font-family="DM Sans" font-size="9">
+      <defs><marker id="ar7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa0bf"/></marker></defs>
+      <!-- spine -->
+      <rect x="250" y="6" width="180" height="78" rx="9" fill="#171a33"/>
+      <text x="262" y="24" fill="#bdc5ff" font-weight="650" font-size="8" letter-spacing="1.2">THE PROVENANCE SPINE</text>
+      <g fill="#fff" font-family="Menlo" font-size="8.3"><text x="262" y="40">id · created_at · updated_at</text><text x="262" y="54">eye: right|left|both|n/a</text><text x="262" y="68">source_type · demo?</text></g>
+      <!-- groups -->
+      <g>
+        <rect x="8" y="104" width="206" height="142" rx="10" fill="#eeeffa"/>
+        <text x="20" y="122" fill="#4f46b8" font-weight="650" font-size="8" letter-spacing="1.2">THE PERSON'S OWN ACCOUNT</text>
+        <rect x="236" y="104" width="206" height="142" rx="10" fill="#eef7f4"/>
+        <text x="248" y="122" fill="#2f7d6d" font-weight="650" font-size="8" letter-spacing="1.2">CLINICAL HISTORY</text>
+        <rect x="464" y="104" width="208" height="142" rx="10" fill="#fdf2ec"/>
+        <text x="476" y="122" fill="#b0602c" font-weight="650" font-size="8" letter-spacing="1.2">EVIDENCE &amp; FILES</text>
+      </g>
+      <g fill="#fff" stroke="#c7cad9">
+        <rect x="18" y="130" width="90" height="24" rx="5"/><rect x="114" y="130" width="90" height="24" rx="5"/>
+        <rect x="18" y="160" width="90" height="24" rx="5"/><rect x="114" y="160" width="90" height="24" rx="5"/>
+        <rect x="18" y="190" width="90" height="24" rx="5"/><rect x="114" y="190" width="90" height="24" rx="5"/>
+        <rect x="18" y="218" width="186" height="22" rx="5"/>
+        <rect x="246" y="130" width="90" height="24" rx="5"/><rect x="342" y="130" width="90" height="24" rx="5"/>
+        <rect x="246" y="160" width="90" height="24" rx="5"/><rect x="342" y="160" width="90" height="24" rx="5"/>
+        <rect x="246" y="190" width="90" height="24" rx="5"/><rect x="342" y="190" width="90" height="24" rx="5"/>
+        <rect x="246" y="218" width="186" height="22" rx="5"/>
+        <rect x="474" y="130" width="92" height="24" rx="5"/><rect x="572" y="130" width="92" height="24" rx="5"/>
+        <rect x="474" y="160" width="92" height="24" rx="5"/><rect x="572" y="160" width="92" height="24" rx="5"/>
+        <rect x="474" y="190" width="190" height="24" rx="5"/>
+        <rect x="474" y="218" width="190" height="22" rx="5"/>
+      </g>
+      <g fill="#171a33" font-weight="600" text-anchor="middle">
+        <text x="63" y="146">SymptomEntry</text><text x="159" y="146">DailyLog</text>
+        <text x="63" y="176">VisualFieldDrawing</text><text x="159" y="176">FloaterObject</text>
+        <text x="63" y="206">DoctorQuestion</text><text x="159" y="206">EyeBaseline</text>
+        <text x="111" y="233">SelfTestResult (with TestConditions)</text>
+        <text x="291" y="146">Diagnosis</text><text x="387" y="146">Procedure</text>
+        <text x="291" y="176">Medication</text><text x="387" y="176">Prescription</text>
+        <text x="291" y="206">Measurement</text><text x="387" y="206">Appointment</text>
+        <text x="339" y="233">GeneratedBrief (BriefPayload)</text>
+        <text x="520" y="146">ImagingRecord</text><text x="618" y="146">DocumentRecord</text>
+        <text x="520" y="176">StoredFile</text><text x="618" y="176">thumbnails</text>
+        <text x="569" y="206">AppMeta · preferences · schema</text>
+        <text x="569" y="233">backups (pre-migration snapshots)</text>
+      </g>
+      <g stroke="#9aa0bf" stroke-width="1" fill="none">
+        <path d="M340 84 V96 H110 V104"/><path d="M340 84 V104"/><path d="M340 96 H568 V104"/>
+      </g>
+      <!-- relationships -->
+      <text x="8" y="272" fill="#171a33" font-weight="650" font-size="10.5">Key relationships</text>
+      <g font-size="9" fill="#171a33">
+        <rect x="8" y="284" width="120" height="26" rx="6" fill="#eeeffa"/><text x="68" y="301" text-anchor="middle" font-weight="600">SymptomEntry</text>
+        <rect x="8" y="346" width="120" height="26" rx="6" fill="#eef7f4"/><text x="68" y="363" text-anchor="middle" font-weight="600">DoctorQuestion</text>
+        <rect x="236" y="276" width="124" height="24" rx="6" fill="#eeeffa"/><text x="298" y="292" text-anchor="middle" font-weight="600">FloaterObject</text>
+        <rect x="236" y="306" width="124" height="24" rx="6" fill="#eeeffa"/><text x="298" y="322" text-anchor="middle" font-weight="600">VisualFieldDrawing</text>
+        <rect x="236" y="346" width="124" height="26" rx="6" fill="#eef7f4"/><text x="298" y="363" text-anchor="middle" font-weight="600">Appointment</text>
+        <rect x="420" y="320" width="120" height="24" rx="6" fill="#fdf2ec"/><text x="480" y="336" text-anchor="middle" font-weight="600">ImagingRecord</text>
+        <rect x="420" y="368" width="120" height="24" rx="6" fill="#fdf2ec"/><text x="480" y="384" text-anchor="middle" font-weight="600">DocumentRecord</text>
+        <rect x="582" y="343" width="92" height="26" rx="6" fill="#171a33"/><text x="628" y="360" text-anchor="middle" font-weight="600" fill="#fff">StoredFile</text>
+      </g>
+      <g stroke="#9aa0bf" stroke-width="1" fill="none" marker-end="url(#ar7)">
+        <path d="M128 293 H180 V288 H234"/><path d="M128 300 H180 V318 H234"/><path d="M128 304 H160 V352 H234"/>
+        <path d="M128 359 H234"/>
+        <path d="M360 359 H390 V332 H418"/><path d="M360 362 H390 V380 H418"/>
+        <path d="M540 332 H560 V352 H580"/><path d="M540 380 H560 V360 H580"/>
+      </g>
+      <g fill="#7a7f9c" font-size="7.6">
+        <text x="168" y="282">floater_object_id</text><text x="182" y="315">drawing_id</text><text x="166" y="348">appointment_id</text>
+        <text x="152" y="372">appointment_id</text>
+        <text x="364" y="326">linked_imaging_ids</text><text x="364" y="396">linked_document_ids</text>
+        <text x="544" y="326">file_ids</text><text x="548" y="394">file_id</text>
+      </g>
+      <text x="8" y="414" fill="#7a7f9c" font-size="8.5">Arrows point from the referencing record to the referenced one. Links are ids, never embedded copies; the timeline joins them at read time.</text>
+    </svg>
+    <figcaption><b>FIG 7.1</b> Entity map: the record types grouped by whose account they are, and the id links between them.</figcaption>
+  </figure>
+
+  <h3>The six provenance types</h3>
+  <table>
+    <thead><tr><th style="width:24%">source_type</th><th style="width:22%">Shown as</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td><code>patient_reported</code></td><td class="plain"><span class="badge" style="color:var(--p-rep)">Patient reported</span></td><td class="plain">What the person noticed and wrote. Never presented as a clinical finding.</td></tr>
+      <tr><td><code>patient_drawn</code></td><td class="plain"><span class="badge" style="color:var(--p-draw)">Patient drawing</span></td><td class="plain">A representation of what someone sees; never a retinal image.</td></tr>
+      <tr><td><code>clinician_reported</code></td><td class="plain"><span class="badge" style="color:var(--p-clin)">Clinician documented</span></td><td class="plain">Copied from a clinic letter or report; never presented as the person's impression.</td></tr>
+      <tr><td><code>device_measurement</code></td><td class="plain"><span class="badge" style="color:var(--p-dev)">Device measurement</span></td><td class="plain">A reading with unit and method (e.g. IOP method, acuity notation); clinic and home readings are never one series.</td></tr>
+      <tr><td><code>document_extracted</code></td><td class="plain"><span class="badge" style="color:var(--p-ext)">Extracted from document</span></td><td class="plain">Read from a filename, PDF or DICOM. <code>confirmed: false</code> and out of the brief until a person confirms it.</td></tr>
+      <tr><td><code>ai_generated</code></td><td class="plain"><span class="badge" style="color:var(--p-ai)">AI-generated summary</span></td><td class="plain">Reserved for optional future summaries; never a diagnosis channel. Unused in 0.10.0.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Notable shapes</h3>
+  <div class="cols">
+    <div>
+      <h4>SymptomEntry</h4>
+      <p>Eye, symptom type, <code>baseline_comparison</code> (same, slightly more, much more, fewer, different appearance, new), optional 0–10 severity, onset <code>date_time</code>, note, and links to a floater, drawings and an appointment.</p>
+      <h4>Prescription</h4>
+      <p>Sphere, cylinder, axis and acuity held separately for the right and left eye (the record's own <code>eye</code> is "both"), with <code>lens: glasses | contact_lenses | not_recorded</code>. Prescriptions entered before the type was asked were migrated to "type not recorded" rather than guessed (schema 6).</p>
+    </div>
+    <div>
+      <h4>SelfTestResult</h4>
+      <p>Amsler, distance-vision or contrast result plus mandatory <code>TestConditions</code>: distance, lighting and correction. Without them a check is not comparable with anything.</p>
+      <h4>Measurement</h4>
+      <p>Value, unit and method, with a confirmed flag. Acuity is normalised to logMAR for charting while the original notation is kept for display.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= 8 PERSISTENCE -->
+<section class="chapter" id="c8">
+  <div class="chapter-head"><span class="num">08</span><h2>Persistence &amp; migrations</h2><span class="sub">IndexedDB · archive</span></div>
+  <p class="lede">The record exists in one place: an IndexedDB database named <code>afterlight</code> on the person's device. That makes integrity the first security property. If the data is lost or silently corrupted, there is nowhere else to restore it from.</p>
+
+  <h3>Stores</h3>
+  <figure>
+    <svg viewBox="0 0 680 128" font-family="Menlo, monospace" font-size="8.6">
+      <g>
+        <rect x="0" y="0" width="680" height="128" rx="10" fill="#f5f5fb"/>
+      </g>
+      <g fill="#fff" stroke="#bdc5ff">
+        <rect x="12" y="12" width="98" height="24" rx="5"/><rect x="118" y="12" width="98" height="24" rx="5"/><rect x="224" y="12" width="98" height="24" rx="5"/><rect x="330" y="12" width="98" height="24" rx="5"/><rect x="436" y="12" width="98" height="24" rx="5"/><rect x="542" y="12" width="126" height="24" rx="5"/>
+        <rect x="12" y="44" width="98" height="24" rx="5"/><rect x="118" y="44" width="98" height="24" rx="5"/><rect x="224" y="44" width="98" height="24" rx="5"/><rect x="330" y="44" width="98" height="24" rx="5"/><rect x="436" y="44" width="98" height="24" rx="5"/><rect x="542" y="44" width="126" height="24" rx="5"/>
+        <rect x="12" y="76" width="98" height="24" rx="5"/><rect x="118" y="76" width="98" height="24" rx="5"/><rect x="224" y="76" width="98" height="24" rx="5"/>
+      </g>
+      <rect x="330" y="76" width="98" height="24" rx="5" fill="#171a33"/>
+      <rect x="436" y="76" width="98" height="24" rx="5" fill="#4f46b8"/>
+      <rect x="542" y="76" width="126" height="24" rx="5" fill="#fff" stroke="#b0602c" stroke-dasharray="3 2"/>
+      <g fill="#171a33" text-anchor="middle">
+        <text x="61" y="28">symptoms</text><text x="167" y="28">dailyLogs</text><text x="273" y="28">floaters</text><text x="379" y="28">drawings</text><text x="485" y="28">appointments</text><text x="605" y="28">questions</text>
+        <text x="61" y="60">diagnoses</text><text x="167" y="60">procedures</text><text x="273" y="60">medications</text><text x="379" y="60">prescriptions</text><text x="485" y="60">measurements</text><text x="605" y="60">selfTests</text>
+        <text x="61" y="92">imaging</text><text x="167" y="92">documents</text><text x="273" y="92">baselines</text>
+        <text x="379" y="92" fill="#fff">files</text><text x="485" y="92" fill="#fff">meta · briefs</text><text x="605" y="92" fill="#b0602c">backups</text>
+      </g>
+      <text x="12" y="118" font-family="DM Sans" fill="#7a7f9c" font-size="8.3">All stores use keyPath "id". files holds ArrayBuffer bytes, never Blobs. backups holds pre-migration snapshots so an upgrade is never a one-way door.</text>
+    </svg>
+    <figcaption><b>FIG 8.1</b> The nineteen object stores in IndexedDB version 3 (<code>DB_VERSION</code>), carrying data schema 7 (<code>SCHEMA_VERSION</code>).</figcaption>
+  </figure>
+
+  <h3>Schema history</h3>
+  <figure>
+    <svg viewBox="0 0 680 150" font-family="DM Sans" font-size="9">
+      <line x1="30" y1="40" x2="650" y2="40" stroke="#bdc5ff" stroke-width="3" stroke-linecap="round"/>
+      <g><circle cx="40" cy="40" r="11" fill="#fff" stroke="#4f46b8" stroke-width="2"/><text x="40" y="44" text-anchor="middle" font-weight="700" fill="#4f46b8">1</text><circle cx="140" cy="40" r="11" fill="#fff" stroke="#4f46b8" stroke-width="2"/><text x="140" y="44" text-anchor="middle" font-weight="700" fill="#4f46b8">2</text><circle cx="240" cy="40" r="11" fill="#fff" stroke="#4f46b8" stroke-width="2"/><text x="240" y="44" text-anchor="middle" font-weight="700" fill="#4f46b8">3</text><circle cx="340" cy="40" r="11" fill="#fff" stroke="#4f46b8" stroke-width="2"/><text x="340" y="44" text-anchor="middle" font-weight="700" fill="#4f46b8">4</text><circle cx="440" cy="40" r="11" fill="#fff" stroke="#4f46b8" stroke-width="2"/><text x="440" y="44" text-anchor="middle" font-weight="700" fill="#4f46b8">5</text><circle cx="540" cy="40" r="11" fill="#fff" stroke="#4f46b8" stroke-width="2"/><text x="540" y="44" text-anchor="middle" font-weight="700" fill="#4f46b8">6</text><circle cx="640" cy="40" r="13" fill="#4f46b8"/><text x="640" y="44" text-anchor="middle" font-weight="700" fill="#fff">7</text></g>
+      <g font-size="7.9" fill="#464b69"><text x="90" y="68" text-anchor="middle" font-weight="650" fill="#171a33">1 → 2</text><text x="90" y="82" text-anchor="middle">floaters get a</text><text x="90" y="94" text-anchor="middle">source</text><text x="190" y="68" text-anchor="middle" font-weight="650" fill="#171a33">2 → 3</text><text x="190" y="82" text-anchor="middle">files kept</text><text x="190" y="94" text-anchor="middle">as bytes</text><text x="290" y="68" text-anchor="middle" font-weight="650" fill="#171a33">3 → 4</text><text x="290" y="82" text-anchor="middle">self-checks,</text><text x="290" y="94" text-anchor="middle">profiles</text><text x="390" y="68" text-anchor="middle" font-weight="650" fill="#171a33">4 → 5</text><text x="390" y="82" text-anchor="middle">measurements</text><text x="390" y="94" text-anchor="middle">marked checked</text><text x="490" y="68" text-anchor="middle" font-weight="650" fill="#171a33">5 → 6</text><text x="490" y="82" text-anchor="middle">lens type,</text><text x="490" y="94" text-anchor="middle">never guessed</text><text x="590" y="68" text-anchor="middle" font-weight="650" fill="#171a33">6 → 7</text><text x="590" y="82" text-anchor="middle">provenance</text><text x="590" y="94" text-anchor="middle">stored; lens fixed</text></g>
+      <rect x="30" y="112" width="620" height="30" rx="8" fill="#f5f5fb"/>
+      <text x="44" y="131" fill="#171a33" font-size="8.8"><tspan font-weight="650">Every upgrade:</tspan> snapshot to <tspan font-family="Menlo">backups</tspan> → pure migration → write back every store it changed, in one transaction → stamp <tspan font-family="Menlo">schema_version</tspan>.</text>
+    </svg>
+    <figcaption><b>FIG 8.2</b> The data schema has moved six times. Each migration is a pure function, tested, and run once after a pre-migration backup.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div>
+      <h3>Export &amp; import</h3>
+      <ul>
+        <li>Archive v2: canonical JSON, SHA-256 checksum, per-store counts and date span.</li>
+        <li>Optional encryption: AES-GCM with PBKDF2-SHA256, 250,000 iterations. No recovery if the passphrase is forgotten, and the app says so.</li>
+        <li>Import always previews first; <strong>replace</strong> or <strong>merge</strong> (newest <code>updated_at</code> wins).</li>
+        <li>Test-backup validates a file without writing anything.</li>
+        <li>The error boundary offers export even if the UI has crashed.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Safety rails</h3>
+      <ul>
+        <li>Quota failures surface through <code>saveStoredFile</code>, never silent loss.</li>
+        <li>Multi-store writes go through snapshot writes and serialised meta patches, avoiding races.</li>
+        <li>Each object URL pins a scan in memory, so they are created with <code>storedFileURL</code> and released with <code>releaseFileURL</code>.</li>
+        <li>A calm weekly nudge appears when the last backup is old, and never nags.</li>
+        <li>Demo records carry <code>demo: true</code> and are removed in one action.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= 9 ENGINES -->
+<section class="chapter" id="c9">
+  <div class="chapter-head"><span class="num">09</span><h2>The derived engines</h2><span class="sub">brief · search · ask · trends</span></div>
+  <p class="lede">The engines read the store through <code>query.ts</code>, which sits on cached indexes. None of them stores its results, and none of them may judge. They state counts, dates, values and differences, and they cite where each came from.</p>
+
+  <h3>The appointment brief</h3>
+  <figure>
+    <svg viewBox="0 0 680 250" font-family="DM Sans" font-size="9">
+      <defs><marker id="ar9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#464b69"/></marker></defs>
+      <g font-size="9.5">
+        <rect x="6" y="40" width="112" height="70" rx="9" fill="#eeeffa"/><text x="18" y="58" font-weight="650" fill="#171a33">Inputs</text>
+        <text x="18" y="74" fill="#464b69" font-size="8.5">store data</text><text x="18" y="86" fill="#464b69" font-size="8.5">period (since last visit,</text><text x="18" y="98" fill="#464b69" font-size="8.5">7 / 30 days, custom)</text>
+        <rect x="6" y="122" width="112" height="44" rx="9" fill="#f5f5fb" stroke="#c7cad9" stroke-dasharray="3 2"/><text x="18" y="140" font-weight="650" fill="#171a33" font-size="9">Opt-in sections</text><text x="18" y="155" fill="#7a7f9c" font-size="8.3">numbers · home checks</text>
+      </g>
+      <g>
+        <rect x="146" y="16" width="120" height="34" rx="8" fill="#fff" stroke="#4f46b8"/><text x="156" y="31" font-weight="650" fill="#171a33">1 · Select in period</text><text x="156" y="43" fill="#7a7f9c" font-size="8">via query layer</text>
+        <rect x="146" y="58" width="120" height="34" rx="8" fill="#fff" stroke="#4f46b8"/><text x="156" y="73" font-weight="650" fill="#171a33">2 · Drop unconfirmed</text><text x="156" y="85" fill="#7a7f9c" font-size="8">confirmed: false out</text>
+        <rect x="146" y="100" width="120" height="34" rx="8" fill="#fff" stroke="#4f46b8"/><text x="156" y="115" font-weight="650" fill="#171a33">3 · Split by eye</text><text x="156" y="127" fill="#7a7f9c" font-size="8">right · left · both</text>
+        <rect x="146" y="142" width="120" height="34" rx="8" fill="#fff" stroke="#4f46b8"/><text x="156" y="157" font-weight="650" fill="#171a33">4 · Split by source</text><text x="156" y="169" fill="#7a7f9c" font-size="8">patient ≠ clinic</text>
+        <rect x="146" y="184" width="120" height="34" rx="8" fill="#fff" stroke="#4f46b8"/><text x="156" y="199" font-weight="650" fill="#171a33">5 · Classify change</text><text x="156" y="211" fill="#7a7f9c" font-size="8">vs. stated baseline</text>
+      </g>
+      <g stroke="#464b69" stroke-width="1.1" fill="none">
+        <path d="M118 75 H132 V33 H144" marker-end="url(#ar9)"/>
+        <path d="M206 50 V56" marker-end="url(#ar9)"/><path d="M206 92 V98" marker-end="url(#ar9)"/><path d="M206 134 V140" marker-end="url(#ar9)"/><path d="M206 176 V182" marker-end="url(#ar9)"/>
+        <path d="M266 201 H290 V120 H302" marker-end="url(#ar9)"/>
+      </g>
+      <!-- document model -->
+      <rect x="304" y="16" width="190" height="210" rx="10" fill="#fff" stroke="#171a33" stroke-width="1.3"/>
+      <text x="316" y="33" font-weight="650" fill="#171a33" font-size="9.5">Brief document model</text>
+      <g font-size="8.4">
+        <rect x="314" y="40" width="82" height="64" rx="5" fill="#eeeffa"/><text x="320" y="53" font-weight="650" fill="#4f46b8">RIGHT EYE</text>
+        <text x="320" y="66" fill="#171a33">New</text><text x="320" y="77" fill="#171a33">More than usual</text><text x="320" y="88" fill="#171a33">Unchanged</text><text x="320" y="99" fill="#171a33">Less than usual</text>
+        <rect x="402" y="40" width="82" height="64" rx="5" fill="#eeeffa"/><text x="408" y="53" font-weight="650" fill="#4f46b8">LEFT EYE</text>
+        <text x="408" y="66" fill="#171a33">New</text><text x="408" y="77" fill="#171a33">More than usual</text><text x="408" y="88" fill="#171a33">Unchanged</text><text x="408" y="99" fill="#171a33">Less than usual</text>
+        <rect x="314" y="110" width="170" height="20" rx="5" fill="#eef7f4"/><text x="320" y="124" fill="#2f7d6d" font-weight="650">From clinic records (separate list)</text>
+        <rect x="314" y="136" width="170" height="20" rx="5" fill="#f5f5fb"/><text x="320" y="150" fill="#171a33">Questions for my doctor</text>
+        <rect x="314" y="162" width="170" height="20" rx="5" fill="#f5f5fb"/><text x="320" y="176" fill="#171a33">What the patient drew (rasterised)</text>
+        <rect x="314" y="188" width="170" height="20" rx="5" fill="#f5f5fb"/><text x="320" y="202" fill="#171a33">Current treatment · events</text>
+        <text x="314" y="220" fill="#7a7f9c" font-size="7.6">PATIENT_GENERATED_FOOTER on every page</text>
+      </g>
+      <!-- renderers -->
+      <g stroke="#464b69" stroke-width="1.1" fill="none">
+        <path d="M494 50 H520" marker-end="url(#ar9)"/><path d="M494 96 H520" marker-end="url(#ar9)"/><path d="M494 142 H520" marker-end="url(#ar9)"/><path d="M494 188 H520" marker-end="url(#ar9)"/>
+      </g>
+      <g font-size="9">
+        <rect x="522" y="34" width="152" height="32" rx="8" fill="#4f46b8"/><text x="534" y="49" fill="#fff" font-weight="650">On screen</text><text x="534" y="60" fill="#dcdcff" font-size="8">Appointments page</text>
+        <rect x="522" y="80" width="152" height="32" rx="8" fill="#4f46b8"/><text x="534" y="95" fill="#fff" font-weight="650">Print</text><text x="534" y="106" fill="#dcdcff" font-size="8">print.css, A4 / Letter</text>
+        <rect x="522" y="126" width="152" height="32" rx="8" fill="#4f46b8"/><text x="534" y="141" fill="#fff" font-weight="650">PDF</text><text x="534" y="152" fill="#dcdcff" font-size="8">pdf.ts: same brief → same bytes</text>
+        <rect x="522" y="172" width="152" height="32" rx="8" fill="#4f46b8"/><text x="534" y="187" fill="#fff" font-weight="650">Present · share · QR</text><text x="534" y="198" fill="#dcdcff" font-size="8">large type, wake lock</text>
+      </g>
+    </svg>
+    <figcaption><b>FIG 9.1</b> From record to brief. One document model feeds every renderer, so what is printed, saved and presented can never disagree. Patient-reported and clinic-documented content is split before any layout happens.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div>
+      <h3>Search</h3>
+      <ul>
+        <li>⌘K over symptoms, notes, documents, diagnoses, procedures and imaging metadata.</li>
+        <li>Field scoping: <code>eye:left type:floaters after:2026-06</code>.</li>
+        <li>Clinical ↔ everyday synonyms in both directions (OCT ↔ tomography).</li>
+        <li>Typo tolerance only on long words, so short clinical terms stay exact.</li>
+        <li>Explainable ranking: every hit carries a <code>why</code>.</li>
+      </ul>
+      <h3>Trends &amp; charts</h3>
+      <ul>
+        <li>Numeric series (acuity in logMAR, IOP, prescriptions) described by date, value and arithmetic difference.</li>
+        <li>No thresholds, verdict words ("worsening", "stable") or good/bad colours; the guard fails on verdict language.</li>
+        <li>Clinic readings and home checks are never one line; glasses and contact lenses are never one series.</li>
+        <li>Every chart has a table equivalent.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Ask my records</h3>
+      <div class="shot" style="margin:4pt 0 6pt"><img src="img/ask.jpg" alt="The ask panel answering that a question could not be found in the stored records."></div>
+      <ul>
+        <li>A deterministic intent grammar, not a language model: when did X first appear, how often, when last, what did a measurement do over a period.</li>
+        <li>Every answer cites the entries it came from.</li>
+        <li>When the record cannot answer: <em>"I could not find that in your stored records."</em></li>
+        <li>A property test proves no answer contains a number the record does not support.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= 10 INGESTION -->
+<section class="chapter" id="c10">
+  <div class="chapter-head"><span class="num">10</span><h2>Documents &amp; ingestion</h2><span class="sub">Nothing read is a fact</span></div>
+  <p class="lede">People arrive with stacks of PDFs, scans and letters. Afterlight keeps every original exactly as given and reads what it can as <em>suggestions</em>. A date from a filename or a laterality from <code>_OD</code> is never a fact until a person says so.</p>
+
+  <figure>
+    <svg viewBox="0 0 680 270" font-family="DM Sans" font-size="9.5">
+      <defs><marker id="ar10" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#464b69"/></marker></defs>
+      <!-- drop -->
+      <rect x="6" y="96" width="104" height="70" rx="10" fill="#171a33"/>
+      <text x="58" y="122" text-anchor="middle" fill="#fff" font-weight="650">Files dropped</text>
+      <text x="58" y="137" text-anchor="middle" fill="#b9bcf0" font-size="8.5">PDF · image · DICOM</text>
+      <text x="58" y="150" text-anchor="middle" fill="#b9bcf0" font-size="8.5">one or many</text>
+      <!-- store bytes -->
+      <rect x="146" y="20" width="150" height="46" rx="9" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/>
+      <text x="158" y="39" font-weight="650" fill="#171a33">Original bytes stored</text><text x="158" y="54" fill="#7a7f9c" font-size="8.5">files store · thumbnail worker</text>
+      <!-- heuristics -->
+      <rect x="146" y="96" width="150" height="70" rx="9" fill="#fff" stroke="#4f46b8" stroke-width="1.2"/>
+      <text x="158" y="114" font-weight="650" fill="#171a33">Read hints</text>
+      <g fill="#464b69" font-size="8.4"><text x="158" y="128">filename tokens, _OD / _OS</text><text x="158" y="140">PDF header &amp; page count</text><text x="158" y="152">DICOM date, modality, laterality</text></g>
+      <!-- unreadable -->
+      <rect x="146" y="196" width="150" height="54" rx="9" fill="#fdf2ec" stroke="#b0602c" stroke-dasharray="3 2"/>
+      <text x="158" y="215" font-weight="650" fill="#b0602c">Cannot be read</text><text x="158" y="229" fill="#464b69" font-size="8.4">stored intact with a plain</text><text x="158" y="241" fill="#464b69" font-size="8.4">sentence; never dropped</text>
+      <!-- extracted -->
+      <rect x="334" y="86" width="160" height="90" rx="10" fill="#fdf2ec" stroke="#b0602c" stroke-width="1.2"/>
+      <text x="346" y="105" font-weight="650" fill="#b0602c">Suggestion</text>
+      <g font-family="Menlo" font-size="8" fill="#171a33"><text x="346" y="121">source_type:</text><text x="358" y="133">"document_extracted"</text><text x="346" y="147">confirmed: false</text></g>
+      <text x="346" y="164" fill="#464b69" font-size="8.3">04-09-2026 → both readings</text>
+      <!-- person -->
+      <path d="M548 131 m-34 0 a34 34 0 1 0 68 0 a34 34 0 1 0 -68 0" fill="#fff" stroke="#171a33" stroke-width="1.3"/>
+      <text x="548" y="127" text-anchor="middle" font-weight="650" fill="#171a33" font-size="9">Person</text><text x="548" y="140" text-anchor="middle" font-weight="650" fill="#171a33" font-size="9">reviews</text>
+      <!-- outcomes -->
+      <rect x="590" y="30" width="86" height="54" rx="9" fill="#4f46b8"/><text x="633" y="50" text-anchor="middle" fill="#fff" font-weight="650" font-size="9">Confirmed</text><text x="633" y="63" text-anchor="middle" fill="#dcdcff" font-size="8">PERSON_</text><text x="633" y="74" text-anchor="middle" fill="#dcdcff" font-size="8">CONFIRMED</text>
+      <rect x="590" y="186" width="86" height="54" rx="9" fill="#f5f5fb" stroke="#c7cad9"/><text x="633" y="207" text-anchor="middle" fill="#171a33" font-weight="650" font-size="9">Left as is</text><text x="633" y="221" text-anchor="middle" fill="#7a7f9c" font-size="8">stays unchecked,</text><text x="633" y="232" text-anchor="middle" fill="#7a7f9c" font-size="8">out of the brief</text>
+      <g stroke="#464b69" stroke-width="1.2" fill="none">
+        <path d="M110 120 H128 V43 H144" marker-end="url(#ar10)"/>
+        <path d="M110 131 H144" marker-end="url(#ar10)"/>
+        <path d="M110 142 H128 V223 H144" marker-end="url(#ar10)"/>
+        <path d="M296 131 H332" marker-end="url(#ar10)"/>
+        <path d="M494 131 H512" marker-end="url(#ar10)"/>
+        <path d="M570 104 L596 86" marker-end="url(#ar10)"/>
+        <path d="M570 158 L596 184" marker-end="url(#ar10)"/>
+      </g>
+      <text x="590" y="102" fill="#4f46b8" font-size="8" font-weight="650">→ eligible for the brief</text>
+    </svg>
+    <figcaption><b>FIG 10.1</b> The ingestion path. <code>PERSON_CONFIRMED</code> is the only place in the code that writes <code>confirmed: true</code>; the guard fails the build on a bare <code>confirmed: true</code> anywhere in the ingestion path.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div><h3>Imaging</h3><ul><li>OCT, fundus photos and other scans kept as original bytes, with thumbnails made in a worker (WebP or JPEG).</li><li>Two OCTs of the same eye side by side or with a slider. The comparison is presentational; a clinician's interpretation is shown if one was recorded.</li><li>No automated reading of any image is ever presented.</li></ul></div>
+    <div><h3>Text recognition (OCR)</h3><ul><li>A registered-recogniser seam exists; no engine is bundled.</li><li>A runtime download would break non-negotiable 1, and bundling one costs about 10 MB. See <code>docs/ocr.md</code>.</li><li>Anything a future recogniser reads would enter as <code>document_extracted</code>, unconfirmed.</li></ul></div>
+  </div>
+</section>
+
+<!-- ======================================================= 11 HANDOFF -->
+<section class="chapter" id="c11">
+  <div class="chapter-head"><span class="num">11</span><h2>Leaving the device</h2><span class="sub">Three exits, all local</span></div>
+  <p class="lede">Data leaves only when the person asks, by exactly three paths: print, a generated PDF, and an encrypted extract. All three are produced locally, and every page they produce says what it is, so a page separated from the rest still says it is not a clinical record.</p>
+
+  <table>
+    <thead><tr><th style="width:18%">Path</th><th>How it works</th><th style="width:30%">Guarantees</th></tr></thead>
+    <tbody>
+      <tr><td>Print</td><td class="plain"><code>print.css</code> loads after the screen styles and produces a black-and-white page, with provenance written as words because colour may not print.</td><td class="plain">Footer on every page; A4 and Letter.</td></tr>
+      <tr><td>Generated PDF</td><td class="plain"><code>pdf.ts</code> is an in-repo writer using only the PDF base-14 fonts. Drawings are rasterised at print resolution by <code>briefexport.ts</code>.</td><td class="plain">Pure and deterministic: no clock, locale or randomness, so the same brief gives byte-identical files.</td></tr>
+      <tr><td>Encrypted extract</td><td class="plain"><code>share.ts</code> builds an ordinary archive of a chosen date range plus a descriptor, encrypted with AES-GCM under a four-word passphrase given in person.</td><td class="plain">Imports through the same tested code as a backup; the passphrase never travels with the file.</td></tr>
+      <tr><td>QR card</td><td class="plain"><code>qr.ts</code> encodes a short plain-text summary (byte mode, versions 1–20, levels L and M) to be scanned off the screen with no signal.</td><td class="plain">Plain text, and labelled as plain text; verified byte-exact against an independent decoder.</td></tr>
+      <tr><td>Present mode</td><td class="plain">The brief one section at a time, in large high-contrast type, keeping the screen awake.</td><td class="plain">Nothing leaves the device.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Share scope, decided before a file exists</h3>
+  <figure>
+    <svg viewBox="0 0 680 168" font-family="DM Sans" font-size="9.5">
+      <rect x="6" y="6" width="320" height="154" rx="12" fill="#eeeffa"/>
+      <text x="20" y="26" font-weight="650" fill="#4f46b8" font-size="8.4" letter-spacing="1.2">INCLUDED BY DEFAULT</text>
+      <g font-size="9.5" fill="#171a33">
+        <rect x="20" y="36" width="140" height="28" rx="7" fill="#fff"/><text x="32" y="54">Symptom entries</text>
+        <rect x="170" y="36" width="140" height="28" rx="7" fill="#fff"/><text x="182" y="54">Daily check-ins</text>
+        <rect x="20" y="72" width="140" height="28" rx="7" fill="#fff"/><text x="32" y="90">Drawings</text>
+        <rect x="170" y="72" width="140" height="28" rx="7" fill="#fff"/><text x="182" y="90">Questions</text>
+      </g>
+      <text x="20" y="124" fill="#464b69" font-size="8.6">The person's own account of the chosen dates.</text>
+      <text x="20" y="138" fill="#464b69" font-size="8.6">Counts are shown first: "42 entries, 3 drawings, 5 questions".</text>
+
+      <rect x="354" y="6" width="320" height="154" rx="12" fill="#fff" stroke="#9aa0bf" stroke-dasharray="4 3"/>
+      <text x="368" y="26" font-weight="650" fill="#7a7f9c" font-size="8.4" letter-spacing="1.2">ONLY IF ASKED FOR, ONE BY ONE</text>
+      <g font-size="9.5" fill="#7a7f9c">
+        <rect x="368" y="36" width="140" height="28" rx="7" fill="#f5f5fb"/><text x="380" y="54">Imaging</text>
+        <rect x="518" y="36" width="140" height="28" rx="7" fill="#f5f5fb"/><text x="530" y="54">Documents</text>
+        <rect x="368" y="72" width="140" height="28" rx="7" fill="#f5f5fb"/><text x="380" y="90">Diagnoses</text>
+        <rect x="518" y="72" width="140" height="28" rx="7" fill="#f5f5fb"/><text x="530" y="90">Original files</text>
+      </g>
+      <text x="368" y="124" fill="#464b69" font-size="8.6">What is left out is counted and shown too.</text>
+      <text x="368" y="138" fill="#464b69" font-size="8.6">The guard fails if <tspan font-family="Menlo" font-size="8">defaultScope</tspan> ever widens.</text>
+    </svg>
+    <figcaption><b>FIG 11.1</b> The default share scope. Sensitive categories are opt-in individually, and the person sees exactly what is in the file, and what is not, before it is made.</figcaption>
+  </figure>
+
+  <div class="callout"><b class="t">The footer</b>
+  Every printed, generated or shared page carries <code>PATIENT_GENERATED_FOOTER</code>: <em>"Patient-generated record, produced by Afterlight from this patient's own entries and from documents the patient holds. Patient-reported items are the patient's own descriptions of their experience. This is not a clinical record, not a measurement, and not a diagnosis."</em> Its wording is on the list that needs clinical sign-off.</div>
+</section>
+
+<!-- ======================================================= 12 ENGINE -->
+<section class="chapter" id="c12">
+  <div class="chapter-head"><span class="num">12</span><h2>The eye engine &amp; atlas</h2><span class="sub">engine/ · lazy</span></div>
+  <p class="lede">Visualize helps a person follow what their clinician describes. It is built from real anatomy in millimetres, and it is generic by construction: it never shows the person's own eye, and it says so on every view.</p>
+
+  <div class="shot"><img src="img/visualize.jpg" alt="Visualize: a three-dimensional cross-section of a generic eye."></div>
+  <figcaption><b>FIG 12.1</b> The 3D cross-section, rendered from <code>engine/anatomy/dimensions.ts</code>. Three.js loads only when this page opens (about 1.4 MB gzipped, outside the initial budget).</figcaption>
+
+  <h3>A condition is a parameter delta, not a picture</h3>
+  <figure>
+    <svg viewBox="0 0 680 210" font-family="DM Sans" font-size="9.5">
+      <defs><marker id="ar12" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#464b69"/></marker></defs>
+      <rect x="6" y="40" width="134" height="76" rx="10" fill="#eeeffa"/>
+      <text x="18" y="60" font-weight="650" fill="#171a33">Normal eye</text>
+      <g fill="#464b69" font-size="8.4"><text x="18" y="76">dimensions in mm</text><text x="18" y="88">iris · fundus · vessels</text><text x="18" y="100">all parameters</text></g>
+      <text x="160" y="84" font-size="20" fill="#4f46b8" font-weight="700">+</text>
+      <rect x="182" y="40" width="134" height="76" rx="10" fill="#fff" stroke="#8a4f9a" stroke-width="1.2"/>
+      <text x="194" y="60" font-weight="650" fill="#171a33">Condition delta</text>
+      <g fill="#464b69" font-size="8.4"><text x="194" y="76">what changes, by how</text><text x="194" y="88">much, from atlas entry</text><text x="194" y="100">(50 entries)</text></g>
+      <text x="336" y="84" font-size="20" fill="#4f46b8" font-weight="700">×</text>
+      <rect x="358" y="40" width="120" height="76" rx="10" fill="#fff" stroke="#8a4f9a" stroke-width="1.2"/>
+      <text x="370" y="60" font-weight="650" fill="#171a33">Severity</text>
+      <rect x="370" y="76" width="96" height="6" rx="3" fill="#eeeffa"/><rect x="370" y="76" width="58" height="6" rx="3" fill="#8a4f9a"/><circle cx="428" cy="79" r="6" fill="#fff" stroke="#8a4f9a" stroke-width="2"/>
+      <text x="370" y="102" fill="#464b69" font-size="8.4">a slider, not a set of images</text>
+      <line x1="478" y1="78" x2="508" y2="78" stroke="#464b69" stroke-width="1.2" marker-end="url(#ar12)"/>
+      <rect x="510" y="16" width="164" height="56" rx="10" fill="#4f46b8"/>
+      <text x="522" y="38" fill="#fff" font-weight="650">3D anatomy view</text><text x="522" y="54" fill="#dcdcff" font-size="8.4">GENERIC_MODEL_BOUNDARY</text>
+      <rect x="510" y="84" width="164" height="56" rx="10" fill="#8a4f9a"/>
+      <text x="522" y="106" fill="#fff" font-weight="650">Patient-view simulator</text><text x="522" y="122" fill="#f1dcff" font-size="8.4">how it is often described</text>
+      <path d="M494 78 V112 H508" fill="none" stroke="#464b69" stroke-width="1.2" marker-end="url(#ar12)"/>
+      <path d="M494 78 V44 H508" fill="none" stroke="#464b69" stroke-width="1.2" marker-end="url(#ar12)"/>
+      <!-- regions bar -->
+      <text x="6" y="150" font-weight="650" fill="#171a33" font-size="10">Atlas coverage · 50 conditions</text>
+      <rect x="6" y="160" width="353" height="22" rx="4" fill="#4f46b8"/><text x="16" y="175" fill="#fff" font-weight="650" font-size="9">Vitreoretinal · 26</text>
+      <rect x="361" y="160" width="258" height="22" rx="4" fill="#8a4f9a"/><text x="371" y="175" fill="#fff" font-weight="650" font-size="9">Anterior segment · 19</text>
+      <rect x="621" y="160" width="53" height="22" rx="4" fill="#ffc6ae"/><text x="628" y="175" fill="#171a33" font-weight="650" font-size="9">Optic · 5</text>
+      <text x="6" y="200" fill="#7a7f9c" font-size="8.3">Separately, 13 condition profiles (retinal detachment, glaucoma, AMD, diabetic eye…) reorder what Today asks about. They shape questions only, never a diagnosis.</text>
+    </svg>
+    <figcaption><b>FIG 12.2</b> Conditions as parameter deltas over the normal eye. That is what makes severity a slider and keeps every view consistent with real anatomy.</figcaption>
+  </figure>
+
+  <h3>Simulator rules, enforced by tests</h3>
+  <figure>
+    <svg viewBox="0 0 680 160" font-family="DM Sans" font-size="9">
+      <defs>
+        <radialGradient id="fade" cx="50%" cy="100%" r="80%"><stop offset="0" stop-color="#9aa0bf" stop-opacity=".85"/><stop offset="1" stop-color="#9aa0bf" stop-opacity="0"/></radialGradient>
+        <linearGradient id="curtain" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#5a5f7a" stop-opacity=".75"/><stop offset=".55" stop-color="#5a5f7a" stop-opacity="0"/></linearGradient>
+      </defs>
+      <!-- retina -->
+      <text x="70" y="14" text-anchor="middle" font-weight="650" fill="#171a33">Retina (back of eye)</text>
+      <circle cx="70" cy="80" r="56" fill="#f6d5c4" stroke="#d8a58e"/>
+      <path d="M14 80 A56 56 0 0 1 126 80 Z" fill="#c9715a" opacity=".55"/>
+      <text x="70" y="58" text-anchor="middle" fill="#fff" font-weight="650" font-size="8.5">superior</text><text x="70" y="69" text-anchor="middle" fill="#fff" font-weight="650" font-size="8.5">detachment</text>
+      <circle cx="70" cy="80" r="4" fill="#9b4d3a"/>
+      <!-- arrow -->
+      <text x="200" y="74" text-anchor="middle" fill="#4f46b8" font-weight="650">inverts</text>
+      <line x1="150" y1="82" x2="250" y2="82" stroke="#4f46b8" stroke-width="1.5"/><path d="M250 82 l-8 -4 v8 z" fill="#4f46b8"/>
+      <text x="200" y="98" text-anchor="middle" fill="#7a7f9c" font-size="8">up ↔ down, left ↔ right</text>
+      <!-- field -->
+      <text x="330" y="14" text-anchor="middle" font-weight="650" fill="#171a33">What is seen</text>
+      <circle cx="330" cy="80" r="56" fill="#eef1ff" stroke="#bdc5ff"/>
+      <circle cx="330" cy="80" r="56" fill="url(#curtain)"/>
+      <text x="330" y="118" text-anchor="middle" fill="#fff" font-weight="650" font-size="8.5">shadow from below</text>
+      <!-- right panel -->
+      <rect x="430" y="18" width="244" height="124" rx="10" fill="#f5f5fb"/>
+      <g font-size="9" fill="#171a33">
+        <circle cx="446" cy="40" r="7" fill="#2f7d6d"/><text x="443" y="43.5" fill="#fff" font-size="8" font-weight="700">✓</text>
+        <text x="460" y="38" font-weight="650">Field loss fades; it is never black</text><text x="460" y="50" fill="#7a7f9c" font-size="8.3">the black tunnel misleads; a test forbids it</text>
+        <circle cx="446" cy="74" r="7" fill="#2f7d6d"/><text x="443" y="77.5" fill="#fff" font-size="8" font-weight="700">✓</text>
+        <text x="460" y="72" font-weight="650">Retinal location inverts to the field</text><text x="460" y="84" fill="#7a7f9c" font-size="8.3">superior detachment → shadow from below</text>
+        <circle cx="446" cy="108" r="7" fill="#2f7d6d"/><text x="443" y="111.5" fill="#fff" font-size="8" font-weight="700">✓</text>
+        <text x="460" y="106" font-weight="650">Never surfaced from symptoms</text><text x="460" y="118" fill="#7a7f9c" font-size="8.3">the atlas is navigated, never ranked</text>
+      </g>
+    </svg>
+    <figcaption><b>FIG 12.3</b> The two physical rules of the simulator, and the product rule that keeps the atlas from behaving like a diagnosis.</figcaption>
+  </figure>
+
+  <ul>
+    <li><strong>Standalone explorer:</strong> <code>npm run build:standalone</code> produces a single offline file, <code>EyeExplorer-engine.html</code>, under 5 MB.</li>
+    <li><strong>Personalisation</strong> (iris colour, pigmentation) is cosmetic, and the boundary text is part of the canvas's accessible name.</li>
+    <li><strong>Asset pipeline:</strong> a Blender bake track is documented in <code>docs/asset-pipeline.md</code> but not run; assets remain procedural.</li>
+  </ul>
+</section>
+
+<!-- ======================================================= 13 A11Y -->
+<section class="chapter" id="c13">
+  <div class="chapter-head"><span class="num">13</span><h2>Accessibility &amp; design system</h2><span class="sub">Built for low vision</span></div>
+  <p class="lede">The people using Afterlight have eye disease. Accessibility is a product requirement enforced by tests, not advice: a person with reduced acuity or contrast sensitivity must be able to complete the daily loop without a sighted helper.</p>
+
+  <figure>
+    <svg viewBox="0 0 680 196" font-family="DM Sans" font-size="9">
+      <text x="6" y="14" font-weight="650" fill="#171a33" font-size="10">Four themes</text>
+      <g>
+        <rect x="6" y="22" width="150" height="88" rx="10" fill="#eef0fb" stroke="#dfe1ee"/><rect x="18" y="36" width="80" height="8" rx="4" fill="#171a33"/><rect x="18" y="52" width="120" height="5" rx="2.5" fill="#7a7f9c"/><rect x="18" y="64" width="64" height="24" rx="8" fill="#4f46b8"/><rect x="88" y="64" width="56" height="24" rx="8" fill="#fff"/><text x="18" y="104" fill="#171a33" font-weight="650">Light</text>
+        <rect x="170" y="22" width="150" height="88" rx="10" fill="#0b0c16"/><rect x="182" y="36" width="80" height="8" rx="4" fill="#eef0f8"/><rect x="182" y="52" width="120" height="5" rx="2.5" fill="#979cb8"/><rect x="182" y="64" width="64" height="24" rx="8" fill="#6b63e0"/><rect x="252" y="64" width="56" height="24" rx="8" fill="#1e2134"/><text x="182" y="104" fill="#eef0f8" font-weight="650">Dark</text>
+        <rect x="334" y="22" width="150" height="88" rx="10" fill="#fff" stroke="#000" stroke-width="2"/><rect x="346" y="36" width="80" height="8" rx="4" fill="#000"/><rect x="346" y="52" width="120" height="5" rx="2.5" fill="#000"/><rect x="346" y="64" width="64" height="24" rx="8" fill="#000"/><rect x="416" y="64" width="56" height="24" rx="8" fill="#fff" stroke="#000" stroke-width="2"/><text x="346" y="104" fill="#000" font-weight="700">High contrast light</text>
+        <rect x="498" y="22" width="176" height="88" rx="10" fill="#000"/><rect x="510" y="36" width="80" height="8" rx="4" fill="#fff"/><rect x="510" y="52" width="120" height="5" rx="2.5" fill="#fff"/><rect x="510" y="64" width="64" height="24" rx="8" fill="#ffe94d"/><rect x="580" y="64" width="56" height="24" rx="8" fill="#000" stroke="#fff" stroke-width="2"/><text x="510" y="104" fill="#fff" font-weight="700">High contrast dark</text>
+      </g>
+      <text x="6" y="134" font-weight="650" fill="#171a33" font-size="10">Eight colour palettes</text>
+      <g transform="translate(6,144)">
+        <g><circle cx="14" cy="14" r="13" fill="#bdc5ff"/><path d="M14 14 L14 1 A13 13 0 0 1 25.3 20.5 Z" fill="#d3b5f5"/><path d="M14 14 L25.3 20.5 A13 13 0 0 1 2.7 20.5 Z" fill="#ffc6ae"/><text x="34" y="18" fill="#171a33">Dusk</text></g>
+        <g transform="translate(84,0)"><circle cx="14" cy="14" r="13" fill="#a3d3ff"/><path d="M14 14 L14 1 A13 13 0 0 1 25.3 20.5 Z" fill="#a9b8ff"/><path d="M14 14 L25.3 20.5 A13 13 0 0 1 2.7 20.5 Z" fill="#8ee6e0"/><text x="34" y="18" fill="#171a33">Ocean</text></g>
+        <g transform="translate(168,0)"><circle cx="14" cy="14" r="13" fill="#f9c4db"/><path d="M14 14 L14 1 A13 13 0 0 1 25.3 20.5 Z" fill="#d8b8f7"/><path d="M14 14 L25.3 20.5 A13 13 0 0 1 2.7 20.5 Z" fill="#ffcaa8"/><text x="34" y="18" fill="#171a33">Blossom</text></g>
+        <g transform="translate(252,0)"><circle cx="14" cy="14" r="13" fill="#ffd2b0"/><path d="M14 14 L14 1 A13 13 0 0 1 25.3 20.5 Z" fill="#f7df9a"/><path d="M14 14 L25.3 20.5 A13 13 0 0 1 2.7 20.5 Z" fill="#f7b6c8"/><text x="34" y="18" fill="#171a33">Sunrise</text></g>
+        <g transform="translate(336,0)"><circle cx="14" cy="14" r="13" fill="#a6e8e3"/><path d="M14 14 L14 1 A13 13 0 0 1 25.3 20.5 Z" fill="#9ccbf5"/><path d="M14 14 L25.3 20.5 A13 13 0 0 1 2.7 20.5 Z" fill="#b9ecc4"/><text x="34" y="18" fill="#171a33">Lagoon</text></g>
+        <g transform="translate(420,0)"><circle cx="14" cy="14" r="13" fill="#9ff0d4"/><path d="M14 14 L14 1 A13 13 0 0 1 25.3 20.5 Z" fill="#c3b2ff"/><path d="M14 14 L25.3 20.5 A13 13 0 0 1 2.7 20.5 Z" fill="#f6b8e0"/><text x="34" y="18" fill="#171a33">Aurora</text></g>
+        <g transform="translate(504,0)"><circle cx="14" cy="14" r="13" fill="#ffc0a8"/><path d="M14 14 L14 1 A13 13 0 0 1 25.3 20.5 Z" fill="#f7b3cf"/><path d="M14 14 L25.3 20.5 A13 13 0 0 1 2.7 20.5 Z" fill="#c9b8ff"/><text x="34" y="18" fill="#171a33">Sorbet</text></g>
+        <g transform="translate(588,0)"><circle cx="14" cy="14" r="13" fill="#d8dcea"/><path d="M14 14 L14 1 A13 13 0 0 1 25.3 20.5 Z" fill="#b9c1d8"/><path d="M14 14 L25.3 20.5 A13 13 0 0 1 2.7 20.5 Z" fill="#d6c8e4"/><text x="34" y="18" fill="#171a33">Moonstone</text></g>
+      </g>
+    </svg>
+    <figcaption><b>FIG 13.1</b> Themes and palettes. Palettes are taste only: none carries meaning, none is used for eyes or provenance, and the high-contrast themes ignore them so their contrast ratios never move.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div>
+      <h3>Requirements</h3>
+      <ul>
+        <li>Type from <code>--fs-*</code> tokens only, in four sizes: Normal, Large (125%), Larger (150%), Largest (200%), with reflow and no horizontal scrolling.</li>
+        <li>Colours from theme tokens; every new colour must pass <code>contrast.test.ts</code> in all four themes.</li>
+        <li>Interactive targets at least 44 px; focus never removed; focus trapped and restored in dialogs.</li>
+        <li>Meaning never carried by colour alone; provenance is always also a word.</li>
+        <li>Reduced motion, glare comfort and dimmed imagery as explicit preferences, as well as <code>prefers-reduced-motion</code>.</li>
+        <li>Canvas and charts have real text equivalents (<code>describe.ts</code>, table views).</li>
+      </ul>
+    </div>
+    <div>
+      <h3>How it is tested</h3>
+      <ul>
+        <li>axe-core runs over every page, every dialog, every theme and the largest type scale in <code>npm run test</code>.</li>
+        <li>A keyboard-only journey covers the daily loop end to end.</li>
+        <li>ESLint's jsx-a11y rules are errors, not warnings.</li>
+        <li>Playwright runs desktop Chromium and an iPhone 13 WebKit profile, including offline.</li>
+      </ul>
+      <h3>Deliberately not shipped</h3>
+      <ul><li><strong>Voice entry:</strong> the browser speech API sends audio to a third party. Operating-system dictation works instead.</li></ul>
+      <h3>Type</h3>
+      <p><span style="font-family:Bricolage;font-weight:650;font-size:12pt">Bricolage Grotesque</span> for headings, <span style="font-weight:500">DM Sans</span> for text. Both bundled locally under the SIL OFL; nothing is fetched.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= 14 PERFORMANCE -->
+<section class="chapter" id="c14">
+  <div class="chapter-head"><span class="num">14</span><h2>Performance</h2><span class="sub">Budgets · benchmarks</span></div>
+  <p class="lede">The daily loop must open quickly on an ordinary phone, and a ten-year record must still feel instant. Both are budgets the build enforces, not aspirations.</p>
+
+  <figure>
+    <svg viewBox="0 0 680 190" font-family="DM Sans" font-size="9.5">
+      <text x="6" y="16" font-weight="650" fill="#171a33" font-size="10.5">Initial download vs budget (gzipped)</text>
+      <!-- JS -->
+      <text x="6" y="48" fill="#171a33" font-weight="650">JavaScript</text>
+      <rect x="110" y="34" width="540" height="22" rx="5" fill="#eeeffa"/>
+      <rect x="110" y="34" width="230.4" height="22" rx="5" fill="#4f46b8"/>
+      <rect x="340.4" y="34" width="199.4" height="22" fill="#8a4f9a"/>
+      <text x="118" y="49" fill="#fff" font-weight="650" font-size="8.6">app 51.2 KB</text>
+      <text x="348" y="49" fill="#fff" font-weight="650" font-size="8.6">react 44.2 KB</text>
+      <line x1="650" y1="28" x2="650" y2="62" stroke="#171a33" stroke-width="1.5"/>
+      <text x="650" y="74" text-anchor="end" fill="#171a33" font-size="8.4" font-weight="650">budget 120 KB</text>
+      <text x="540" y="74" text-anchor="middle" fill="#4f46b8" font-size="8.4" font-weight="650">95.5 KB used</text>
+      <!-- CSS -->
+      <text x="6" y="106" fill="#171a33" font-weight="650">CSS</text>
+      <rect x="110" y="92" width="540" height="22" rx="5" fill="#eeeffa"/>
+      <rect x="110" y="92" width="318.6" height="22" rx="5" fill="#4f46b8"/>
+      <text x="118" y="107" fill="#fff" font-weight="650" font-size="8.6">11.8 KB</text>
+      <line x1="650" y1="86" x2="650" y2="120" stroke="#171a33" stroke-width="1.5"/>
+      <text x="650" y="132" text-anchor="end" fill="#171a33" font-size="8.4" font-weight="650">budget 20 KB</text>
+      <!-- lazy -->
+      <text x="6" y="160" font-weight="650" fill="#171a33">Lazy chunks</text>
+      <g font-size="8.4">
+        <rect x="110" y="148" width="62" height="18" rx="4" fill="#f5f5fb" stroke="#c7cad9"/><text x="141" y="160" text-anchor="middle" fill="#464b69">WhatISee 5.0</text>
+        <rect x="176" y="148" width="64" height="18" rx="4" fill="#f5f5fb" stroke="#c7cad9"/><text x="208" y="160" text-anchor="middle" fill="#464b69">SelfTests 5.4</text>
+        <rect x="244" y="148" width="62" height="18" rx="4" fill="#f5f5fb" stroke="#c7cad9"/><text x="275" y="160" text-anchor="middle" fill="#464b69">Imaging 9.8</text>
+        <rect x="310" y="148" width="66" height="18" rx="4" fill="#f5f5fb" stroke="#c7cad9"/><text x="343" y="160" text-anchor="middle" fill="#464b69">Settings 13.4</text>
+        <rect x="380" y="148" width="92" height="18" rx="4" fill="#f5f5fb" stroke="#c7cad9"/><text x="426" y="160" text-anchor="middle" fill="#464b69">Appointments 18.8</text>
+        <rect x="476" y="148" width="174" height="18" rx="4" fill="#fdf2ec" stroke="#b0602c"/><text x="563" y="160" text-anchor="middle" fill="#b0602c" font-weight="650">Visualize + three 1,404 KB</text>
+      </g>
+      <text x="110" y="184" fill="#7a7f9c" font-size="8.2">Lazy chunk sizes in KB gzipped. They load only when their page opens and do not count against the initial budget.</text>
+    </svg>
+    <figcaption><b>FIG 14.1</b> Bundle budgets from <code>npm run bundle</code> on 24 October 2026. The guard also fails the build if a lazy page is pulled into the entry chunk.</figcaption>
+  </figure>
+
+  <h3>Ten-year record benchmark</h3>
+  <table>
+    <thead><tr><th style="width:36%">Operation (20,000 symptoms, 500 drawings, 200 scans)</th><th>Measured</th><th>Budget in test</th></tr></thead>
+    <tbody>
+      <tr><td>Search, cold</td><td class="plain">≈ 35 ms (isolated) · 61 ms (inside the full suite)</td><td class="plain">&lt; 400 ms</td></tr>
+      <tr><td>Search, warm</td><td class="plain">≈ 20 ms (isolated) · 87 ms (inside the full suite)</td><td class="plain">&lt; 150 ms</td></tr>
+      <tr><td>Index build, brief</td><td class="plain">milliseconds; built once per data change and cached on the data object</td><td class="plain">budgets loose enough to catch quadratic regressions</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><b class="t">Known fragility</b>
+  The warm-search assertion failed once (162 ms) when the machine was busy with other work. It passes comfortably in isolation. The budget measures wall-clock time, so it can fail under heavy CPU contention; see chapter 17.</div>
+
+  <h3>Other performance rules</h3>
+  <ul>
+    <li>The timeline renders a window (about 60 days) with an explicit "show earlier".</li>
+    <li>Thumbnails are generated off the main thread in <code>image.worker</code>.</li>
+    <li>Object-URL leak guards: each URL pins a whole scan in memory, so it is released with <code>releaseFileURL</code>.</li>
+    <li>The service worker precaches a content-hashed shell, so the app opens and records offline.</li>
+  </ul>
+</section>
+
+<!-- ======================================================= 15 PRIVACY -->
+<section class="chapter" id="c15">
+  <div class="chapter-head"><span class="num">15</span><h2>Privacy &amp; security</h2><span class="sub">By architecture</span></div>
+  <p class="lede">Afterlight's privacy is not a policy; it is the absence of anywhere for data to go. There is no server, so nothing can be transmitted, breached or subpoenaed from one. The remaining risks are all on the device, and the design addresses them in order of harm.</p>
+
+  <h3>Threat model, ranked by harm</h3>
+  <table>
+    <thead><tr><th style="width:26%">Risk</th><th>Why it matters</th><th style="width:34%">Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Data loss</td><td class="plain">The record exists nowhere else. Clearing browser data deletes it permanently.</td><td class="plain">Calm backup nudge, export with checksum, test-backup, pre-migration snapshots, error-boundary export.</td></tr>
+      <tr><td>Silent corruption</td><td class="plain">A wrong date or eye is worse than a missing one, because a clinician may act on it.</td><td class="plain">Writes resolve at commit; migrations are pure and tested; extracted data unconfirmed by default.</td></tr>
+      <tr><td>Over-sharing</td><td class="plain">A share file could carry more than intended.</td><td class="plain">Narrow default scope, counts shown before creation, guard on <code>defaultScope</code>.</td></tr>
+      <tr><td>Exposure of an export</td><td class="plain">A backup file may be stored somewhere less private.</td><td class="plain">Optional AES-GCM with PBKDF2 (250k iterations); passphrase given in person.</td></tr>
+      <tr><td>Third-party leakage</td><td class="plain">A single font, script or image request would reveal use of an eye-disease app.</td><td class="plain">Guard on source; <code>nonetwork</code> on built output; verified zero external requests end to end.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>What <code>nonetwork</code> checks</h3>
+  <p>It reads the <strong>built</strong> <code>dist/</code> and <code>site/</code> files and fails on anything a browser would load from a third party: a <code>src</code>, a <code>&lt;link href&gt;</code>, a <code>url()</code>, an <code>@import</code>, a worker, a socket or a fetch. A URL inside a string (an ordinary link someone may choose to follow) is listed but allowed, because following a link is a choice, not a request.</p>
+
+  <div class="callout warn"><b class="t">The honest trade-off</b>
+  Local-first means nobody can restore a lost record. The app says this plainly, in onboarding and in Settings, and <code>docs/keeping-it-safe.md</code> covers backup, restore and moving to a new device.</div>
+
+  <h3>Community &amp; reporting</h3>
+  <ul>
+    <li>Clinical-accuracy and accessibility issues have their own forms and go to a person, never auto-closed.</li>
+    <li>Contributors are asked not to attach their own records, but to describe the shape of a problem instead.</li>
+    <li>No medical advice in issues (<code>CODE_OF_CONDUCT.md</code>); security reports per <code>SECURITY.md</code>.</li>
+  </ul>
+</section>
+
+<!-- ======================================================= 16 QUALITY -->
+<section class="chapter" id="c16">
+  <div class="chapter-head"><span class="num">16</span><h2>Quality gate &amp; release</h2><span class="sub">verify · sign-off</span></div>
+  <p class="lede">Nothing is done until <code>npm run verify</code> passes clean. The gate is a single chain: any failing link stops it.</p>
+
+  <figure>
+    <svg viewBox="0 0 680 150" font-family="DM Sans" font-size="9">
+      <defs><marker id="ar16" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#4f46b8"/></marker></defs>
+      <g font-weight="650" text-anchor="middle">
+        <rect x="4" y="20" width="62" height="46" rx="8" fill="#171a33"/><text x="35" y="40" fill="#fff">tsc -b</text><text x="35" y="54" fill="#b9bcf0" font-weight="400" font-size="7.8">types</text>
+        <rect x="80" y="20" width="62" height="46" rx="8" fill="#171a33"/><text x="111" y="40" fill="#fff">lint</text><text x="111" y="54" fill="#b9bcf0" font-weight="400" font-size="7.8">a11y = error</text>
+        <rect x="156" y="20" width="62" height="46" rx="8" fill="#171a33"/><text x="187" y="40" fill="#fff">guard</text><text x="187" y="54" fill="#b9bcf0" font-weight="400" font-size="7.8">invariants</text>
+        <rect x="232" y="20" width="62" height="46" rx="8" fill="#171a33"/><text x="263" y="40" fill="#fff">assets</text><text x="263" y="54" fill="#b9bcf0" font-weight="400" font-size="7.8">eye assets</text>
+        <rect x="308" y="20" width="62" height="46" rx="8" fill="#171a33"/><text x="339" y="40" fill="#fff">changelog</text><text x="339" y="54" fill="#b9bcf0" font-weight="400" font-size="7.8">no drift</text>
+        <rect x="384" y="20" width="62" height="46" rx="8" fill="#4f46b8"/><text x="415" y="40" fill="#fff">test</text><text x="415" y="54" fill="#dcdcff" font-weight="400" font-size="7.8">685 tests</text>
+        <rect x="460" y="20" width="62" height="46" rx="8" fill="#171a33"/><text x="491" y="40" fill="#fff">build</text><text x="491" y="54" fill="#b9bcf0" font-weight="400" font-size="7.8">vite</text>
+        <rect x="536" y="20" width="62" height="46" rx="8" fill="#171a33"/><text x="567" y="40" fill="#fff">bundle</text><text x="567" y="54" fill="#b9bcf0" font-weight="400" font-size="7.8">budgets</text>
+        <rect x="612" y="20" width="64" height="46" rx="8" fill="#8a4f9a"/><text x="644" y="40" fill="#fff">nonetwork</text><text x="644" y="54" fill="#f1dcff" font-weight="400" font-size="7.8">built files</text>
+      </g>
+      <g stroke="#4f46b8" stroke-width="1.4" marker-end="url(#ar16)">
+        <line x1="66" y1="43" x2="78" y2="43"/><line x1="142" y1="43" x2="154" y2="43"/><line x1="218" y1="43" x2="230" y2="43"/><line x1="294" y1="43" x2="306" y2="43"/><line x1="370" y1="43" x2="382" y2="43"/><line x1="446" y1="43" x2="458" y2="43"/><line x1="522" y1="43" x2="534" y2="43"/><line x1="598" y1="43" x2="610" y2="43"/>
+      </g>
+      <rect x="4" y="88" width="330" height="54" rx="9" fill="#eeeffa"/>
+      <text x="16" y="106" font-weight="650" fill="#171a33" font-size="9.5">Then, separately: npm run e2e</text>
+      <text x="16" y="121" fill="#464b69" font-size="8.4">106 Playwright tests: daily loop, handoff, mobile, engine, offline,</text>
+      <text x="16" y="133" fill="#464b69" font-size="8.4">release, plus a verification suite of per-page flows and persistence.</text>
+      <rect x="346" y="88" width="330" height="54" rx="9" fill="#fff5ef" stroke="#b0602c" stroke-dasharray="3 2"/>
+      <text x="358" y="106" font-weight="650" fill="#b0602c" font-size="9.5">npm run release refuses to tag</text>
+      <text x="358" y="121" fill="#464b69" font-size="8.4">while docs/clinical-review.md says NOT REVIEWED. It never</text>
+      <text x="358" y="133" fill="#464b69" font-size="8.4">pushes or deploys; Pages is workflow_dispatch only.</text>
+    </svg>
+    <figcaption><b>FIG 16.1</b> The verify chain, in order. On 24 October 2026 it passed clean: 685 of 685 unit tests in 54 files, guard 161 files with no violations.</figcaption>
+  </figure>
+
+  <div class="cols">
+    <div>
+      <h3>Definition of done</h3>
+      <ul>
+        <li><code>npm run verify</code> passes clean.</li>
+        <li>New behaviour has a test that would fail if it regressed.</li>
+        <li>Keyboard and screen-reader paths work for anything new.</li>
+        <li>No non-negotiable regressed, checked explicitly.</li>
+        <li>The demo dataset loads and still reads coherently.</li>
+        <li>Docs updated where a user or future agent would need them.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>What only a human may approve</h3>
+      <ul>
+        <li>New clinical wording, and anything written for a clinician to read.</li>
+        <li>Safety and emergency copy.</li>
+        <li>Anything that weakens a non-negotiable, even behind a flag.</li>
+        <li>Deleting or migrating data in a way an export cannot reverse.</li>
+        <li>Publishing: deploys, releases, packages.</li>
+        <li>Marking the clinical review done.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Versioning</h3>
+  <p><code>lib/changelog.ts</code> holds <code>VERSION</code> and the patient-facing changelog; <code>CHANGELOG.md</code> is generated from it, and <code>package.json</code> must agree. Entries are written the way you would tell a patient what changed. The version stays below 1.0.0 until the clinical review is recorded, because 1.0 on a tool that touches eye care would imply that review happened.</p>
+  <table>
+    <thead><tr><th style="width:12%">Version</th><th style="width:16%">Date</th><th>Theme</th></tr></thead>
+    <tbody>
+      <tr><td>0.10.0</td><td class="plain">unreleased</td><td class="plain">Getting ready for other people: guide, boundaries page, changelog in Settings, reporting routes, i18n groundwork.</td></tr>
+      <tr><td>0.9.0</td><td class="plain">9 Sep 2026</td><td class="plain">The brief ready for a doctor: PDF, print, provenance split, encrypted share, QR, present mode, bulk ingest.</td></tr>
+      <tr><td>0.8.0</td><td class="plain">8 Sep 2026</td><td class="plain">A record that answers questions: richer ask, clinical search, charts and tables, "same as last time?".</td></tr>
+      <tr><td>0.7.0</td><td class="plain">8 Sep 2026</td><td class="plain">Fifty-condition atlas with severity and a view-from-inside simulator.</td></tr>
+      <tr><td>0.6.0</td><td class="plain">8 Sep 2026</td><td class="plain">A real 3D eye from anatomical measurements; single-file offline explorer.</td></tr>
+      <tr><td>0.5.0</td><td class="plain">8 Sep 2026</td><td class="plain">Thirteen condition profiles; Amsler, vision and contrast checks; units and methods.</td></tr>
+      <tr><td>0.2–0.4</td><td class="plain">8 Sep 2026</td><td class="plain">Portable encrypted backups (0.2); four themes and text sizes, drawings in words, keyboard (0.3); thirty seconds a day on a phone, backdating, offline (0.4).</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ======================================================= 17 OPEN ITEMS -->
+<section class="chapter" id="c17">
+  <div class="chapter-head"><span class="num">17</span><h2>Open items &amp; recent changes</h2><span class="sub">As of 24 Oct 2026</span></div>
+
+  <h3>Since the 0.10.0 changelog</h3>
+  <p>Work after the September draft, on <code>main</code> and on the current branch <code>fix/find-charts-and-3d-freeze</code> (four commits ahead of main, pushed, not yet merged):</p>
+  <table>
+    <thead><tr><th style="width:16%">Date</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td>23 Sep</td><td class="plain">Liquid-glass redesign, three-colour palettes and the Today dashboard.</td></tr>
+      <tr><td>24 Sep</td><td class="plain">Phone tab bar at large text, explorer fits phones, no Diagnose tab in the app.</td></tr>
+      <tr><td>3 Oct</td><td class="plain">Reliability pass: writes commit before rows change, Today opens the saved entry, 3D drag no longer selects anatomy, 44 px inputs.</td></tr>
+      <tr><td>15 Oct</td><td class="plain">Record charts are easy to find; Visualize no longer freezes on open.</td></tr>
+      <tr><td>15 Oct</td><td class="plain">Edit prescriptions; chart sphere and cylinder per eye over time; reviewer fixes to charts, edit form and accessibility.</td></tr>
+      <tr><td>15 Oct</td><td class="plain">Glasses and contact-lens prescriptions kept and charted apart (schema 6).</td></tr>
+      <tr><td>24 Oct</td><td class="plain">Provenance stored on appointments, questions, procedures, medications and prescriptions (schema 7). Surgery entered at set-up is marked as the person's own account; the procedure form gains a Source field; search and the brief now agree with the timeline.</td></tr>
+      <tr><td>24 Oct</td><td class="plain">Migrations now save every store they change. Previously only floaters, measurements and files were written back, so the lens-type step of schema 6 never reached disk; schema 7 repairs it.</td></tr>
+    </tbody>
+  </table>
+  <p class="k">These changes are not yet described in the patient-facing changelog, which still lists 0.10.0 as the latest entry.</p>
+
+  <h3>Open items</h3>
+  <table>
+    <thead><tr><th style="width:24%">Item</th><th>State</th><th style="width:16%">Owner</th></tr></thead>
+    <tbody>
+      <tr><td>Clinical review</td><td class="plain">Condition profiles, atlas lines, home-check instructions, safety copy, the clinician note and printed-brief wording all need ophthalmologist or optometrist sign-off. <code>npm run clinical-pack</code> prepares the 93-string pack.</td><td class="plain">Human, blocking 1.0</td></tr>
+      <tr><td>Hosted deploy</td><td class="plain">Intentionally manual; Pages workflow is dispatch-only.</td><td class="plain">Human</td></tr>
+      <tr><td>Physical print</td><td class="plain">The brief has not been checked on a real printer, A4 and Letter.</td><td class="plain">Human</td></tr>
+      <tr><td>Clinician read test</td><td class="plain">Someone who has never seen the app should read a brief against a clock.</td><td class="plain">Human</td></tr>
+      <tr><td>Real-device PWA</td><td class="plain">Install on a real iPhone and Android handset; iOS offline reload needs a manual check.</td><td class="plain">Human</td></tr>
+      <tr><td>OCR engine</td><td class="plain">Seam exists; engine not bundled for cost and offline purity.</td><td class="plain">Design review</td></tr>
+      <tr><td>Translation</td><td class="plain">Shell, daily loop, provenance and safety strings extracted; deeper pages not fully. Only English ships.</td><td class="plain">Engineering</td></tr>
+      <tr><td>Blender bake</td><td class="plain">Pipeline documented; not run in this environment. Engine remains procedural.</td><td class="plain">Engineering</td></tr>
+      <tr><td>Search benchmark</td><td class="plain">Warm-search assertion is wall-clock and can fail under heavy machine load (162 ms vs 150 ms seen once).</td><td class="plain">Engineering</td></tr>
+      <tr><td>Changelog</td><td class="plain">Post-0.10.0 work (above) still needs patient-facing entries.</td><td class="plain">Engineering</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ======================================================= 18 GLOSSARY -->
+<section class="chapter" id="c18">
+  <div class="chapter-head"><span class="num">18</span><h2>Glossary</h2><span class="sub">Terms</span></div>
+  <table>
+    <thead><tr><th style="width:24%">Term</th><th>Meaning in Afterlight</th></tr></thead>
+    <tbody>
+      <tr><td>Amsler grid</td><td class="plain">A square grid used at home to notice distortion or missing areas in central vision. Recorded with its test conditions.</td></tr>
+      <tr><td>Baseline</td><td class="plain">A person's own description of what is normal for one eye, with dated revisions. "More than usual" is measured against it.</td></tr>
+      <tr><td>Brief</td><td class="plain">The one-page appointment summary of what changed in each eye since a chosen date.</td></tr>
+      <tr><td>Derived</td><td class="plain">Computed from stored entities at read time and never stored, e.g. the timeline, indexes, briefs and search results.</td></tr>
+      <tr><td>DICOM</td><td class="plain">The standard file format for medical images. Afterlight reads its date, modality, laterality and institution as suggestions.</td></tr>
+      <tr><td>Floater object</td><td class="plain">One persistent floater tracked over time, so "still there" can be told apart from "genuinely new".</td></tr>
+      <tr><td>Generic boundary</td><td class="plain"><code>GENERIC_MODEL_BOUNDARY</code>: the statement on every visualisation that it is educational and not the person's own eye.</td></tr>
+      <tr><td>Guard</td><td class="plain"><code>npm run guard</code>: the source check that fails the build on network calls, banned clinical copy, verdict language and other invariant breaches.</td></tr>
+      <tr><td>logMAR</td><td class="plain">A scale for visual acuity used internally so charts can plot different notations together; the original notation is always displayed.</td></tr>
+      <tr><td>OD / OS</td><td class="plain">Right eye / left eye, from the Latin <em>oculus dexter</em> / <em>oculus sinister</em>.</td></tr>
+      <tr><td>OCT</td><td class="plain">Optical coherence tomography: a cross-sectional scan of the retina. Stored and compared, never interpreted.</td></tr>
+      <tr><td>Provenance</td><td class="plain">Where a record came from (its <code>source_type</code>), shown on every surface.</td></tr>
+      <tr><td>PVD</td><td class="plain">Posterior vitreous detachment: the gel inside the eye separating from the retina; a common cause of new floaters.</td></tr>
+      <tr><td>PWA</td><td class="plain">Progressive web app: installable from the browser and able to run offline through a service worker.</td></tr>
+      <tr><td>Vitrectomy</td><td class="plain">Surgery that removes the vitreous gel, often as part of retinal detachment repair.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-top:16pt"><b class="t">Source of truth</b>
+  This document summarises product intent and architecture. Where it and the repository disagree, the repository wins: <code>AGENTS.md</code> for the working agreement, <code>docs/plan/</code> for phase briefs, <code>lib/models.ts</code> for the data model, and <code>docs/clinical-review.md</code> for the review status.</div>
+
+  <p class="k" style="margin-top:14pt;text-align:center">Afterlight · MIT licensed · built by a patient, for patients<br><em>Your vision changes every day. Now your record does too.</em></p>
+</section>
+
+</body>
+</html>
