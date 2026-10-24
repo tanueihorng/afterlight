@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import type { Series } from "../lib/trends";
 import { formatDate } from "../lib/util";
 import { EYE_LABELS } from "../lib/models";
@@ -12,9 +12,37 @@ import { EYE_LABELS } from "../lib/models";
  * Clinic measurements and home checks are drawn as different marks and never joined into one
  * line — they are not the same kind of measurement, and a line implies they are.
  */
-export default function Chart({ series, height = 160 }: { series: Series; height?: number }) {
+export default function Chart({
+  series,
+  height: minHeight = 160,
+}: {
+  series: Series;
+  height?: number;
+}) {
   const id = useId();
   const points = series.points.filter((p) => p.numeric);
+  // The drawing is laid out at the width it is actually shown at, one unit per CSS pixel, so it
+  // is never scaled: labels stay at the text size the person chose (they used to shrink to ~6px
+  // on a phone), and the marks stay the size they were drawn at.
+  const box = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState({ width: 520, font: 14 });
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const read = () => {
+      const font = parseFloat(getComputedStyle(el).fontSize) || 14;
+      setMeasured((m) =>
+        m.width === (el.clientWidth || 520) && m.font === font
+          ? m
+          : { width: el.clientWidth || 520, font },
+      );
+    };
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   if (points.length === 0) {
     return (
@@ -25,19 +53,37 @@ export default function Chart({ series, height = 160 }: { series: Series; height
     );
   }
 
-  const width = 520;
-  const pad = { top: 12, right: 12, bottom: 26, left: 56 };
+  const { width, font } = measured;
   const values = points.map((p) => p.value);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
+  const firstLabel = formatDate(points[0].date);
+  const lastLabel = formatDate(points[points.length - 1].date);
+  // An estimate of the text width is enough here: it only decides between one row and two.
+  const stackDates = (firstLabel.length + lastLabel.length) * font * 0.58 + 24 > width;
+  const valueLabels = (min === max ? [min] : [min, max]).map(
+    (value) => points.find((p) => p.value === value)?.raw ?? String(value),
+  );
+  const longest = Math.max(...valueLabels.map((l) => l.length));
+  // Room for the labels at their real size: values down the left, the two dates along the foot.
+  const pad = {
+    top: Math.ceil(font * 0.7) + 4,
+    right: 12,
+    // Two date rows when the first and last dates cannot sit side by side without colliding.
+    bottom: Math.ceil(font * 1.6) + (stackDates ? Math.ceil(font * 1.3) : 0),
+    left: Math.ceil(longest * font * 0.62) + 10,
+  };
+  const height =
+    Math.max(minHeight, Math.ceil(font * 8)) + (stackDates ? Math.ceil(font * 1.3) : 0);
   const dates = points.map((p) => new Date(p.date).getTime());
   const firstDate = Math.min(...dates);
   const lastDate = Math.max(...dates);
   const dateSpan = lastDate - firstDate || 1;
 
   const x = (p: (typeof points)[number]) =>
-    pad.left + ((new Date(p.date).getTime() - firstDate) / dateSpan) * (width - pad.left - pad.right);
+    pad.left +
+    ((new Date(p.date).getTime() - firstDate) / dateSpan) * (width - pad.left - pad.right);
   const y = (p: (typeof points)[number]) => {
     const t = (p.value - min) / span;
     // logMAR runs the opposite way to how acuity reads, so the axis flips for display only.
@@ -50,70 +96,90 @@ export default function Chart({ series, height = 160 }: { series: Series; height
 
   return (
     <figure style={{ margin: "12px 0" }}>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        width="100%"
-        height={height}
-        role="img"
-        aria-labelledby={`${id}-title`}
-        aria-describedby={`${id}-table`}
-      >
-        <title id={`${id}-title`}>
-          {series.label}, {EYE_LABELS[series.eye]}, {series.points.length}{" "}
-          {series.noun?.many ?? "readings"} from {formatDate(points[0].date)} to{" "}
-          {formatDate(points[points.length - 1].date)}
-        </title>
+      <div ref={box} className="chart-box">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          width={width}
+          height={height}
+          role="img"
+          aria-labelledby={`${id}-title`}
+          aria-describedby={`${id}-table`}
+        >
+          <title id={`${id}-title`}>
+            {series.label}, {EYE_LABELS[series.eye]}, {series.points.length}{" "}
+            {series.noun?.many ?? "readings"} from {formatDate(points[0].date)} to{" "}
+            {formatDate(points[points.length - 1].date)}
+          </title>
 
-        {/* Two gridlines only: the extremes, labelled. Anything more is noise.
+          {/* Two gridlines only: the extremes, labelled. Anything more is noise.
             Labelled with the value as it was written — "20/200", not the logMAR the axis uses,
             which means nothing to the person whose record this is. */}
-        {(min === max ? [min] : [min, max]).map((value, i) => {
-          const yy = pad.top + (series.invertForDisplay === (i === 0) ? 0 : height - pad.top - pad.bottom);
-          const label = points.find((p) => p.value === value)?.raw ?? String(value);
-          return (
-            <g key={i}>
-              <line x1={pad.left} x2={width - pad.right} y1={yy} y2={yy} stroke="var(--border-soft)" />
-              <text x={4} y={yy + 4} fontSize="11" fill="var(--text-3)">
-                {label}
-              </text>
-            </g>
-          );
-        })}
+          {(min === max ? [min] : [min, max]).map((value, i) => {
+            const yy =
+              pad.top + (series.invertForDisplay === (i === 0) ? 0 : height - pad.top - pad.bottom);
+            const label = points.find((p) => p.value === value)?.raw ?? String(value);
+            return (
+              <g key={i}>
+                <line
+                  x1={pad.left}
+                  x2={width - pad.right}
+                  y1={yy}
+                  y2={yy}
+                  stroke="var(--border-soft)"
+                />
+                <text x={4} y={yy + font * 0.35} fontSize={font} fill="var(--text-3)">
+                  {label}
+                </text>
+              </g>
+            );
+          })}
 
-        {/* Clinic readings joined; home checks left as separate marks. */}
-        {clinic.length > 1 && (
-          <polyline
-            points={clinic.map((p) => `${x(p)},${y(p)}`).join(" ")}
-            fill="none"
-            stroke="var(--accent-strong)"
-            strokeWidth="2"
-          />
-        )}
-        {clinic.map((p, i) => (
-          <circle key={`c${i}`} cx={x(p)} cy={y(p)} r="4" fill="var(--accent-strong)" />
-        ))}
-        {home.map((p, i) => (
-          // A different shape, not just a different colour.
-          <rect
-            key={`h${i}`}
-            x={x(p) - 4}
-            y={y(p) - 4}
-            width="8"
-            height="8"
-            transform={`rotate(45 ${x(p)} ${y(p)})`}
-            fill="none"
-            stroke="var(--text-2)"
-            strokeWidth="2"
-          />
-        ))}
+          {/* Clinic readings joined; home checks left as separate marks. */}
+          {clinic.length > 1 && (
+            <polyline
+              points={clinic.map((p) => `${x(p)},${y(p)}`).join(" ")}
+              fill="none"
+              stroke="var(--accent-strong)"
+              strokeWidth="2"
+            />
+          )}
+          {clinic.map((p, i) => (
+            <circle key={`c${i}`} cx={x(p)} cy={y(p)} r="4" fill="var(--accent-strong)" />
+          ))}
+          {home.map((p, i) => (
+            // A different shape, not just a different colour.
+            <rect
+              key={`h${i}`}
+              x={x(p) - 4}
+              y={y(p) - 4}
+              width="8"
+              height="8"
+              transform={`rotate(45 ${x(p)} ${y(p)})`}
+              fill="none"
+              stroke="var(--text-2)"
+              strokeWidth="2"
+            />
+          ))}
 
-        <text x={pad.left} y={height - 6} fontSize="11" fill="var(--text-3)">
-          {formatDate(points[0].date)}
-        </text>
-        <text x={width - pad.right} y={height - 6} fontSize="11" fill="var(--text-3)" textAnchor="end">
-          {formatDate(points[points.length - 1].date)}
-        </text>
-      </svg>
+          <text
+            x={stackDates ? 4 : pad.left}
+            y={height - font * 0.35 - (stackDates ? Math.ceil(font * 1.3) : 0)}
+            fontSize={font}
+            fill="var(--text-3)"
+          >
+            {firstLabel}
+          </text>
+          <text
+            x={width - pad.right}
+            y={height - font * 0.35}
+            fontSize={font}
+            fill="var(--text-3)"
+            textAnchor="end"
+          >
+            {lastLabel}
+          </text>
+        </svg>
+      </div>
 
       <details>
         <summary className="muted" style={{ cursor: "pointer", fontSize: "var(--fs-sm)" }}>

@@ -286,8 +286,9 @@
   box-sizing: border-box;
 }
 
+/* 100%, not 16px: a person who has raised their browser's own text size keeps it. */
 html {
-  font-size: 16px;
+  font-size: 100%;
 }
 
 body {
@@ -295,6 +296,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-ui);
+  /* Text with no size of its own follows the text-size setting, not the browser default. */
+  font-size: var(--fs-base);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -784,6 +787,8 @@ button {
 
 .main {
   min-width: 0;
+  /* A long word, date or file name breaks before it pushes the page sideways. */
+  overflow-wrap: anywhere;
   padding: 18px 32px 96px;
   max-width: 1180px;
   width: 100%;
@@ -848,15 +853,17 @@ button {
   font-weight: 600;
 }
 
+/* minmax(0, 1fr), not 1fr: a bare 1fr column will not shrink below its widest word or badge, which
+   at the largest text size pushed My Eyes 330px past the edge of a phone. */
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
 }
 
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -881,7 +888,7 @@ button {
 @media (max-width: 767px) {
   .grid-2,
   .grid-3 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -1177,7 +1184,10 @@ input[type="range"] {
   border: 1px solid var(--border);
   color: var(--text-2);
   background: var(--glass);
-  white-space: nowrap;
+  /* Badges wrap rather than force a line wider than the screen at large text sizes. */
+  white-space: normal;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .badge.source-patient_reported,
@@ -2235,7 +2245,7 @@ input[type="range"] {
 
   .grid-2,
   .grid-3 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .page-header h1 {
@@ -3446,4 +3456,14 @@ a:hover {
 /* A fieldset refuses to shrink below its content by default; the swatch grid must be allowed to wrap. */
 .pref-group {
   min-width: 0;
+}
+
+/* The chart is drawn at its real width; this box is what it measures, and its font size is the
+   size the axis labels are drawn at. */
+.chart-box {
+  width: 100%;
+  font-size: var(--fs-sm);
+}
+.chart-box svg {
+  display: block;
 }

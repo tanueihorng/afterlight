@@ -310,7 +310,8 @@ function PrescriptionsCard({
       {list.length === 0 ? (
         <p className="muted">No prescriptions recorded.</p>
       ) : (
-        <div style={{ overflowX: "auto" }}>
+        // position: relative keeps the visually hidden "Actions" header inside this scroller.
+        <div style={{ overflowX: "auto", position: "relative" }}>
           <table className="table">
             <thead>
               <tr>

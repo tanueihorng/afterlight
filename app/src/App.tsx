@@ -111,7 +111,16 @@ export default function App() {
   return (
     <>
       {!onboarded && <Onboarding />}
-      <a className="skip-link" href="#main">
+      <a
+        className="skip-link"
+        href="#main"
+        onClick={(e) => {
+          // The router owns the hash: following "#main" would read it as an unknown route and
+          // land on Today. Move focus to the content instead and leave the address alone.
+          e.preventDefault();
+          document.getElementById("main")?.focus();
+        }}
+      >
         {t("app.skip_to_content")}
       </a>
       <div className="aura" aria-hidden="true">
