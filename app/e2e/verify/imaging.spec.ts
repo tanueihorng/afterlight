@@ -25,8 +25,12 @@ test.describe("imaging & documents", () => {
 
     // The record exists and can be opened; it stores the file bytes.
     // The saved scan, not the "OCT vault" view toggle, which also has "OCT" in its name.
-    await page.getByRole("button", { name: /1 sep 2026.*eye: left/i }).first().click();
-    await expect(page.getByRole("dialog")).toBeVisible();
+    // The card re-renders when its thumbnail finishes generating in the worker, which can land
+    // between the click and its dispatch, so the click-and-assert pair retries as one.
+    await expect(async () => {
+      await page.getByRole("button", { name: /1 sep 2026.*eye: left/i }).first().click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+    }).toPass({ timeout: 15_000 });
     await page.keyboard.press("Escape");
     expect(errors).toEqual([]);
   });

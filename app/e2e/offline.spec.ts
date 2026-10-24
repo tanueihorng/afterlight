@@ -1,6 +1,7 @@
 import { expect, test, devices, type Browser } from "@playwright/test";
 import type { AddressInfo } from "node:net";
 import { preview } from "vite";
+import { settingsSaved } from "./verify/helpers";
 
 async function recordOfflineInWebKit(browser: Browser) {
   const server = await preview({ preview: { host: "127.0.0.1", port: 0 } });
@@ -96,6 +97,9 @@ test.describe("offline", () => {
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, {
       timeout: 20_000,
     });
+    // Reloading before "Skip setup" has reached IndexedDB brings the welcome dialog back, which
+    // reads as an offline failure when it is only a save that has not landed yet.
+    await settingsSaved(page, { onboarded: true });
 
     await context.setOffline(true);
     await page.reload();
