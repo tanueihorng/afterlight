@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultBriefRange, generateBrief, changesSince, eyeName } from "./brief";
+import { briefToPdfDocument } from "./briefpdf";
 import {
   anAllData,
   anAppointment,
@@ -76,10 +77,18 @@ describe("generateBrief — empty and out-of-range periods", () => {
     expect(p.clinicalEvents).toHaveLength(0);
     expect(p.drawings).toHaveLength(0);
     expect(p.questions).toHaveLength(0);
-    // The only unchanged line is the explicit "nothing recorded" statement.
-    expect(p.perEye.right.unchanged).toEqual([
-      "No symptoms recorded for the right eye in this period.",
-    ]);
+    // A quiet period is missing data, not an unchanged eye: nothing is filed under any bucket.
+    expect(p.perEye.right.unchanged).toEqual([]);
+    expect(p.perEyeItems?.right).toEqual([]);
+  });
+
+  it("prints an empty period as nothing recorded, never under UNCHANGED", () => {
+    const p = generateBrief(anAllData(), { range_start: "2026-05-01", range_end: "2026-06-30" });
+    const doc = briefToPdfDocument(p, { title: "Brief", pageSize: "A4" });
+    // The eye panels sit inside a two-column block, so read the whole document model.
+    const text = JSON.stringify(doc.blocks);
+    expect(text).toMatch(/Nothing recorded for this eye in this period/);
+    expect(text).not.toMatch(/UNCHANGED/);
   });
 
   it("excludes records outside the range at both ends", () => {

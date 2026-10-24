@@ -230,6 +230,8 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
 
     for (const i of data.imaging) {
       const text = i.clinician_interpretation || i.findings;
+      // Same rule as documents below: an unchecked extraction may be machine-read text.
+      if (i.source_type === "document_extracted" && i.confirmed !== true) continue;
       if (i.source_type !== "patient_reported" && hit(text)) {
         matches.push({ label: `${i.modality} report — ${formatDate(i.date)} (${SOURCE_LABELS[i.source_type]})`, text: text!, route: "imaging", date: i.date });
       }

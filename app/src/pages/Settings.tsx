@@ -374,6 +374,17 @@ export default function Settings() {
               </SafetyNotice>
             </div>
           )}
+          {pending.summary.share && (
+            <div style={{ marginTop: 12 }}>
+              <SafetyNotice>
+                This is a shared extract, not a full backup. It covers{" "}
+                {formatDate(pending.summary.share.range_start)} to{" "}
+                {formatDate(pending.summary.share.range_end)} and leaves the rest of the record out,
+                so it can only be added alongside your record, never replace it. It may be part of
+                someone else&rsquo;s record.
+              </SafetyNotice>
+            </div>
+          )}
           <div className="modal-actions">
             <button className="btn" onClick={() => setPending(null)}>
               {inspectOnly ? "Close" : "Cancel"}
@@ -381,14 +392,16 @@ export default function Settings() {
             {!inspectOnly && (
               <>
                 <button className="btn" onClick={() => runImport("merge")}>
-                  Merge into my record
+                  {pending.summary.share ? "Add to my record" : "Merge into my record"}
                 </button>
-                <ConfirmButton
-                  label="Replace everything"
-                  confirmLabel="Replace all records on this device?"
-                  className="btn danger"
-                  onConfirm={() => runImport("replace")}
-                />
+                {!pending.summary.share && (
+                  <ConfirmButton
+                    label="Replace everything"
+                    confirmLabel="Replace all records on this device?"
+                    className="btn danger"
+                    onConfirm={() => runImport("replace")}
+                  />
+                )}
               </>
             )}
           </div>

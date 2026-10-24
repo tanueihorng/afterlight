@@ -164,11 +164,15 @@ export function prescriptionSeries(
       value,
       raw: signedDioptres(value),
       unit: "D",
-      // Prescriptions carry no source of their own: the person typed these in. "clinic" here only
-      // means the points are one kind and may be joined; the wording comes from howLabel.
-      source: "patient_reported",
+      // The record's own source, so the chart agrees with the timeline and search. A written
+      // prescription is clinician content the person copied in, which is what howLabel says.
+      // "clinic" here only means the points are one kind and may be joined.
+      source: row.source_type,
       provenance: "clinic",
-      howLabel: "Copied by you from a written prescription",
+      howLabel:
+        row.source_type === "patient_reported"
+          ? "Entered by you"
+          : "Copied by you from a written prescription",
       numeric: true,
     });
   }
@@ -216,6 +220,29 @@ export interface SeriesDescription {
  * Everything here is arithmetic reported in words: how many readings, over what period, what the
  * values were, whether they were taken the same way. No verdict.
  */
+/**
+ * Range, first-to-last difference and spread, as facts about the numbers. Say only what the
+ * arithmetic says, with no word implying whether it is good, bad, expected or concerning.
+ */
+function arithmeticNotes(values: number[], unit: string, prefix: string): string[] {
+  const notes: string[] = [];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  notes.push(`${prefix}${prefix ? "recorded" : "Recorded"} values range from ${format(min)} to ${format(max)}${unit}.`);
+  const change = values[values.length - 1] - values[0];
+  if (change !== 0) {
+    notes.push(
+      `${prefix}${prefix ? "the" : "The"} most recent reading is ${format(Math.abs(change))}${unit} ${change > 0 ? "higher" : "lower"} than the first.`,
+    );
+  } else {
+    notes.push(`${prefix}${prefix ? "the" : "The"} first and most recent readings are the same number.`);
+  }
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const spread = Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length);
+  if (spread > 0) notes.push(`${prefix}${prefix ? "they" : "They"} vary by about ${format(spread)}${unit} around their average.`);
+  return notes;
+}
+
 export function describe(series: Series): SeriesDescription {
   const numeric = series.points.filter((p) => p.numeric);
   const notes: string[] = [];
@@ -251,27 +278,19 @@ export function describe(series: Series): SeriesDescription {
     );
   }
 
-  if (numeric.length >= 2 && !series.mixedCylinderForms) {
-    const values = numeric.map((p) => p.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    notes.push(`Recorded values range from ${format(min)} to ${format(max)}${unit}.`);
-
-    // Say only what the arithmetic says: the direction between the first and last readings, with
-    // no word implying whether that is good, bad, expected or concerning.
-    const change = values[values.length - 1] - values[0];
-    if (change !== 0) {
-      notes.push(
-        `The most recent reading is ${format(Math.abs(change))}${unit} ${change > 0 ? "higher" : "lower"} than the first.`,
-      );
-    } else {
-      notes.push("The first and most recent readings are the same number.");
+  if (!series.mixedCylinderForms) {
+    // Clinic measurements and home checks are never one series, so the arithmetic never runs
+    // across both: a mixed series gets one set of sentences per kind, each saying which it is.
+    const groups: { prefix: string; points: SeriesPoint[] }[] = mixedProvenance
+      ? [
+          { prefix: "Clinic readings: ", points: numeric.filter((p) => p.provenance === "clinic") },
+          { prefix: "Home checks: ", points: numeric.filter((p) => p.provenance === "home") },
+        ]
+      : [{ prefix: "", points: numeric }];
+    for (const group of groups) {
+      if (group.points.length < 2) continue;
+      notes.push(...arithmeticNotes(group.points.map((p) => p.value), unit, group.prefix));
     }
-
-    // Variability, as a fact about the numbers.
-    const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const spread = Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length);
-    if (spread > 0) notes.push(`They vary by about ${format(spread)}${unit} around their average.`);
   }
 
   return { summary, notes, mixedProvenance };

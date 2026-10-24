@@ -158,19 +158,9 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
       seen.add(key);
       return true;
     });
-    if (payload.perEye[eye].new.length === 0 && payload.perEye[eye].improved.length === 0 && payload.perEye[eye].worse.length === 0 && payload.perEye[eye].unchanged.length === 0) {
-      const nothing = `No symptoms recorded for the ${eye} eye in this period.`;
-      payload.perEye[eye].unchanged.push(nothing);
-      // A quiet period is a fact about the record, not a finding about the eye — it carries the
-      // same "nothing was written down" meaning wherever it is shown.
-      payload.perEyeItems![eye].push({
-        bucket: "unchanged",
-        text: nothing,
-        short: "Nothing recorded",
-        date: opts.range_end,
-        source_type: "patient_reported",
-      });
-    }
+    // A quiet period is missing data, not an unchanged eye, so nothing is filed under a bucket.
+    // Every reader of the brief (screen, PDF, QR card, Ask) says "nothing recorded" for an eye
+    // with no items; a placeholder line here used to print under UNCHANGED instead.
   }
 
   payload.drawings = s.drawings

@@ -137,6 +137,16 @@ describe("askRecords — provenance of quoted records", () => {
     expect(a.lines).toEqual([NOT_FOUND]);
   });
 
+  it("does not quote a scan report read out of a file that nobody has checked", () => {
+    const data = anAllData({
+      imaging: [
+        anImaging({ findings: "macula stable, no fluid", source_type: "document_extracted", confirmed: false }),
+      ],
+    });
+    const a = askRecords(data, "What did my doctors document about the macula?");
+    expect(a.lines).toEqual([NOT_FOUND]);
+  });
+
   it("labels a patient-typed note with its source instead of calling everything clinician-documented", () => {
     const data = anAllData({
       appointments: [

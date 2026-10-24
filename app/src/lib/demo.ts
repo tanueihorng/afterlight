@@ -210,8 +210,12 @@ export async function seedDemo(store: StoreShape): Promise<void> {
     demo: true,
     updated_at: created,
   };
-  await store.baselines.put(baselineRight);
-  await store.baselines.put(baselineLeft);
+  // A baseline has one fixed id per eye, so a demo one could only exist by overwriting the
+  // person's own — and "Remove demo data" would then delete their words for good. An eye that
+  // already has a baseline keeps it.
+  for (const baseline of [baselineRight, baselineLeft]) {
+    if (!store.baselines.list.some((b) => b.id === baseline.id)) await store.baselines.put(baseline);
+  }
 
   // ---- floater objects ------------------------------------------------------
   const f01: FloaterObject = newRecord({

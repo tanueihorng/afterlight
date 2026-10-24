@@ -68,10 +68,11 @@ describe("prescription series", () => {
     expect(prescriptionSeries(mixed, "sphere", "left", "glasses").mixedCylinderForms).toBe(false);
   });
 
-  it("says the person copied it, never that a clinic measured it", () => {
+  it("says the person copied it, never that a clinic measured it, and keeps the stored source", () => {
     const right = prescriptionSeries(anAllData({ prescriptions: history }), "sphere", "right", "glasses");
     for (const p of right.points) {
-      expect(p.source).toBe("patient_reported");
+      // The same source the timeline and search show for these records.
+      expect(p.source).toBe("clinician_reported");
       expect(p.howLabel).toMatch(/copied by you/i);
     }
     expect(right.label).toBe("Glasses — sphere");

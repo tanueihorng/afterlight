@@ -47,6 +47,13 @@ export const CHANGELOG: Release[] = [
       "A file whose date cannot be read is still dated today, but now says so next to it, so a wrong date is easier to catch before you confirm it.",
       "The keyboard and screen-reader paths through the search panel, the full-screen brief and first-run set-up now work properly: focus enters and stays inside each of them and returns to where you were.",
       "A document saved without a title now says so instead of doing nothing.",
+      "Importing a shared extract can no longer replace your whole record; it can only be added alongside it, and Afterlight says what it is before you choose.",
+      "Restoring a backup now brings back your settings too: text size, motion and glare preferences, condition profiles and how your brief is headed.",
+      "Loading demo data no longer replaces your own description of what is normal for each eye, so removing demo data can no longer delete it.",
+      "A period with nothing recorded now prints as nothing recorded, not as unchanged.",
+      "Clinic readings and home checks are no longer compared with each other in the words under a chart.",
+      "On a phone at the largest text size, pages no longer scroll sideways, and chart labels follow your text size.",
+      "The skip-to-content link now stays on the page you are on.",
     ],
     notes: [
       "The clinical wording in the condition atlas, the home checks and the safety messages has not yet been reviewed by an ophthalmologist or optometrist. Until it has, treat every explanation in the app as background reading, not as advice about your eyes.",
