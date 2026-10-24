@@ -55,10 +55,17 @@ if (cssKB > CSS_BUDGET_KB) {
 }
 
 // The explorer and the file-heavy pages must not be in the initial download.
-const shouldBeLazy = ["Visualize", "Imaging", "WhatISee", "Settings", "Appointments", "MyEyes"];
+const shouldBeLazy = ["Visualize", "Imaging", "WhatISee", "Settings", "Appointments", "MyEyes", "SelfTests"];
+const allJs = readdirSync(join(dist, "assets")).filter((f) => f.endsWith(".js"));
 for (const name of shouldBeLazy) {
   if (initialJs.some((f) => f.includes(name))) {
     console.error(`✖ ${name} is in the initial download; it must stay lazy`);
+    failed = true;
+  }
+  // A page that some eager module imports statically is folded into the entry chunk and gets no
+  // file of its own, which the check above cannot see. A lazy page must be its own chunk.
+  if (!allJs.some((f) => f.startsWith(`${name}-`))) {
+    console.error(`✖ ${name} has no chunk of its own; something imports it statically`);
     failed = true;
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { routeParams } from "../lib/router";
 import { useStore, useTimeline } from "../lib/store";
 import type { TimelineEvent } from "../lib/models";
@@ -7,7 +7,10 @@ import SameAsLastTime from "../components/SameAsLastTime";
 import { DemoBadge, EmptyState, EyeBadge, Modal, PageHeader, ProvenanceBadge } from "../components/ui";
 import { formatDate, formatTime, isoToDateOnly, todayLocal, daysAgoISO } from "../lib/util";
 import { inLens, weightOf, type StoryLens } from "../lib/timeline-story";
-import { DiagnosisModal, MedicationModal, ProcedureModal } from "./MyEyes";
+// Lazy: these forms are needed only when someone adds an event, so they stay out of the first download.
+const DiagnosisModal = lazy(() => import("../components/RecordModals").then((m) => ({ default: m.DiagnosisModal })));
+const ProcedureModal = lazy(() => import("../components/RecordModals").then((m) => ({ default: m.ProcedureModal })));
+const MedicationModal = lazy(() => import("../components/RecordModals").then((m) => ({ default: m.MedicationModal })));
 
 const CATEGORIES = [
   { id: "daily_log", label: "Daily logs" },
@@ -423,9 +426,11 @@ export default function TimelinePage() {
           </div>
         </Modal>
       )}
-      {inlineAdd === "diagnosis" && <DiagnosisModal onClose={() => setInlineAdd(null)} />}
-      {inlineAdd === "procedure" && <ProcedureModal onClose={() => setInlineAdd(null)} />}
-      {inlineAdd === "medication" && <MedicationModal onClose={() => setInlineAdd(null)} />}
+      <Suspense fallback={null}>
+        {inlineAdd === "diagnosis" && <DiagnosisModal onClose={() => setInlineAdd(null)} />}
+        {inlineAdd === "procedure" && <ProcedureModal onClose={() => setInlineAdd(null)} />}
+        {inlineAdd === "medication" && <MedicationModal onClose={() => setInlineAdd(null)} />}
+      </Suspense>
       {detail && <EventDetail event={detail} onClose={() => setDetail(null)} onCompare={setCompare} />}
       {compare && <SameAsLastTime entry={compare} onClose={() => setCompare(null)} />}
     </>
