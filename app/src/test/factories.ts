@@ -1,6 +1,7 @@
 // Record builders for tests. Defaults are valid and boring; a test states only what it cares about.
 import type { AllData } from "../lib/db";
 import { EMPTY_DATA } from "../lib/db";
+import { medicationSource } from "../lib/models";
 import type {
   Appointment,
   Diagnosis,
@@ -81,13 +82,23 @@ export function anAppointment(over: Partial<Appointment> = {}): Appointment {
     reason: "Retina follow-up",
     linked_document_ids: [],
     linked_imaging_ids: [],
+    eye: "not_applicable",
+    source_type: "clinician_reported",
     ...stamps(),
     ...over,
   };
 }
 
 export function aQuestion(over: Partial<DoctorQuestion> = {}): DoctorQuestion {
-  return { id: id("qst"), text: "Is this new floater concerning?", status: "pending", ...stamps(), ...over };
+  return {
+    id: id("qst"),
+    text: "Is this new floater concerning?",
+    status: "pending",
+    eye: "not_applicable",
+    source_type: "patient_reported",
+    ...stamps(),
+    ...over,
+  };
 }
 
 export function aDiagnosis(over: Partial<Diagnosis> = {}): Diagnosis {
@@ -111,6 +122,7 @@ export function aProcedure(over: Partial<Procedure> = {}): Procedure {
     date: "2024-08-09",
     eye: "right",
     linked_document_ids: [],
+    source_type: "clinician_reported",
     ...stamps(),
     ...over,
   };
@@ -123,6 +135,7 @@ export function aMedication(over: Partial<Medication> = {}): Medication {
     kind: "self_care",
     eye: "both",
     start_date: "2026-05-01",
+    source_type: medicationSource(over.kind ?? "self_care"),
     ...stamps(),
     ...over,
   };
@@ -135,6 +148,8 @@ export function aPrescription(over: Partial<Prescription> = {}): Prescription {
     lens: "glasses",
     right_eye: { sphere: -0.5, cylinder: -1, acuity: "20/25" },
     left_eye: { sphere: -3.25, cylinder: -0.5, acuity: "20/20" },
+    eye: "both",
+    source_type: "clinician_reported",
     ...stamps(),
     ...over,
   };

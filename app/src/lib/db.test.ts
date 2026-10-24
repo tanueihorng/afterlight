@@ -13,8 +13,8 @@ import {
   storedFileToBlob,
 } from "./db";
 import { SCHEMA_VERSION } from "./migrations";
-import type { FloaterObject, StoredFile } from "./models";
-import { aDrawing, aFloater, anImaging, aSymptom } from "../test/factories";
+import type { FloaterObject, Prescription, Procedure, StoredFile } from "./models";
+import { aDrawing, aFloater, anImaging, aPrescription, aProcedure, aSymptom } from "../test/factories";
 
 beforeEach(async () => {
   for (const store of STORES) await dbClear(store);
@@ -135,6 +135,43 @@ describe("loadMigrated", () => {
     expect(data.floaters[0].source_type).toBe("patient_reported");
     expect(data.meta?.schema_version).toBe(SCHEMA_VERSION);
     expect(data.migrated?.length).toBeGreaterThan(0);
+  });
+
+  it("persists every store a migration changed, not only the ones it was first written for", async () => {
+    // A migration that is applied in memory but never written back is reported as done while the
+    // stored record stays in its old shape. Before this test, prescriptions and procedures were
+    // migrated on every load and thrown away.
+    const rx = { ...aPrescription({ id: "rx" }) } as Partial<Prescription>;
+    delete rx.lens;
+    delete rx.eye;
+    delete rx.source_type;
+    const proc = { ...aProcedure({ id: "prc" }) } as Partial<Procedure>;
+    delete proc.source_type;
+    await dbPut("prescriptions", rx);
+    await dbPut("procedures", proc);
+    await dbPut("meta", { id: "meta", onboarded: true, theme: "dark", demo_seeded: false, schema_version: 5 });
+
+    await loadMigrated();
+
+    const [storedRx] = await dbGetAll<Prescription>("prescriptions");
+    expect(storedRx).toMatchObject({ lens: "not_recorded", eye: "both", source_type: "clinician_reported" });
+    const [storedProc] = await dbGetAll<Procedure>("procedures");
+    expect(storedProc.source_type).toBe("clinician_reported");
+  });
+
+  it("repairs a prescription whose lens type was lost by an earlier upgrade", async () => {
+    // Schema 6 was stamped on records whose prescriptions never had the lens type written.
+    const rx = { ...aPrescription({ id: "rx" }) } as Partial<Prescription>;
+    delete rx.lens;
+    delete rx.eye;
+    delete rx.source_type;
+    await dbPut("prescriptions", rx);
+    await dbPut("meta", { id: "meta", onboarded: true, theme: "dark", demo_seeded: false, schema_version: 6 });
+
+    await loadMigrated();
+
+    const [stored] = await dbGetAll<Prescription>("prescriptions");
+    expect(stored.lens).toBe("not_recorded");
   });
 
   it("keeps a pre-migration snapshot so the upgrade is not a one-way door", async () => {

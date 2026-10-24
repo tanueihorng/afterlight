@@ -12,6 +12,7 @@ import {
   type Prescription,
   type Procedure,
   MODALITY_LABELS,
+  medicationSource,
 } from "../lib/models";
 import { ConfirmButton, Field, Modal, NeedsCheckingBadge, PageHeader, ProvenanceBadge, StatusBadge } from "../components/ui";
 import Trends from "../components/Trends";
@@ -466,7 +467,7 @@ export function DiagnosisModal({ onClose }: { onClose: () => void }) {
 
 export function ProcedureModal({ onClose }: { onClose: () => void }) {
   const store = useStore();
-  const [p, setP] = useState({ procedure_type: "", date: todayLocal(), eye: "right" as Eye, surgeon: "", facility: "", indication: "", outcome: "" });
+  const [p, setP] = useState({ procedure_type: "", date: todayLocal(), eye: "right" as Eye, surgeon: "", facility: "", indication: "", outcome: "", source_type: "clinician_reported" as Procedure["source_type"] });
   return (
     <Modal title="Add procedure" onClose={onClose}>
       <Field label="Procedure"><input type="text" value={p.procedure_type} onChange={(e) => setP({ ...p, procedure_type: e.target.value })} placeholder="e.g. vitrectomy, scleral buckle, laser photocoagulation…" /></Field>
@@ -480,6 +481,12 @@ export function ProcedureModal({ onClose }: { onClose: () => void }) {
           </select>
         </Field>
       </div>
+      <Field label="Source">
+        <select value={p.source_type} onChange={(e) => setP({ ...p, source_type: e.target.value as Procedure["source_type"] })}>
+          <option value="clinician_reported">Clinician documented</option>
+          <option value="patient_reported">Patient reported</option>
+        </select>
+      </Field>
       <div className="grid-2">
         <Field label="Surgeon"><input type="text" value={p.surgeon} onChange={(e) => setP({ ...p, surgeon: e.target.value })} /></Field>
         <Field label="Facility"><input type="text" value={p.facility} onChange={(e) => setP({ ...p, facility: e.target.value })} /></Field>
@@ -501,6 +508,7 @@ export function ProcedureModal({ onClose }: { onClose: () => void }) {
               indication: p.indication || undefined,
               outcome: p.outcome || undefined,
               linked_document_ids: [],
+              source_type: p.source_type,
             });
             await store.procedures.put(rec);
             onClose();
@@ -564,6 +572,7 @@ export function MedicationModal({ onClose }: { onClose: () => void }) {
               end_date: m.end_date || undefined,
               prescribed_by: m.prescribed_by || undefined,
               reason: m.reason || undefined,
+              source_type: medicationSource(m.kind as Medication["kind"]),
             });
             await store.medications.put(rec);
             onClose();
@@ -717,7 +726,7 @@ function PrescriptionModal({ existing, onClose }: { existing?: Prescription; onC
             // once someone has typed their own values in, removing demo data must not delete them.
             const rec: Prescription = existing
               ? { ...existing, ...fields, demo: undefined, updated_at: nowISO() }
-              : newRecord(fields);
+              : newRecord({ ...fields, eye: "both" as const, source_type: "clinician_reported" as const });
             await store.prescriptions.put(rec);
             onClose();
           }}

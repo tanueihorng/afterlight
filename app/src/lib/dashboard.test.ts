@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AllData } from "./db";
 import { greeting, latestAcuity, nextAppointment, recentDays, recentEntries } from "./dashboard";
+import { anAppointment } from "../test/factories";
 
 const T = "2026-01-01T00:00:00.000Z";
 
@@ -88,7 +89,7 @@ describe("latestAcuity", () => {
 describe("nextAppointment", () => {
   it("picks the soonest visit from today on, ignoring past ones", () => {
     const data = empty();
-    const a = (id: string, date_time: string) => ({ id, date_time, created_at: T, updated_at: T });
+    const a = (id: string, date_time: string) => anAppointment({ id, date_time, created_at: T, updated_at: T });
     data.appointments.push(a("past", "2026-03-01T10:00:00"), a("later", "2026-05-01T10:00:00"));
     data.appointments.push(a("soon", "2026-04-02T09:40:00"));
     expect(nextAppointment(data, "2026-03-10")?.id).toBe("soon");

@@ -197,7 +197,7 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
       date: isoToDateOnly(a.date_time),
       kind: "Appointment",
       title: [a.reason, a.clinic, a.clinician].filter(Boolean).join(" · ") || "Clinic visit",
-      source_type: "clinician_reported",
+      source_type: a.source_type,
     });
   }
   for (const p of s.procedures.filter((p) => inRange(p.date))) {
@@ -205,7 +205,7 @@ export function generateBrief(s: AllData, opts: BriefOptions): BriefPayload {
       date: p.date,
       kind: "Procedure",
       title: p.procedure_type,
-      source_type: "clinician_reported",
+      source_type: p.source_type,
     });
   }
   for (const d of s.diagnoses.filter(

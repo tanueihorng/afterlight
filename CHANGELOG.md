@@ -17,6 +17,7 @@ the clinical wording has been reviewed by a qualified clinician — see `docs/cl
 - Version and this list of changes now appear in Settings.
 - Ways to report a problem, including a route for anything that reads as clinically wrong, which goes to a person rather than being closed automatically.
 - Groundwork for other languages. Only English is available so far.
+- Every appointment, question, procedure, medication and prescription now records where it came from, so your record says the same thing wherever it is shown, exported or shared. A surgery you add yourself can be marked as your own account rather than a clinic's.
 
 > The clinical wording in the condition atlas, the home checks and the safety messages has not yet been reviewed by an ophthalmologist or optometrist. Until it has, treat every explanation in the app as background reading, not as advice about your eyes.
 

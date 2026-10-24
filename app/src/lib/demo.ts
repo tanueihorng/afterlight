@@ -5,6 +5,7 @@
 import type { StoreShape } from "./store";
 import { newRecord } from "./store";
 import type { DailyLog, DrawingMark, EyeBaseline, FloaterObject, SymptomEntry, VisualFieldDrawing } from "./models";
+import { medicationSource } from "./models";
 import { addDays, nowISO, todayLocal } from "./util";
 import { drawingToDataURL } from "./render";
 import { dbDelete, dbGetAll } from "./db";
@@ -566,7 +567,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
       linked_document_ids: [] as string[],
     }),
   ];
-  for (const p of procs) await store.procedures.put(p);
+  for (const p of procs) await store.procedures.put({ ...p, source_type: "clinician_reported" });
 
   // ---- medications --------------------------------------------------------------
   const meds = [
@@ -606,7 +607,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
       notes: "Self-started; discussed at review.",
     }),
   ];
-  for (const x of meds) await store.medications.put(x);
+  for (const x of meds) await store.medications.put({ ...x, source_type: medicationSource(x.kind) });
 
   // ---- measurements --------------------------------------------------------------
   const meas = [
@@ -654,7 +655,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
       notes: "Daily disposables for sport.",
     }),
   ];
-  for (const r of rx) await store.prescriptions.put(r);
+  for (const r of rx) await store.prescriptions.put({ ...r, eye: "both", source_type: "clinician_reported" });
 
   // ---- imaging + files -------------------------------------------------------------
   const octBlobOld = await syntheticOCT(11, true);
@@ -798,9 +799,9 @@ Outcome: Uncomplicated. Posture advised for 3 nights.
     specialty: "Medical retina",
     reason: "Retina follow-up",
   });
-  await store.appointments.put(aptSurgery);
-  await store.appointments.put(aptReview);
-  await store.appointments.put(aptNext);
+  for (const a of [aptSurgery, aptReview, aptNext]) {
+    await store.appointments.put({ ...a, eye: "not_applicable", source_type: "clinician_reported" });
+  }
 
   // ---- questions ------------------------------------------------------------------
   const questions = [
@@ -828,7 +829,7 @@ Outcome: Uncomplicated. Posture advised for 3 nights.
       appointment_id: aptReview.id,
     }),
   ];
-  for (const q of questions) await store.questions.put(q);
+  for (const q of questions) await store.questions.put({ ...q, eye: "not_applicable", source_type: "patient_reported" });
 
   await store.setMeta({ demo_seeded: true });
 }

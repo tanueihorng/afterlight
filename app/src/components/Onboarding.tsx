@@ -25,6 +25,8 @@ export default function Onboarding() {
         eye: surgeryEye,
         indication: dxText || undefined,
         linked_document_ids: [],
+        // Told to the app by the person during set-up, like the diagnosis below.
+        source_type: "patient_reported",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });

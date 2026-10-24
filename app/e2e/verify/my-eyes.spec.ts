@@ -82,6 +82,8 @@ test.describe("my eyes — the clinical record", () => {
     await page.getByRole("button", { name: /add prescription/i }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel(/^date/i).fill("2026-09-01");
+    // Glasses and contact lenses are never one series, so the type is required before saving.
+    await dialog.getByLabel(/glasses or contact lenses/i).selectOption("glasses");
     await dialog.getByRole("button", { name: /save prescription/i }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
 

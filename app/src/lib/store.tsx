@@ -240,7 +240,7 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       eye: f.eye,
       title: `Floater first recorded — ${f.nickname || f.shape}`,
       summary: f.appearance,
-      source_type: "patient_reported",
+      source_type: f.source_type,
       demo: f.demo,
       icon: "·",
     });
@@ -251,10 +251,10 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       event_type: "appointment",
       entity_id: a.id,
       date_time: a.date_time,
-      eye: "not_applicable",
+      eye: a.eye,
       title: a.reason || "Appointment",
       summary: [a.clinic, a.clinician].filter(Boolean).join(" · ") || undefined,
-      source_type: "clinician_reported",
+      source_type: a.source_type,
       demo: a.demo,
       icon: "✚",
     });
@@ -282,7 +282,7 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       eye: p.eye,
       title: p.procedure_type,
       summary: p.surgeon || p.facility,
-      source_type: "clinician_reported",
+      source_type: p.source_type,
       demo: p.demo,
       icon: "⚕",
     });
@@ -296,7 +296,7 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       eye: m.eye,
       title: `${m.kind === "prescription" ? "Medication" : "Self-care"} — ${m.name}`,
       summary: [m.dose, m.frequency].filter(Boolean).join(" · ") || undefined,
-      source_type: m.kind === "prescription" ? "clinician_reported" : "patient_reported",
+      source_type: m.source_type,
       demo: m.demo,
       icon: "℞",
     });
@@ -307,10 +307,10 @@ export function buildTimeline(s: AllData): TimelineEvent[] {
       event_type: "prescription",
       entity_id: p.id,
       date_time: p.date,
-      eye: "both",
+      eye: p.eye,
       title: `Prescription — ${LENS_LABELS[p.lens ?? "not_recorded"]}`,
       summary: p.provider,
-      source_type: "clinician_reported",
+      source_type: p.source_type,
       demo: p.demo,
       icon: "℞",
     });

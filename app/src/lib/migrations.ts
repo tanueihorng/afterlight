@@ -6,10 +6,20 @@
 // has been written — a schema upgrade must never be a one-way door.
 
 import type { AllData } from "./db";
-import type { AppMeta, FloaterObject, Prescription, StoredFile } from "./models";
+import type {
+  AppMeta,
+  Appointment,
+  DoctorQuestion,
+  FloaterObject,
+  Medication,
+  Prescription,
+  Procedure,
+  StoredFile,
+} from "./models";
+import { medicationSource } from "./models";
 
 /** Bump this whenever a migration is added. */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 export interface Snapshot {
   data: AllData;
@@ -112,6 +122,47 @@ export const MIGRATIONS: Migration[] = [
         prescriptions: s.data.prescriptions.map((p: Prescription) =>
           p.lens ? p : { ...p, lens: "not_recorded" as const },
         ),
+      },
+    }),
+  },
+  {
+    from: 6,
+    to: 7,
+    describe:
+      "Store where each appointment, question, procedure, medication and prescription came from, using the same labels the app already showed. Nothing you see changes.",
+    // Each value is exactly what the app displayed for these records before they stored one, so
+    // the migration writes down what was already shown and guesses nothing new. A value that is
+    // already present is kept.
+    migrate: (s) => ({
+      ...s,
+      data: {
+        ...s.data,
+        appointments: s.data.appointments.map((a: Appointment) => ({
+          ...a,
+          eye: a.eye ?? ("not_applicable" as const),
+          source_type: a.source_type ?? ("clinician_reported" as const),
+        })),
+        questions: s.data.questions.map((q: DoctorQuestion) => ({
+          ...q,
+          eye: q.eye ?? ("not_applicable" as const),
+          source_type: q.source_type ?? ("patient_reported" as const),
+        })),
+        procedures: s.data.procedures.map((p: Procedure) => ({
+          ...p,
+          source_type: p.source_type ?? ("clinician_reported" as const),
+        })),
+        medications: s.data.medications.map((m: Medication) => ({
+          ...m,
+          source_type: m.source_type ?? medicationSource(m.kind),
+        })),
+        prescriptions: s.data.prescriptions.map((p: Prescription) => ({
+          ...p,
+          // Repairs records stamped as schema 6 whose lens type was never written to disk:
+          // the 5 → 6 step ran in memory but was not saved until this release.
+          lens: p.lens ?? ("not_recorded" as const),
+          eye: p.eye ?? ("both" as const),
+          source_type: p.source_type ?? ("clinician_reported" as const),
+        })),
       },
     }),
   },

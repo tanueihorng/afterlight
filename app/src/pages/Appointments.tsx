@@ -27,6 +27,16 @@ import {
 import { ShareBrief } from "../components/ShareBrief";
 import { addDays, formatDate, formatLongDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
 
+/** A question is the person's own words, and is not about one eye until they say so. */
+function newQuestion(text: string): DoctorQuestion {
+  return newRecord({
+    text: text.trim(),
+    status: "pending" as const,
+    eye: "not_applicable" as const,
+    source_type: "patient_reported" as const,
+  });
+}
+
 export default function Appointments() {
   const store = useStore();
   const [briefForId, setBriefForId] = useState<string | null>(null);
@@ -279,6 +289,8 @@ function AppointmentModal({ appt, onClose }: { appt: Appointment | null; onClose
                   follow_up_date: f.follow_up_date || undefined,
                   linked_document_ids: [],
                   linked_imaging_ids: [],
+                  eye: "not_applicable" as const,
+                  source_type: "clinician_reported" as const,
                 });
             await store.appointments.put(rec);
             onClose();
@@ -317,9 +329,7 @@ function QuestionsModal({ onClose }: { onClose: () => void }) {
           aria-label="New question"
           onKeyDown={async (e) => {
             if (e.key === "Enter" && text.trim()) {
-              await store.questions.put(
-                newRecord({ text: text.trim(), status: "pending" as const }),
-              );
+              await store.questions.put(newQuestion(text));
               setText("");
             }
           }}
@@ -328,7 +338,7 @@ function QuestionsModal({ onClose }: { onClose: () => void }) {
           className="btn primary"
           disabled={!text.trim()}
           onClick={async () => {
-            await store.questions.put(newRecord({ text: text.trim(), status: "pending" as const }));
+            await store.questions.put(newQuestion(text));
             setText("");
           }}
         >

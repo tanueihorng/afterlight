@@ -8,8 +8,19 @@ import {
   schemaVersionOf,
   type Snapshot,
 } from "./migrations";
-import type { FloaterObject, Prescription } from "./models";
-import { anAllData, aFloater, aMeasurement, aPrescription, aSymptom } from "../test/factories";
+import type { Appointment, DoctorQuestion, FloaterObject, Medication, Prescription, Procedure } from "./models";
+import {
+  anAllData,
+  anAppointment,
+  aFloater,
+  aMeasurement,
+  aMedication,
+  aPrescription,
+  aProcedure,
+  aQuestion,
+  aSymptom,
+} from "../test/factories";
+import { buildTimeline } from "./store";
 
 const snapshotAt = (over: Partial<Snapshot> = {}): Snapshot => ({
   data: anAllData(),
@@ -120,7 +131,64 @@ describe("lens type (5 → 6)", () => {
     const byId = new Map(result.snapshot.data.prescriptions.map((p) => [p.id, p]));
     expect(byId.get("rx-old")).toEqual({ ...old, lens: "not_recorded" });
     expect(byId.get("rx-set")).toEqual(set);
-    expect(result.to).toBe(6);
+    expect(result.applied.map((m) => m.to)).toContain(6);
+  });
+});
+
+/** A record as written before schema 7: no stored `source_type`, and no `eye` where it had none. */
+function withoutProvenance<T extends object>(rec: T, ...fields: string[]): T {
+  const copy = { ...rec } as Record<string, unknown>;
+  for (const f of fields) delete copy[f];
+  return copy as T;
+}
+
+describe("stored provenance (6 → 7)", () => {
+  const old = anAllData({
+    appointments: [withoutProvenance(anAppointment({ id: "apt" }), "eye", "source_type") as Appointment],
+    questions: [withoutProvenance(aQuestion({ id: "qst" }), "eye", "source_type") as DoctorQuestion],
+    procedures: [withoutProvenance(aProcedure({ id: "prc" }), "source_type") as Procedure],
+    medications: [
+      withoutProvenance(aMedication({ id: "med-rx", kind: "prescription" }), "source_type") as Medication,
+      withoutProvenance(aMedication({ id: "med-self", kind: "self_care" }), "source_type") as Medication,
+    ],
+    prescriptions: [withoutProvenance(aPrescription({ id: "rx" }), "eye", "source_type") as Prescription],
+  });
+
+  it("writes down exactly the provenance the timeline already showed for each record", () => {
+    // What the timeline displayed for these records before schema 7, when it derived provenance
+    // from the record type. The migration must not change a single badge.
+    const shownBefore: Record<string, [string, string]> = {
+      apt: ["not_applicable", "clinician_reported"],
+      prc: ["right", "clinician_reported"],
+      "med-rx": ["both", "clinician_reported"],
+      "med-self": ["both", "patient_reported"],
+      rx: ["both", "clinician_reported"],
+    };
+    const migrated = migrate(snapshotAt({ data: old }), 6).snapshot.data;
+    const after = Object.fromEntries(buildTimeline(migrated).map((e) => [e.entity_id, [e.eye, e.source_type]]));
+    expect(after).toEqual(shownBefore);
+  });
+
+  it("stores the values on the records themselves", () => {
+    const d = migrate(snapshotAt({ data: old }), 6).snapshot.data;
+    expect(d.appointments[0]).toMatchObject({ eye: "not_applicable", source_type: "clinician_reported" });
+    expect(d.questions[0]).toMatchObject({ eye: "not_applicable", source_type: "patient_reported" });
+    expect(d.procedures[0].source_type).toBe("clinician_reported");
+    const med = new Map(d.medications.map((m) => [m.id, m.source_type]));
+    expect(med.get("med-rx")).toBe("clinician_reported");
+    expect(med.get("med-self")).toBe("patient_reported");
+    expect(d.prescriptions[0]).toMatchObject({ eye: "both", source_type: "clinician_reported" });
+  });
+
+  it("keeps provenance that is already stored, including a patient-reported procedure", () => {
+    const told = aProcedure({ id: "told", source_type: "patient_reported" });
+    const d = migrate(snapshotAt({ data: anAllData({ procedures: [told] }) }), 6).snapshot.data;
+    expect(d.procedures[0]).toEqual(told);
+  });
+
+  it("reaches the current schema version", () => {
+    expect(migrate(snapshotAt({ data: old }), 6).to).toBe(SCHEMA_VERSION);
+    expect(SCHEMA_VERSION).toBe(7);
   });
 });
 
