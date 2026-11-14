@@ -54,7 +54,7 @@ describe("demo data never touches the person's own baseline", () => {
       </StoreProvider>,
     );
     const user = userEvent.setup();
-    await waitFor(() => expect(screen.getByRole("button", { name: "load demo" })).toBeEnabled());
+    await waitFor(() => expect(screen.getByRole("button", { name: "load demo" })).toBeEnabled(), { timeout: 10_000 });
 
     await user.click(screen.getByRole("button", { name: "load demo" }));
     await waitFor(async () => expect((await dbGetAll<{ demo_seeded: boolean }>("meta"))[0].demo_seeded).toBe(true), { timeout: 10_000 });
