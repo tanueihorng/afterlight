@@ -134,11 +134,19 @@ test.describe("the eye engine", () => {
 
     // Navigate within the app rather than reloading, so this is a genuine mount/unmount cycle
     // of the WebGL scene rather than a fresh page each time.
-    const today = page.getByRole("button", { name: "Today", exact: true }).filter({ visible: true });
+    const today = page
+      .getByRole("button", { name: "Today", exact: true })
+      .filter({ visible: true });
     // Visualize lives behind the dock's More menu on desktop.
     const openVisualize = async () => {
-      await page.getByRole("button", { name: "More", exact: true }).filter({ visible: true }).click();
-      await page.getByRole("button", { name: "Visualize", exact: true }).filter({ visible: true }).click();
+      await page
+        .getByRole("button", { name: "More", exact: true })
+        .filter({ visible: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Visualize", exact: true })
+        .filter({ visible: true })
+        .click();
     };
     for (let i = 0; i < 8; i++) {
       await today.click();
@@ -171,7 +179,11 @@ test.describe("the eye engine", () => {
     const memoryAfter = async () => {
       // the engine exposes renderer.info through the canvas for diagnostics
       return page.evaluate(async () => {
-        const scene = (window as unknown as { __eyeScene?: { info: () => { memory: { geometries: number; textures: number } } } }).__eyeScene;
+        const scene = (
+          window as unknown as {
+            __eyeScene?: { info: () => { memory: { geometries: number; textures: number } } };
+          }
+        ).__eyeScene;
         if (!scene) return null;
         return scene.info().memory;
       });
@@ -203,21 +215,33 @@ test.describe("the eye engine", () => {
     await expect(canvas).toBeVisible({ timeout: 30_000 * GL });
     await page.waitForTimeout(1500);
     await canvas.focus();
-    // retry: under software GL the element-stability wait can race the eased rotation
-    let changed = false;
-    for (let attempt = 0; attempt < 3 && !changed; attempt++) {
-      const before = await canvas.screenshot({ timeout: 15_000 * GL }).catch(() => null);
-      if (!before) continue;
-      for (let i = 0; i < 4; i++) {
-        await page.keyboard.press("ArrowRight");
-        await page.waitForTimeout(150);
-      }
-      await page.waitForTimeout(600);
-      const after = await canvas.screenshot({ timeout: 15_000 * GL }).catch(() => null);
-      changed = !!after && Buffer.compare(before, after) !== 0;
+    // Under software GL a screenshot can race the element-stability wait, so take the "before"
+    // frame with a few tries.
+    let before: Buffer | null = null;
+    for (let attempt = 0; attempt < 3 && !before; attempt++) {
+      before = await canvas.screenshot({ timeout: 15_000 * GL }).catch(() => null);
     }
+    expect(before, "the canvas never produced a frame to compare against").not.toBeNull();
 
-    expect(changed, "keyboard arrows never changed the rendered eye").toBe(true);
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press("ArrowRight");
+      await page.waitForTimeout(150);
+    }
+    // The turn eases over several frames, and a GPU-less runner draws each one slowly, so keep
+    // looking until the eye has moved rather than checking once at a fixed moment.
+    await expect
+      .poll(
+        async () => {
+          const after = await canvas.screenshot({ timeout: 15_000 * GL }).catch(() => null);
+          return !!after && !after.equals(before!);
+        },
+        {
+          message: "keyboard arrows never changed the rendered eye",
+          timeout: 30_000 * GL,
+          intervals: [600, 1000],
+        },
+      )
+      .toBe(true);
   });
 });
 
@@ -248,10 +272,9 @@ test("explores slices, cornea and retina without replacing the canvas", async ({
   await expect(canvas).toHaveAttribute("data-original", "yes");
   await expect(canvas).toHaveAccessibleName(/not your anatomy/);
   await page.getByRole("button", { name: "Whole eye", exact: true }).first().click();
-  await expect(page.getByRole("button", { name: "Whole eye", exact: true }).first()).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(
+    page.getByRole("button", { name: "Whole eye", exact: true }).first(),
+  ).toHaveAttribute("aria-pressed", "true");
 });
 
 test("the standalone explorer loads baked detail and remains interactive offline", async ({

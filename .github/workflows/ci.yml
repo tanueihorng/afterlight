@@ -62,12 +62,21 @@ jobs:
         run: npx playwright install --with-deps ${{ matrix.project == 'desktop' && 'chromium' || 'webkit' }}
 
       - name: End-to-end, ${{ matrix.project }} (including offline)
-        run: npm run e2e -- --project=${{ matrix.project }}
+        # The browser's own stderr and the runner's memory, so a page that dies mid-test leaves
+        # evidence of why (V-107).
+        env:
+          DEBUG: pw:browser
+        run: |
+          (while true; do echo "$(date -u +%T) $(free -m | awk 'NR==2{print "used="$3"MB avail="$7"MB"}')"; sleep 20; done) > memory.log &
+          npm run e2e -- --project=${{ matrix.project }} 2> browser.log
 
       - name: Upload report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.project }}
-          path: app/playwright-report
+          path: |
+            app/playwright-report
+            app/memory.log
+            app/browser.log
           retention-days: 7
