@@ -291,6 +291,10 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
 - **Judgement** Recorded as test-environment starvation, the same family as V-103, pending a
   decision: run `visualize.spec.ts` serially, or accept it in local runs. Not yet shown to be
   harmless on a slow real device — worth a human look at the eye studio on low-end hardware.
+- **Update (2026-11-15)** CI ran two workers and failed 12 specs this way (3D pages, and four
+  app-flow specs starved alongside them); the same four app-flow specs pass 23 of 23 locally on
+  one worker. The suite now runs on one worker in CI as well (app/playwright.config.ts). The
+  slow-device question above still stands.
 
 ## Inventory candidates — verdicts
 

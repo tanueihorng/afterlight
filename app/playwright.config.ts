@@ -8,8 +8,10 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
-  // Limit concurrent software rendering locally; this does not classify failures as harmless.
-  workers: process.env.CI ? undefined : 1,
+  // One worker everywhere: two pages rendering the eye in software GL at once starve each other
+  // and time out (V-107), on a laptop and on a CI runner alike. This does not classify failures
+  // as harmless.
+  workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? "github" : "list",
