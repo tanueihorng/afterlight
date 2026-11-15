@@ -9,14 +9,20 @@ import { expect, test } from "@playwright/test";
 // WebGL test in this file runs one at a time, including the top-level ones.
 test.describe.configure({ mode: "serial" });
 
+// A CI runner has no GPU and is slower than a laptop at software GL: there the first frame of the
+// full model alone can take over a minute. Every limit in this file stretches by this factor on
+// CI, so a real failure (a blank canvas, a leak, an error) still fails and only slowness is
+// forgiven. Locally the limits are as written.
+const GL = process.env.CI ? 3 : 1;
+
 test("inspects structures from the accessible list and resets", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(120_000 * GL);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.getByRole("button", { name: /skip setup/i }).click();
   await page.goto("/#/visualize");
   const canvas = page.locator("canvas").first();
-  await expect(canvas).toBeVisible({ timeout: 30_000 });
+  await expect(canvas).toBeVisible({ timeout: 30_000 * GL });
 
   // the cutaway is the initial presentation
   await expect(page.getByRole("button", { name: "Cross-section", exact: true })).toHaveAttribute(
@@ -56,17 +62,17 @@ test.describe("the eye engine", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "needs Chromium's WebGL and metrics");
   // Browser setup itself times out under software GL before an in-body setTimeout has run, so the
   // headroom has to sit at group level (V-107). Tests that need more still set their own.
-  test.setTimeout(120_000);
+  test.setTimeout(120_000 * GL);
 
   test("renders a real eye rather than falling back", async ({ page }) => {
     // retries against software-GL screenshot races need room beyond the 30s default
-    test.setTimeout(120_000);
+    test.setTimeout(120_000 * GL);
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
     await page.goto("/#/visualize");
 
     const canvas = page.locator("canvas").first();
-    await expect(canvas).toBeVisible({ timeout: 30_000 });
+    await expect(canvas).toBeVisible({ timeout: 30_000 * GL });
     await page.waitForTimeout(2500);
 
     // The WebGL drawing buffer is cleared once presented, so readPixels sees nothing; the honest
@@ -76,7 +82,7 @@ test.describe("the eye engine", () => {
     let shot: Buffer | null = null;
     for (let attempt = 0; attempt < 3 && !shot; attempt++) {
       try {
-        const candidate = await canvas.screenshot({ timeout: 15_000 });
+        const candidate = await canvas.screenshot({ timeout: 15_000 * GL });
         if (candidate.byteLength > 20_000) shot = candidate;
       } catch {
         await page.waitForTimeout(1000);
@@ -94,7 +100,7 @@ test.describe("the eye engine", () => {
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
     await page.goto("/#/visualize");
-    await expect(page.locator("canvas").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("canvas").first()).toBeVisible({ timeout: 30_000 * GL });
 
     await expect(page.getByText(/not your anatomy/i).first()).toBeVisible();
     const label = await page.locator("canvas").first().getAttribute("aria-label");
@@ -105,7 +111,7 @@ test.describe("the eye engine", () => {
   test("does not leak GPU resources across repeated mounts", async ({ page }) => {
     // Software GL is slow, and each mount now assembles the full anatomical model; eight
     // cycles still catches a leak that twelve did.
-    test.setTimeout(240_000);
+    test.setTimeout(240_000 * GL);
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
 
@@ -114,7 +120,7 @@ test.describe("the eye engine", () => {
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 
     await page.goto("/#/visualize");
-    await expect(page.locator("canvas").first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("canvas").first()).toBeVisible({ timeout: 30_000 * GL });
     await page.waitForTimeout(1200);
 
     const heapAfter = async () => {
@@ -152,12 +158,12 @@ test.describe("the eye engine", () => {
 
   test("sections rebuild and dispose without growing resources across sweeps", async ({ page }) => {
     // software GL renders each slice step slowly; two identical rounds still prove no growth
-    test.setTimeout(240_000);
+    test.setTimeout(240_000 * GL);
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
     await page.goto("/#/visualize");
     const canvas = page.locator("canvas").first();
-    await expect(canvas).toBeVisible({ timeout: 30_000 });
+    await expect(canvas).toBeVisible({ timeout: 30_000 * GL });
     await page.getByRole("button", { name: "Cross-section", exact: true }).click();
     const slice = page.getByRole("slider", { name: "Slice position" });
     await expect(slice).toHaveCount(1);
@@ -189,25 +195,25 @@ test.describe("the eye engine", () => {
   });
 
   test("turns with the keyboard, not only the mouse", async ({ page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(120_000 * GL);
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
     await page.goto("/#/visualize");
     const canvas = page.locator("canvas").first();
-    await expect(canvas).toBeVisible({ timeout: 30_000 });
+    await expect(canvas).toBeVisible({ timeout: 30_000 * GL });
     await page.waitForTimeout(1500);
     await canvas.focus();
     // retry: under software GL the element-stability wait can race the eased rotation
     let changed = false;
     for (let attempt = 0; attempt < 3 && !changed; attempt++) {
-      const before = await canvas.screenshot({ timeout: 15_000 }).catch(() => null);
+      const before = await canvas.screenshot({ timeout: 15_000 * GL }).catch(() => null);
       if (!before) continue;
       for (let i = 0; i < 4; i++) {
         await page.keyboard.press("ArrowRight");
         await page.waitForTimeout(150);
       }
       await page.waitForTimeout(600);
-      const after = await canvas.screenshot({ timeout: 15_000 }).catch(() => null);
+      const after = await canvas.screenshot({ timeout: 15_000 * GL }).catch(() => null);
       changed = !!after && Buffer.compare(before, after) !== 0;
     }
 
@@ -216,13 +222,13 @@ test.describe("the eye engine", () => {
 });
 
 test("explores slices, cornea and retina without replacing the canvas", async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(60_000 * GL);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.getByRole("button", { name: /skip setup/i }).click();
   await page.goto("/#/visualize");
   const canvas = page.locator("canvas").first();
-  await expect(canvas).toBeVisible({ timeout: 30_000 });
+  await expect(canvas).toBeVisible({ timeout: 30_000 * GL });
   await canvas.evaluate((node) => node.setAttribute("data-original", "yes"));
   await page.getByRole("button", { name: "Cross-section", exact: true }).first().click();
   const before = await canvas.screenshot();
@@ -252,7 +258,7 @@ test("the standalone explorer loads baked detail and remains interactive offline
   page,
   context,
 }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(60_000 * GL);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const remote: string[] = [];
@@ -262,7 +268,7 @@ test("the standalone explorer loads baked detail and remains interactive offline
   });
   await page.goto("/EyeExplorer.html");
   const canvas = page.locator("#viewport canvas");
-  await expect(canvas).toBeVisible({ timeout: 30_000 });
+  await expect(canvas).toBeVisible({ timeout: 30_000 * GL });
   await expect(page.locator("#bootmsg")).not.toBeVisible();
   await expect(canvas).toHaveAccessibleName(/not your anatomy/);
   await context.setOffline(true);

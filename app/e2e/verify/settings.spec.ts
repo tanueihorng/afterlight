@@ -119,7 +119,11 @@ test.describe("settings — the record's control room", () => {
     // Arming deletion must not wipe anything before the second confirmation.
     await page.getByRole("button", { name: /delete all records permanently/i }).click();
     await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+    // The wipe reloads the page shortly after it clears the stores. Wait for that reload, or it
+    // can land later — under load, in the middle of the import below — and drop its preview.
+    const wiped = page.waitForEvent("load");
     await page.getByRole("button", { name: "Delete absolutely everything on this device?", exact: true }).click();
+    await wiped;
     await expect(page.getByRole("button", { name: /skip setup/i })).toBeVisible();
     await page.getByRole("button", { name: /skip setup/i }).click();
     await settingsSaved(page, { onboarded: true });
