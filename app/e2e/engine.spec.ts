@@ -54,6 +54,9 @@ test("inspects structures from the accessible list and resets", async ({ page })
 
 test.describe("the eye engine", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "needs Chromium's WebGL and metrics");
+  // Browser setup itself times out under software GL before an in-body setTimeout has run, so the
+  // headroom has to sit at group level (V-107). Tests that need more still set their own.
+  test.setTimeout(120_000);
 
   test("renders a real eye rather than falling back", async ({ page }) => {
     // retries against software-GL screenshot races need room beyond the 30s default

@@ -4,6 +4,8 @@ test.skip(({ browserName }) => browserName !== "chromium", "the renderer needs C
 
 test.describe("visualize — understanding, not diagnosing", () => {
   test("the atlas search finds a condition and its detail opens with honest boundaries", async ({ page }) => {
+    // the atlas detail renders the eye in software GL on CI; the 30s default is not a budget
+    test.setTimeout(120_000);
     const errors = collectErrors(page);
     await asReturningUser(page);
     await loadDemo(page);

@@ -295,6 +295,11 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
   app-flow specs starved alongside them); the same four app-flow specs pass 23 of 23 locally on
   one worker. The suite now runs on one worker in CI as well (app/playwright.config.ts). The
   slow-device question above still stands.
+- **Update (2026-11-15, later)** The one-worker CI run did not repeat the four app-flow failures —
+  starvation confirmed for those — but two 3D timeouts remained, both hitting Playwright's 30s
+  default rather than app behaviour: the atlas-search spec had no headroom of its own, and in
+  `engine.spec.ts` an in-body `setTimeout` runs after browser setup, which itself timed out. Both
+  now carry the 120s their siblings already use.
 
 ## Inventory candidates — verdicts
 
