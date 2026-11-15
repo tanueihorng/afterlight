@@ -20,38 +20,47 @@ export async function asReturningUser(page: Page) {
 export async function settingsSaved(page: Page, expected: Record<string, unknown>) {
   await expect
     .poll(() =>
-      page.evaluate(
-        () =>
-          new Promise<Record<string, unknown>>((resolve, reject) => {
-            const request = indexedDB.open("afterlight");
-            request.onerror = () => reject(request.error);
-            request.onblocked = () => reject(new Error("Settings database open blocked"));
-            request.onsuccess = () => {
-              const db = request.result;
-              try {
-                const transaction = db.transaction("meta");
-                const read = transaction.objectStore("meta").get("meta");
-                transaction.oncomplete = () => {
-                  db.close();
-                  resolve(read.result ?? {});
-                };
-                transaction.onabort = () => {
-                  db.close();
-                  reject(transaction.error ?? new Error("Settings read aborted"));
-                };
-                transaction.onerror = () => {
-                  db.close();
-                  reject(transaction.error ?? new Error("Settings read failed"));
-                };
-              } catch (error) {
-                db.close();
-                reject(error);
-              }
-            };
-          }),
-      ),
+      readMeta(page).catch((error: unknown) => {
+        // A page that reloads mid-read (a wipe, an import) has no answer yet; ask again.
+        // Anything else is a real failure.
+        if (String(error).includes("Execution context was destroyed")) return undefined;
+        throw error;
+      }),
     )
     .toMatchObject(expected);
+}
+
+function readMeta(page: Page) {
+  return page.evaluate(
+    () =>
+      new Promise<Record<string, unknown>>((resolve, reject) => {
+        const request = indexedDB.open("afterlight");
+        request.onerror = () => reject(request.error);
+        request.onblocked = () => reject(new Error("Settings database open blocked"));
+        request.onsuccess = () => {
+          const db = request.result;
+          try {
+            const transaction = db.transaction("meta");
+            const read = transaction.objectStore("meta").get("meta");
+            transaction.oncomplete = () => {
+              db.close();
+              resolve(read.result ?? {});
+            };
+            transaction.onabort = () => {
+              db.close();
+              reject(transaction.error ?? new Error("Settings read aborted"));
+            };
+            transaction.onerror = () => {
+              db.close();
+              reject(transaction.error ?? new Error("Settings read failed"));
+            };
+          } catch (error) {
+            db.close();
+            reject(error);
+          }
+        };
+      }),
+  );
 }
 
 // Only the post-commit confirmation includes the timeline action; the stored-day note does not.
@@ -84,7 +93,10 @@ export async function openSearch(page: Page) {
     return;
   }
   await page.getByRole("button", { name: /^more/i }).click();
-  await page.getByRole("dialog").getByRole("button", { name: /search my records/i }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /search my records/i })
+    .click();
 }
 
 /** Open the ask palette on either shell. */
@@ -95,7 +107,10 @@ export async function openAsk(page: Page) {
     return;
   }
   await page.getByRole("button", { name: /^more/i }).click();
-  await page.getByRole("dialog").getByRole("button", { name: /ask my records/i }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: /ask my records/i })
+    .click();
 }
 
 /**

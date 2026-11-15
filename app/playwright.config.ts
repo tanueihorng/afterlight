@@ -14,7 +14,15 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  reporter: process.env.CI ? "github" : "list",
+  // A CI runner has no GPU, so every page that shows the eye compiles its shaders in software
+  // GL, which there takes tens of seconds and holds up the browser for whatever comes next —
+  // even opening the next test's context (V-107). These tests check behaviour, not speed, so CI
+  // gets a budget that fits that machine. Locally the defaults stay, so slowness on a real
+  // machine still fails. Retries stay at zero: a pass on retry would not explain the failure.
+  timeout: process.env.CI ? 120_000 : 30_000,
+  expect: { timeout: process.env.CI ? 20_000 : 5_000 },
+  // CI prints each test as it runs and keeps a report with traces for any failure.
+  reporter: process.env.CI ? [["list"], ["github"], ["html", { open: "never" }]] : "list",
   use: {
     baseURL: "http://localhost:4173",
     trace: "retain-on-failure",
