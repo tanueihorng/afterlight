@@ -291,6 +291,30 @@ person-visible flow is wrong or dead) · **low** (cosmetic or unreachable).
 - **Judgement** Recorded as test-environment starvation, the same family as V-103, pending a
   decision: run `visualize.spec.ts` serially, or accept it in local runs. Not yet shown to be
   harmless on a slow real device — worth a human look at the eye studio on low-end hardware.
+- **Update (2026-11-15)** CI ran two workers and failed 12 specs this way (3D pages, and four
+  app-flow specs starved alongside them); the same four app-flow specs pass 23 of 23 locally on
+  one worker. The suite now runs on one worker in CI as well (app/playwright.config.ts). The
+  slow-device question above still stands.
+- **Update (2026-11-15, later)** The one-worker CI run did not repeat the four app-flow failures —
+  starvation confirmed for those — but two 3D timeouts remained, both hitting Playwright's 30s
+  default rather than app behaviour: the atlas-search spec had no headroom of its own, and in
+  `engine.spec.ts` an in-body `setTimeout` runs after browser setup, which itself timed out. Both
+  now carry the 120s their siblings already use.
+- **Resolution for CI (2026-11-15)** e2e passed on CI for the first time since 2026-09-07
+  (run 43702166340: desktop 32m, phone 16m). What it took, and why each is not a mask:
+  - *Software GL is slow, not wrong.* The ubuntu runner has no GPU; SwiftShader shader compiles
+    block context setup and a canvas screenshot takes 20–45s+. CI alone gets a 120s test budget, a
+    20s `expect` budget, and `engine.spec.ts` multiplies its own limits by 3 (`GL`). Local limits
+    are unchanged, so a real slowdown on a real GPU still fails.
+  - *Keyboard turn.* The test now polls for the rendered eye to change after the arrow keys
+    instead of taking one screenshot; it still fails if the eye never turns.
+  - *Settings wipe.* A real test race, not starvation: Settings reloads 700ms after the wipe, and
+    that reload could land mid-import. The test now waits for the reload.
+  - *Phone project on Linux WebKit.* Playwright's Linux WebKit (the WPE port) crashed the page
+    process at random — "Page crashed" in specs with no 3D at all — with memory well under the
+    runner's limit. The phone job now runs on `macos-latest`, the same WebKit build that passes
+    locally. Playwright's WebKit is still not real Safari; an iPhone check remains a human step.
+  - No retries were added and no spec was skipped. The slow-device question above still stands.
 
 ## Inventory candidates — verdicts
 

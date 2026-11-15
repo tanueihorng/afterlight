@@ -105,8 +105,9 @@ const models = readFileSync(join(srcDir, "lib/models.ts"), "utf8");
 const RECORD_EXEMPT = new Set([
   // Not clinical records: app plumbing, derived views, and value objects.
   "AppMeta", "StoredFile", "BriefSection", "BriefPayload", "DrawingMark",
-  "TimelineEvent", "GeneratedBrief", "DoctorQuestion", "Appointment",
-  "Prescription", "Medication", "Procedure", "EyeBaseline",
+  "TimelineEvent", "GeneratedBrief",
+  // The id is the eye ("right" | "left"), and a baseline is always the person's own words.
+  "EyeBaseline",
   // A line of an already-per-eye brief panel; the eye is the panel it sits in.
   "BriefItem",
 ]);

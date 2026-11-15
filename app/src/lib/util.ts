@@ -11,6 +11,18 @@ export function todayLocal(): string {
   return localDayOf(new Date());
 }
 
+/**
+ * Now as a local, zone-less YYYY-MM-DDTHH:MM:SS string, for comparing against stored
+ * appointment timestamps. Those are written without a zone, so comparing them with
+ * toISOString() put "2026-10-24T13:00:00" against UTC and a UTC−5 patient's 13:00 visit
+ * turned "Past" five hours before it happened.
+ */
+export function localNaiveNow(d = new Date()): string {
+  return `${localDayOf(d)}T${String(d.getHours()).padStart(2, "0")}:${String(
+    d.getMinutes()
+  ).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+}
+
 /** The local day a Date falls on, as YYYY-MM-DD. */
 function localDayOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(

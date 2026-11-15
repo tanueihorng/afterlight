@@ -3,7 +3,7 @@
 
 import type { AllData } from "./db";
 import type { Eye, SourceType } from "./models";
-import { EYE_SHORT, MEASUREMENT_LABELS } from "./models";
+import { EYE_SHORT, LENS_LABELS, MEASUREMENT_LABELS } from "./models";
 import type { Route } from "./router";
 import { formatDate, isoToDateOnly } from "./util";
 
@@ -283,8 +283,8 @@ export function buildIndex(s: AllData): IndexRow[] {
         title: x.reason || "Appointment",
         snippet: j(x.clinic, x.clinician, x.specialty, x.notes),
         date: isoToDateOnly(x.date_time),
-        eye: "not_applicable",
-        source_type: "clinician_reported",
+        eye: x.eye,
+        source_type: x.source_type,
         route: "appointments",
         demo: x.demo,
       },
@@ -300,8 +300,8 @@ export function buildIndex(s: AllData): IndexRow[] {
         title: x.text,
         snippet: x.answer ?? "",
         date: isoToDateOnly(x.created_at),
-        eye: "not_applicable",
-        source_type: "patient_reported",
+        eye: x.eye,
+        source_type: x.source_type,
         route: "appointments",
         demo: x.demo,
       },
@@ -335,7 +335,7 @@ export function buildIndex(s: AllData): IndexRow[] {
         snippet: j(x.surgeon, x.facility, x.indication, x.outcome),
         date: x.date,
         eye: x.eye,
-        source_type: "clinician_reported",
+        source_type: x.source_type,
         route: "my-eyes",
         demo: x.demo,
       },
@@ -352,7 +352,7 @@ export function buildIndex(s: AllData): IndexRow[] {
         snippet: j(x.dose, x.frequency, x.reason),
         date: x.start_date,
         eye: x.eye,
-        source_type: "clinician_reported",
+        source_type: x.source_type,
         route: "my-eyes",
         demo: x.demo,
       },
@@ -372,11 +372,11 @@ export function buildIndex(s: AllData): IndexRow[] {
       {
         id: `prescription:${x.id}`,
         kind: "Prescription",
-        title: "Glasses prescription",
+        title: `Prescription — ${LENS_LABELS[x.lens ?? "not_recorded"]}`,
         snippet: `OD ${fmt(x.right_eye) || "—"} / OS ${fmt(x.left_eye) || "—"}`,
         date: x.date,
-        eye: "both",
-        source_type: "clinician_reported",
+        eye: x.eye,
+        source_type: x.source_type,
         route: "my-eyes",
         demo: x.demo,
       },

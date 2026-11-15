@@ -97,13 +97,20 @@ async function toRow(file: File): Promise<Row> {
 
   const kind: Kind = dicom || isImageLike(file) || guess.modality ? "imaging" : "document";
 
+  // Nothing is dated silently: a filename date, then a DICOM study date, then today, and the
+  // notes say which one it was. The today fallback needs its note too — a silent today-date is
+  // a fabricated date one inattentive checkbox away from being confirmed into the record.
+  if (!dicom?.studyDate && !guess.date) {
+    notes.push(
+      "No date could be read from the file, so it is dated today. Change this if that is wrong.",
+    );
+  }
+
   return {
     key: `${file.name}-${file.size}-${file.lastModified}`,
     file,
     bytes,
     kind,
-    // Nothing is dated silently: a filename date, then a DICOM study date, then today, and the
-    // notes say which one it was.
     date: dicom?.studyDate ?? guess.date ?? todayLocal(),
     dateChoices: guess.ambiguousDates,
     eye: dicom?.laterality ?? guess.eye ?? "not_applicable",

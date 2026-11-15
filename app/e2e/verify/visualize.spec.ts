@@ -4,13 +4,17 @@ test.skip(({ browserName }) => browserName !== "chromium", "the renderer needs C
 
 test.describe("visualize — understanding, not diagnosing", () => {
   test("the atlas search finds a condition and its detail opens with honest boundaries", async ({ page }) => {
+    // the atlas detail renders the eye in software GL on CI; the 30s default is not a budget
+    test.setTimeout(120_000);
     const errors = collectErrors(page);
     await asReturningUser(page);
     await loadDemo(page);
     await page.goto("/#/visualize");
     await page.getByRole("button", { name: /condition atlas/i }).click();
 
-    await page.getByRole("searchbox").or(page.getByLabel(/search/i)).first().fill("detachment");
+    // Scoped to the atlas's own field: an unscoped /search/i label also matches the header's
+    // "Search my records" button, which sits earlier in the DOM and is not fillable.
+    await page.getByRole("searchbox", { name: /search by name/i }).fill("detachment");
     await page.waitForTimeout(300);
     await page.getByRole("button", { name: /detachment/i }).first().click();
 
@@ -103,6 +107,9 @@ test.describe("visualize — understanding, not diagnosing", () => {
   test("inside the app the explorer has no Diagnose tab; the standalone file keeps it", async ({
     page,
   }) => {
+    // The 3D scene builds from scratch under software rendering, which can pass 30s on a busy
+    // machine; the waits below already allow 45s, so the test budget has to allow them.
+    test.setTimeout(120_000);
     await asReturningUser(page);
     await page.goto("/#/visualize");
     await page.getByRole("button", { name: /3d explorer/i }).click();

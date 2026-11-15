@@ -5,6 +5,7 @@
 import type { StoreShape } from "./store";
 import { newRecord } from "./store";
 import type { DailyLog, DrawingMark, EyeBaseline, FloaterObject, SymptomEntry, VisualFieldDrawing } from "./models";
+import { medicationSource } from "./models";
 import { addDays, nowISO, todayLocal } from "./util";
 import { drawingToDataURL } from "./render";
 import { dbDelete, dbGetAll } from "./db";
@@ -209,8 +210,12 @@ export async function seedDemo(store: StoreShape): Promise<void> {
     demo: true,
     updated_at: created,
   };
-  await store.baselines.put(baselineRight);
-  await store.baselines.put(baselineLeft);
+  // A baseline has one fixed id per eye, so a demo one could only exist by overwriting the
+  // person's own — and "Remove demo data" would then delete their words for good. An eye that
+  // already has a baseline keeps it.
+  for (const baseline of [baselineRight, baselineLeft]) {
+    if (!store.baselines.list.some((b) => b.id === baseline.id)) await store.baselines.put(baseline);
+  }
 
   // ---- floater objects ------------------------------------------------------
   const f01: FloaterObject = newRecord({
@@ -566,7 +571,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
       linked_document_ids: [] as string[],
     }),
   ];
-  for (const p of procs) await store.procedures.put(p);
+  for (const p of procs) await store.procedures.put({ ...p, source_type: "clinician_reported" });
 
   // ---- medications --------------------------------------------------------------
   const meds = [
@@ -606,7 +611,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
       notes: "Self-started; discussed at review.",
     }),
   ];
-  for (const x of meds) await store.medications.put(x);
+  for (const x of meds) await store.medications.put({ ...x, source_type: medicationSource(x.kind) });
 
   // ---- measurements --------------------------------------------------------------
   const meas = [
@@ -629,6 +634,7 @@ export async function seedDemo(store: StoreShape): Promise<void> {
     newRecord({
       ...demo,
       date: ago(730),
+      lens: "glasses" as const,
       right_eye: { sphere: -0.5, cylinder: -1.0, axis: 90, acuity: "20/25" },
       left_eye: { sphere: -3.25, cylinder: -0.5, axis: 175, acuity: "20/20" },
       provider: "University Eye Hospital optometry",
@@ -637,12 +643,23 @@ export async function seedDemo(store: StoreShape): Promise<void> {
     newRecord({
       ...demo,
       date: ago(60),
+      lens: "glasses" as const,
       right_eye: { sphere: -0.25, cylinder: -0.75, axis: 95, acuity: "20/25" },
       left_eye: { sphere: -3.5, cylinder: -0.5, axis: 175, acuity: "20/20" },
       provider: "High Street Opticians",
     }),
+    // Contact lens powers are written differently from glasses, so they chart as their own series.
+    newRecord({
+      ...demo,
+      date: ago(400),
+      lens: "contact_lenses" as const,
+      right_eye: { sphere: -0.5 },
+      left_eye: { sphere: -3.0 },
+      provider: "High Street Opticians",
+      notes: "Daily disposables for sport.",
+    }),
   ];
-  for (const r of rx) await store.prescriptions.put(r);
+  for (const r of rx) await store.prescriptions.put({ ...r, eye: "both", source_type: "clinician_reported" });
 
   // ---- imaging + files -------------------------------------------------------------
   const octBlobOld = await syntheticOCT(11, true);
@@ -786,9 +803,9 @@ Outcome: Uncomplicated. Posture advised for 3 nights.
     specialty: "Medical retina",
     reason: "Retina follow-up",
   });
-  await store.appointments.put(aptSurgery);
-  await store.appointments.put(aptReview);
-  await store.appointments.put(aptNext);
+  for (const a of [aptSurgery, aptReview, aptNext]) {
+    await store.appointments.put({ ...a, eye: "not_applicable", source_type: "clinician_reported" });
+  }
 
   // ---- questions ------------------------------------------------------------------
   const questions = [
@@ -816,7 +833,7 @@ Outcome: Uncomplicated. Posture advised for 3 nights.
       appointment_id: aptReview.id,
     }),
   ];
-  for (const q of questions) await store.questions.put(q);
+  for (const q of questions) await store.questions.put({ ...q, eye: "not_applicable", source_type: "patient_reported" });
 
   await store.setMeta({ demo_seeded: true });
 }

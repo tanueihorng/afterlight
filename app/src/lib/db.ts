@@ -340,9 +340,13 @@ export async function loadMigrated(): Promise<AllData & { meta?: AppMeta; migrat
     meta: before.meta ?? null,
   });
 
+  // Write back every record store a migration changed. A fixed list of stores here once meant the
+  // prescription and procedure migrations ran in memory on every load and were never saved.
+  const changed = (Object.keys(EMPTY_DATA) as (keyof AllData)[]).filter(
+    (key) => JSON.stringify(result.snapshot.data[key]) !== JSON.stringify(before.data[key]),
+  );
   await dbWriteSnapshot([
-    { store: "floaters", values: result.snapshot.data.floaters, clearFirst: true },
-    { store: "measurements", values: result.snapshot.data.measurements, clearFirst: true },
+    ...changed.map((key) => ({ store: key, values: result.snapshot.data[key], clearFirst: true })),
     { store: "files", values: materialised, clearFirst: true },
   ]);
   // Patch rather than overwrite: a migration only owns the schema version. Writing the whole

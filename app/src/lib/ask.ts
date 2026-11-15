@@ -7,7 +7,7 @@
 import type { AllData } from "./db";
 import { generateBrief } from "./brief";
 import type { Eye, SymptomEntry } from "./models";
-import { EYE_SHORT, MEASUREMENT_LABELS, SOURCE_LABELS } from "./models";
+import { EYE_SHORT, LENS_LABELS, MEASUREMENT_LABELS, SOURCE_LABELS } from "./models";
 import type { Route } from "./router";
 import { searchRecords, parseQuery } from "./search";
 import { dateOf, select, type Entity } from "./query";
@@ -230,19 +230,23 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
 
     for (const i of data.imaging) {
       const text = i.clinician_interpretation || i.findings;
+      // Same rule as documents below: an unchecked extraction may be machine-read text.
+      if (i.source_type === "document_extracted" && i.confirmed !== true) continue;
       if (i.source_type !== "patient_reported" && hit(text)) {
-        matches.push({ label: `${i.modality} report — ${formatDate(i.date)}`, text: text!, route: "imaging", date: i.date });
+        matches.push({ label: `${i.modality} report — ${formatDate(i.date)} (${SOURCE_LABELS[i.source_type]})`, text: text!, route: "imaging", date: i.date });
       }
     }
     for (const d of data.documents) {
+      // An extraction nobody has checked may be machine-read text, so it is not quotable here.
+      if (d.source_type === "document_extracted" && d.confirmed !== true) continue;
       if (hit(d.summary)) {
-        matches.push({ label: `${d.title} — ${formatDate(d.date)}`, text: d.summary!, route: "imaging", date: d.date });
+        matches.push({ label: `${d.title} — ${formatDate(d.date)} (${SOURCE_LABELS[d.source_type]})`, text: d.summary!, route: "imaging", date: d.date });
       }
     }
     for (const a of data.appointments) {
       if (hit(a.notes)) {
         matches.push({
-          label: `${a.reason || "Appointment"} notes — ${formatDate(isoToDateOnly(a.date_time))}`,
+          label: `${a.reason || "Appointment"} notes — ${formatDate(isoToDateOnly(a.date_time))} (${SOURCE_LABELS[a.source_type]})`,
           text: a.notes!,
           route: "appointments",
           date: isoToDateOnly(a.date_time),
@@ -252,7 +256,7 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     for (const dx of data.diagnoses) {
       if (hit(dx.notes) || hit(dx.name)) {
         matches.push({
-          label: `Diagnosis: ${dx.name} — ${formatDate(dx.first_documented)}`,
+          label: `Diagnosis: ${dx.name} — ${formatDate(dx.first_documented)} (${SOURCE_LABELS[dx.source_type]})`,
           text: dx.notes || dx.name,
           route: "my-eyes",
           date: dx.first_documented,
@@ -260,18 +264,24 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
       }
     }
 
-    if (!matches.length) return notFound(`Clinician-documented content${topics.length ? ` about "${topics.join(" ")}"` : ""}`);
+    if (!matches.length) return notFound(`Records${topics.length ? ` about "${topics.join(" ")}"` : ""}`);
     matches.sort((a, b) => b.date.localeCompare(a.date));
+    // These matches can include notes the person typed themselves, so the answer never calls
+    // them clinician-documented: each one is labelled with the source it actually came from.
     return {
       lines: [
-        `${matches.length} clinician-documented record${matches.length === 1 ? "" : "s"}${
-          topics.length ? ` mention "${topics.join(" ")}"` : ""
-        }. Quoted as documented, without interpretation:`,
+        `${matches.length} record${matches.length === 1 ? "" : "s"}${
+          topics.length
+            ? matches.length === 1
+              ? ` mentions "${topics.join(" ")}"`
+              : ` mention "${topics.join(" ")}"`
+            : ""
+        }, quoted as written and labelled with where each came from, without interpretation:`,
         ...matches.slice(0, 8).map((m) => `• ${m.label} — "${m.text}"`),
       ],
       citations: matches.slice(0, 8).map((m) => ({ label: m.label, route: m.route })),
       found: true,
-      interpretation: `Clinician-documented records${topics.length ? ` about "${topics.join(" ")}"` : ""}`,
+      interpretation: `Records${topics.length ? ` about "${topics.join(" ")}"` : ""}`,
     };
   }
 
@@ -280,8 +290,11 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
     const rx = [...data.prescriptions].sort((a, b) => b.date.localeCompare(a.date));
     if (!rx.length) return notFound("Prescriptions");
     if (/compar|change|differ/.test(q)) {
-      if (rx.length < 2) return notFound("Comparison of the two most recent prescriptions");
-      const [now, before] = rx;
+      // Glasses and contact lens powers are written differently, so only like is compared.
+      const lens = rx[0].lens ?? "not_recorded";
+      const same = rx.filter((p) => (p.lens ?? "not_recorded") === lens);
+      if (same.length < 2) return notFound("Comparison of the two most recent prescriptions");
+      const [now, before] = same;
       const line = (label: string, a?: number, b?: number, unit = "D") => {
         if (a === undefined && b === undefined) return `${label}: not recorded.`;
         if (a === undefined || b === undefined) return `${label}: ${b ?? "—"} → ${a ?? "—"}`;
@@ -290,7 +303,7 @@ export function askRecords(data: AllData, rawQuestion: string): AskAnswer {
       };
       return {
         lines: [
-          `Comparing ${formatDate(before.date)} with ${formatDate(now.date)}:`,
+          `Comparing ${formatDate(before.date)} with ${formatDate(now.date)} (${LENS_LABELS[lens].toLowerCase()}):`,
           `Right eye (OD) — ${line("sphere", now.right_eye.sphere, before.right_eye.sphere)}; ${line("cylinder", now.right_eye.cylinder, before.right_eye.cylinder)}; acuity ${before.right_eye.acuity ?? "—"} → ${now.right_eye.acuity ?? "—"}.`,
           `Left eye (OS) — ${line("sphere", now.left_eye.sphere, before.left_eye.sphere)}; ${line("cylinder", now.left_eye.cylinder, before.left_eye.cylinder)}; acuity ${before.left_eye.acuity ?? "—"} → ${now.left_eye.acuity ?? "—"}.`,
           "These are the recorded values only. Whether a change is clinically meaningful is for your clinician to say.",

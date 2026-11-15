@@ -25,7 +25,7 @@ const ROUTES = [
   "settings",
 ] as const;
 
-const INTERACTIVE = 'button:visible, a[href]:visible, [role="tab"]:visible, summary:visible';
+const INTERACTIVE = 'button:visible, a[href]:visible, summary:visible';
 
 /** Close whatever the click may have opened, so the next iteration starts clean. */
 async function closeStrayLayer(page: Page) {

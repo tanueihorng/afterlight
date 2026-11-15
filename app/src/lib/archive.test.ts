@@ -16,8 +16,9 @@ import {
 } from "./archive";
 import { STORES, dbClear, dbGetAll, dbPut, getStoredFile } from "./db";
 import { SCHEMA_VERSION } from "./migrations";
-import type { StoredFile, SymptomEntry } from "./models";
-import { aDrawing, aFloater, anImaging, aSymptom } from "../test/factories";
+import type { AppMeta, DoctorQuestion, StoredFile, SymptomEntry } from "./models";
+import { buildShareBundle, defaultScope } from "./share";
+import { aDrawing, aFloater, anAllData, anImaging, aProcedure, aQuestion, aSymptom } from "../test/factories";
 
 const OCT_BYTES = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 255, 128, 64]);
 
@@ -289,5 +290,70 @@ describe("importing an older archive", () => {
     expect(result.migrationsApplied.length).toBeGreaterThan(0);
     const floaters = await dbGetAll<{ source_type?: string }>("floaters");
     expect(floaters[0].source_type).toBe("patient_reported");
+  });
+});
+
+describe("what an import does to settings", () => {
+  const prefs = {
+    type_scale: 2,
+    reduced_motion: true,
+    glare_comfort: true,
+    condition_profiles: ["retinal_detachment"],
+    brief_header: "J. Doe · Hospital no. 123",
+    brief_page_size: "Letter" as const,
+    accent: "ocean" as const,
+  };
+
+  it("restoring a backup brings back every setting it holds", async () => {
+    // Condition profiles change what Today asks; text size and motion are how someone with low
+    // vision can use the app at all. A restore that silently drops them is not a restore.
+    await seedRecord();
+    await dbPut("meta", { id: "meta", onboarded: true, theme: "hc-dark", demo_seeded: false, schema_version: SCHEMA_VERSION, ...prefs });
+    const archive = await buildArchive();
+    for (const store of STORES) await dbClear(store);
+
+    await importArchive(archive, "replace");
+    const [meta] = await dbGetAll<AppMeta>("meta");
+    expect(meta).toMatchObject({ theme: "hc-dark", ...prefs, schema_version: SCHEMA_VERSION });
+  });
+
+  it("merging keeps this device's own settings, and keeps demo data removable", async () => {
+    await seedRecord();
+    const archive = await buildArchive();
+    await dbPut("meta", { id: "meta", onboarded: true, theme: "light", demo_seeded: true, schema_version: SCHEMA_VERSION, ...prefs });
+
+    await importArchive(archive, "merge");
+    const [meta] = await dbGetAll<AppMeta>("meta");
+    expect(meta).toMatchObject({ theme: "light", demo_seeded: true, ...prefs });
+  });
+});
+
+describe("a shared extract is not a backup", () => {
+  const SEPT = { start: "2026-09-01", end: "2026-09-30" };
+
+  async function aShareBundle() {
+    const data = anAllData({ questions: [aQuestion({ id: "q-shared", text: "Has the shadow changed?" })] });
+    return buildShareBundle(data, defaultScope(SEPT.start, SEPT.end), [], "2026-10-01T09:00:00Z");
+  }
+
+  it("cannot replace a record, and leaves it untouched when asked to", async () => {
+    // Replacing with a slice of someone's record would erase everything the slice leaves out.
+    await seedRecord();
+    await dbPut("procedures", aProcedure({ id: "mine" }));
+    const bundle = await aShareBundle();
+
+    await expect(importArchive(bundle, "replace")).rejects.toThrow(/shared extract/i);
+    expect(await dbGetAll("procedures")).toHaveLength(1);
+    expect(await dbGetAll("symptoms")).toHaveLength(1);
+    expect(await dbGetAll("files")).toHaveLength(1);
+  });
+
+  it("can still be added alongside a record, without touching its settings", async () => {
+    await seedRecord();
+    await importArchive(await aShareBundle(), "merge");
+    expect((await dbGetAll<DoctorQuestion>("questions")).map((q) => q.id)).toContain("q-shared");
+    expect(await dbGetAll("symptoms")).toHaveLength(1);
+    const [meta] = await dbGetAll<AppMeta>("meta");
+    expect(meta.theme).toBe("dark");
   });
 });

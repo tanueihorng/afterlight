@@ -407,7 +407,13 @@ function isNewer(incoming: Identified, existing: Identified): boolean {
   return incoming.updated_at > existing.updated_at;
 }
 
+/** Why a shared extract cannot replace a record, in the words the person will read. */
+export const SHARE_CANNOT_REPLACE =
+  "This file is a shared extract covering part of a record, not a full backup, so it cannot replace your record. Nothing has been changed.";
+
 export async function importArchive(parsed: Archive, mode: ImportMode): Promise<ImportResult> {
+  // A share holds a slice of a record. Replacing with it would erase everything it leaves out.
+  if (parsed.share && mode === "replace") throw new Error(SHARE_CANNOT_REPLACE);
   const data = (parsed.data ?? {}) as Record<string, unknown>;
   const archiveFiles = (parsed.files ?? (data.files as ArchiveFile[]) ?? []) as ArchiveFile[];
   const incomingMeta = (parsed.meta ?? (data.meta as AppMeta) ?? undefined) as AppMeta | undefined;
@@ -474,15 +480,31 @@ export async function importArchive(parsed: Archive, mode: ImportMode): Promise<
     if (newFiles.length) writes.push({ store: "files", values: newFiles });
   }
 
-  const meta: AppMeta = {
-    id: "meta",
-    onboarded: true,
-    theme: incomingMeta?.theme ?? "dark",
-    demo_seeded: incomingMeta?.demo_seeded ?? false,
-    schema_version: SCHEMA_VERSION,
-    last_export_at: incomingMeta?.last_export_at,
-    changes_since_export: 0,
-  };
+  // Settings are part of the record: condition profiles shape the prompts, and text size and
+  // motion are how someone with low vision uses the app at all. A restore brings back every one
+  // of them; a merge keeps this device's own, because they are the person's choice here.
+  const [current] = await dbGetAll<AppMeta>("meta");
+  const meta: AppMeta =
+    mode === "replace"
+      ? {
+          theme: "dark",
+          demo_seeded: false,
+          ...incomingMeta,
+          id: "meta",
+          onboarded: true,
+          schema_version: SCHEMA_VERSION,
+          changes_since_export: 0,
+        }
+      : {
+          ...(current ?? { theme: incomingMeta?.theme ?? "dark", demo_seeded: false }),
+          id: "meta",
+          onboarded: true,
+          // Demo records may now sit on either side; "Remove demo data" must stay reachable.
+          demo_seeded: Boolean(current?.demo_seeded || incomingMeta?.demo_seeded),
+          schema_version: SCHEMA_VERSION,
+          // What came in has not been exported from this device yet.
+          changes_since_export: (current?.changes_since_export ?? 0) + added + updated,
+        };
   writes.push({ store: "meta", values: [meta] });
 
   await dbWriteSnapshot(writes);

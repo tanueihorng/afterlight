@@ -31,3 +31,5 @@ app/scripts/debug-*.mjs
 
 # promo master (72 MB); the compressed promo/afterlight-intro-web.mp4 is committed
 promo/afterlight-intro.mp4
+app/memory.log
+app/browser.log

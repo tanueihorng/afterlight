@@ -200,6 +200,9 @@ export interface Appointment {
   follow_up_date?: string;
   linked_document_ids?: string[];
   linked_imaging_ids?: string[];
+  /** A visit is not about one eye; what happened to each eye is recorded on its own records. */
+  eye: Eye;
+  source_type: SourceType;
   demo?: boolean;
   created_at: string;
   updated_at: string;
@@ -211,6 +214,9 @@ export interface DoctorQuestion {
   status: "pending" | "asked" | "answered" | "follow_up";
   answer?: string;
   appointment_id?: string;
+  eye: Eye;
+  /** The question is the person's own; a clinician's answer is kept in `answer`, beside it. */
+  source_type: SourceType;
   created_at: string;
   updated_at: string;
   demo?: boolean;
@@ -243,6 +249,7 @@ export interface Procedure {
   operative_note?: string;
   outcome?: string;
   linked_document_ids: string[];
+  source_type: SourceType;
   demo?: boolean;
   created_at: string;
   updated_at: string;
@@ -288,18 +295,39 @@ export interface Medication {
   prescribed_by?: string;
   reason?: string;
   notes?: string;
+  /** A prescribed medication is clinician-documented; self-care is the person's own account. */
+  source_type: SourceType;
   demo?: boolean;
   created_at: string;
   updated_at: string;
 }
 
+/** Where a medication record comes from: a prescription is clinician-documented, self-care is the person's own. */
+export function medicationSource(kind: Medication["kind"]): SourceType {
+  return kind === "prescription" ? "clinician_reported" : "patient_reported";
+}
+
+/** Glasses and contact lenses are prescribed differently and are never compared as one series. */
+export type LensType = "glasses" | "contact_lenses" | "not_recorded";
+
+export const LENS_LABELS: Record<LensType, string> = {
+  glasses: "Glasses",
+  contact_lenses: "Contact lenses",
+  not_recorded: "Type not recorded",
+};
+
 export interface Prescription {
   id: string;
   date: string;
+  /** "not_recorded" for anything entered before the type was asked; never guessed. */
+  lens: LensType;
   right_eye: { sphere?: number; cylinder?: number; axis?: number; acuity?: string };
   left_eye: { sphere?: number; cylinder?: number; axis?: number; acuity?: string };
   provider?: string;
   notes?: string;
+  /** Always "both": the numbers for each eye are held side by side in one prescription. */
+  eye: Eye;
+  source_type: SourceType;
   demo?: boolean;
   created_at: string;
   updated_at: string;

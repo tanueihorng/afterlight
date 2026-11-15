@@ -10,7 +10,7 @@
 import type { AllData } from "./db";
 import { acuityForms } from "./acuity";
 import { select } from "./query";
-import type { Eye, MeasurementKind, SourceType } from "./models";
+import type { Eye, LensType, MeasurementKind, SourceType } from "./models";
 import { MEASUREMENT_LABELS, METHOD_LABELS } from "./models";
 import { formatDate, isoToDateOnly } from "./util";
 
@@ -26,16 +26,30 @@ export interface SeriesPoint {
   method?: string;
   /** Values that cannot be compared numerically (CF, HM, LP) are carried but not plotted. */
   numeric: boolean;
+  /** Overrides the clinic/home wording where neither is true, e.g. a copied prescription. */
+  howLabel?: string;
 }
 
+/** Prescription components are charted alongside measurements but are not measurement kinds. */
+export type RxComponent = "sphere" | "cylinder";
+
 export interface Series {
-  kind: MeasurementKind;
+  kind: MeasurementKind | `rx_${RxComponent}`;
   label: string;
   eye: Eye;
   unit?: string;
   points: SeriesPoint[];
   /** Whether higher numbers mean "more of the thing"; used only for axis direction, not judgement. */
   invertForDisplay: boolean;
+  /** What one point is called. Defaults to "reading"; a prescription is an entry, not a reading. */
+  noun?: { one: string; many: string };
+  /**
+   * Set when differences between points may not be real changes — plus- and minus-cylinder forms
+   * of one lens differ in both sphere and cylinder. The arithmetic notes are then left out.
+   */
+  mixedCylinderForms?: boolean;
+  /** For prescriptions: glasses and contact lenses are separate series, never one line. */
+  lens?: LensType;
 }
 
 /** logMAR runs the opposite way to how people read acuity, so the axis is flipped for display. */
@@ -105,6 +119,90 @@ export function allSeries(data: AllData, eyes: Eye[] = ["right", "left"]): Serie
   return out;
 }
 
+/** Signed the way a prescription is written, so "+1.25" never reads as "1.25". */
+export function signedDioptres(value: number): string {
+  const fixed = value.toFixed(2);
+  return value > 0 ? `+${fixed}` : fixed;
+}
+
+const RX_COMPONENT: Record<RxComponent, string> = { sphere: "sphere", cylinder: "cylinder" };
+
+const RX_LENS: Record<LensType, string> = {
+  glasses: "Glasses",
+  contact_lenses: "Contact lenses",
+  not_recorded: "Prescription, type not recorded",
+};
+
+const RX_NOUN = { one: "entry", many: "entries" };
+
+/**
+ * One component of the glasses and contact prescriptions for one eye, oldest first.
+ *
+ * Axis is deliberately not offered: it is an angle that wraps at 180°, so 175° and 5° are nearly
+ * the same and a line between them would draw a change that is not there.
+ */
+export function prescriptionSeries(
+  data: AllData,
+  component: RxComponent,
+  eye: "right" | "left",
+  lens: LensType,
+): Series {
+  const rows = select(data, "prescriptions")
+    .where((row) => (row.lens ?? "not_recorded") === lens)
+    .order("asc")
+    .all();
+  const cylinders = rows
+    .map((row) => (eye === "right" ? row.right_eye : row.left_eye)?.cylinder)
+    .filter((c): c is number => c != null && Number.isFinite(c));
+  const mixedCylinderForms = cylinders.some((c) => c > 0) && cylinders.some((c) => c < 0);
+  const points: SeriesPoint[] = [];
+  for (const row of rows) {
+    const value = (eye === "right" ? row.right_eye : row.left_eye)?.[component];
+    if (value == null || !Number.isFinite(value)) continue;
+    points.push({
+      date: isoToDateOnly(row.date),
+      value,
+      raw: signedDioptres(value),
+      unit: "D",
+      // The record's own source, so the chart agrees with the timeline and search. A written
+      // prescription is clinician content the person copied in, which is what howLabel says.
+      // "clinic" here only means the points are one kind and may be joined.
+      source: row.source_type,
+      provenance: "clinic",
+      howLabel:
+        row.source_type === "patient_reported"
+          ? "Entered by you"
+          : "Copied by you from a written prescription",
+      numeric: true,
+    });
+  }
+  return {
+    kind: `rx_${component}`,
+    label: `${RX_LENS[lens]} — ${RX_COMPONENT[component]}`,
+    eye,
+    unit: "D",
+    points,
+    invertForDisplay: false,
+    noun: RX_NOUN,
+    mixedCylinderForms,
+    lens,
+  };
+}
+
+/** Sphere and cylinder for each lens type and eye, keeping only those with something recorded. */
+export function allPrescriptionSeries(data: AllData): Series[] {
+  const out: Series[] = [];
+  for (const lens of ["glasses", "contact_lenses", "not_recorded"] as LensType[]) {
+    for (const component of ["sphere", "cylinder"] as RxComponent[]) {
+      for (const eye of ["right", "left"] as const) {
+        const series = prescriptionSeries(data, component, eye, lens);
+        if (series.points.length > 0) out.push(series);
+      }
+    }
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------ describing */
 
 export interface SeriesDescription {
@@ -122,6 +220,29 @@ export interface SeriesDescription {
  * Everything here is arithmetic reported in words: how many readings, over what period, what the
  * values were, whether they were taken the same way. No verdict.
  */
+/**
+ * Range, first-to-last difference and spread, as facts about the numbers. Say only what the
+ * arithmetic says, with no word implying whether it is good, bad, expected or concerning.
+ */
+function arithmeticNotes(values: number[], unit: string, prefix: string): string[] {
+  const notes: string[] = [];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  notes.push(`${prefix}${prefix ? "recorded" : "Recorded"} values range from ${format(min)} to ${format(max)}${unit}.`);
+  const change = values[values.length - 1] - values[0];
+  if (change !== 0) {
+    notes.push(
+      `${prefix}${prefix ? "the" : "The"} most recent reading is ${format(Math.abs(change))}${unit} ${change > 0 ? "higher" : "lower"} than the first.`,
+    );
+  } else {
+    notes.push(`${prefix}${prefix ? "the" : "The"} first and most recent readings are the same number.`);
+  }
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const spread = Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length);
+  if (spread > 0) notes.push(`${prefix}${prefix ? "they" : "They"} vary by about ${format(spread)}${unit} around their average.`);
+  return notes;
+}
+
 export function describe(series: Series): SeriesDescription {
   const numeric = series.points.filter((p) => p.numeric);
   const notes: string[] = [];
@@ -136,14 +257,17 @@ export function describe(series: Series): SeriesDescription {
   const last = series.points[series.points.length - 1];
   const unit = series.unit ? ` ${series.unit}` : "";
 
+  const noun = series.noun ?? { one: "reading", many: "readings" };
   const summary =
     series.points.length === 1
-      ? `${series.label}: one reading, ${first.raw}${unit} on ${formatDate(first.date)}.`
-      : `${series.label}: ${series.points.length} readings from ${formatDate(first.date)} to ${formatDate(last.date)} — ${series.points.map((p) => p.raw).join(", ")}${unit}.`;
+      ? `${series.label}: one ${noun.one}, ${first.raw}${unit} on ${formatDate(first.date)}.`
+      : `${series.label}: ${series.points.length} ${noun.many} from ${formatDate(first.date)} to ${formatDate(last.date)} — ${series.points.map((p) => p.raw).join(", ")}${unit}.`;
 
   if (mixedProvenance) {
+    // "Shown separately" is only true of the chart; in the brief this lands as prose, so the
+    // sentence must not claim a separation the reader cannot see there.
     notes.push(
-      "Some of these were measured at a clinic and some were done at home. They are not the same kind of measurement and are shown separately.",
+      "Some of these were measured at a clinic and some were done at home. They are not the same kind of measurement.",
     );
   }
 
@@ -154,27 +278,19 @@ export function describe(series: Series): SeriesDescription {
     );
   }
 
-  if (numeric.length >= 2) {
-    const values = numeric.map((p) => p.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    notes.push(`Recorded values range from ${format(min)} to ${format(max)}${unit}.`);
-
-    // Say only what the arithmetic says: the direction between the first and last readings, with
-    // no word implying whether that is good, bad, expected or concerning.
-    const change = values[values.length - 1] - values[0];
-    if (change !== 0) {
-      notes.push(
-        `The most recent reading is ${format(Math.abs(change))}${unit} ${change > 0 ? "higher" : "lower"} than the first.`,
-      );
-    } else {
-      notes.push("The first and most recent readings are the same number.");
+  if (!series.mixedCylinderForms) {
+    // Clinic measurements and home checks are never one series, so the arithmetic never runs
+    // across both: a mixed series gets one set of sentences per kind, each saying which it is.
+    const groups: { prefix: string; points: SeriesPoint[] }[] = mixedProvenance
+      ? [
+          { prefix: "Clinic readings: ", points: numeric.filter((p) => p.provenance === "clinic") },
+          { prefix: "Home checks: ", points: numeric.filter((p) => p.provenance === "home") },
+        ]
+      : [{ prefix: "", points: numeric }];
+    for (const group of groups) {
+      if (group.points.length < 2) continue;
+      notes.push(...arithmeticNotes(group.points.map((p) => p.value), unit, group.prefix));
     }
-
-    // Variability, as a fact about the numbers.
-    const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const spread = Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length);
-    if (spread > 0) notes.push(`They vary by about ${format(spread)}${unit} around their average.`);
   }
 
   return { summary, notes, mixedProvenance };

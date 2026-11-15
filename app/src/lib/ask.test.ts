@@ -126,6 +126,44 @@ describe("askRecords — clinician-documented content", () => {
   });
 });
 
+describe("askRecords — provenance of quoted records", () => {
+  it("does not quote a document extraction nobody has checked", () => {
+    const data = anAllData({
+      documents: [
+        aDocument({ summary: "macula stable, no fluid", source_type: "document_extracted", confirmed: false }),
+      ],
+    });
+    const a = askRecords(data, "What did my doctors document about the macula?");
+    expect(a.lines).toEqual([NOT_FOUND]);
+  });
+
+  it("does not quote a scan report read out of a file that nobody has checked", () => {
+    const data = anAllData({
+      imaging: [
+        anImaging({ findings: "macula stable, no fluid", source_type: "document_extracted", confirmed: false }),
+      ],
+    });
+    const a = askRecords(data, "What did my doctors document about the macula?");
+    expect(a.lines).toEqual([NOT_FOUND]);
+  });
+
+  it("labels a patient-typed note with its source instead of calling everything clinician-documented", () => {
+    const data = anAllData({
+      appointments: [
+        anAppointment({
+          date_time: "2026-06-01T10:00:00",
+          notes: "The macula was discussed at the visit",
+          source_type: "patient_reported",
+        }),
+      ],
+    });
+    const a = askRecords(data, "What did my doctors document about the macula?");
+    const text = a.lines.join(" ");
+    expect(text).toContain("Patient reported");
+    expect(text).not.toContain("clinician-documented");
+  });
+});
+
 describe("askRecords — prescriptions", () => {
   it("compares the two most recent and reports both dates", () => {
     const data = anAllData({

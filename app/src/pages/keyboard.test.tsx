@@ -5,6 +5,7 @@ import { renderWithStore } from "../test/renderWithStore";
 import Today from "./Today";
 import Appointments from "./Appointments";
 import Settings from "./Settings";
+import App from "../App";
 import { anAppointment, aSymptom } from "../test/factories";
 import { addDays, todayLocal } from "../lib/util";
 import { dbGetAll } from "../lib/db";
@@ -117,5 +118,19 @@ describe("display preferences are operable from the keyboard", () => {
     applyPrefs({ ...DEFAULT_PREFS, theme: "hc-dark", typeScale: 2 }, document.documentElement);
     expect(document.documentElement.getAttribute("data-theme")).toBe("hc-dark");
     expect(document.documentElement.style.getPropertyValue("--type-scale")).toBe("2");
+  });
+});
+
+describe("the skip link", () => {
+  it("moves focus to the page content without leaving the current page", async () => {
+    // The router reads the hash, so following "#main" used to land every page on Today.
+    window.location.hash = "#/settings";
+    const user = userEvent.setup();
+    await renderWithStore(<App />, {});
+    await screen.findByRole("heading", { name: /^settings$/i }, { timeout: 10_000 });
+    const skip = await tabTo(user, /skip to/i);
+    await user.click(skip);
+    expect(window.location.hash).toBe("#/settings");
+    expect(document.activeElement?.id).toBe("main");
   });
 });

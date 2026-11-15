@@ -55,6 +55,21 @@ export const EN = {
   "app.more": "More",
   "app.opening": "Opening…",
 
+  /* ------------------------------------------------------- record charts */
+
+  "charts.title": "Recorded numbers over time",
+  "charts.jump": "Charts of my recorded numbers",
+  "charts.elsewhere":
+    "This page shows generic illustrations, not your eye. Charts of the numbers in your own record are on My Eyes.",
+  "charts.empty":
+    "No measurements or prescriptions are recorded yet. Once you add one with “+ Measurement” above or “+ Add prescription” below, it is charted here with its date and where it came from.",
+  "charts.rx_title": "Glasses and contact prescriptions",
+  "charts.rx_intro":
+    "Sphere and cylinder from each prescription, in dioptres, exactly as written. Glasses and contact lens prescriptions are written differently, so each has its own charts. Axis is in the table below instead of the chart: it is an angle where 180° and 1° point almost the same way, so a line between them would show a jump that is not there.",
+  "charts.rx_mixed_cylinder":
+    "Some of this eye's cylinder values are written as plus and some as minus. The same lens can be written either way, and switching form also changes the sphere, so differences between these entries may not be real changes. Your optometrist can say how these prescriptions compare.",
+  "eye.preparing": "Preparing the 3D view…",
+
   "nav.today": "Today",
   "nav.what_i_see": "What I See",
   "nav.timeline": "Timeline",

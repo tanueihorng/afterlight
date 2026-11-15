@@ -27,6 +27,7 @@ export default function VisionSim({
   onAskIfLikeThis?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [customImage, setCustomImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
@@ -66,23 +67,26 @@ export default function VisionSim({
       </p>
 
       <div className="btn-row">
-        <label className="btn subtle" style={{ display: "inline-flex", alignItems: "center" }}>
+        {/* A real button opens the picker; a label around a display:none input is unreachable
+            by keyboard or screen reader, so the control did not exist for those users. */}
+        <button className="btn subtle" onClick={() => photoInputRef.current?.click()}>
           Use my own photo
-          <input
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const image = new Image();
-              // Processed here on the device and never stored unless the person saves it.
-              image.onload = () => setCustomImage(image);
-              image.src = URL.createObjectURL(file);
-              e.target.value = "";
-            }}
-          />
-        </label>
+        </button>
+        <input
+          ref={photoInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const image = new Image();
+            // Processed here on the device and never stored unless the person saves it.
+            image.onload = () => setCustomImage(image);
+            image.src = URL.createObjectURL(file);
+            e.target.value = "";
+          }}
+        />
         {customImage && (
           <button className="btn subtle" onClick={() => setCustomImage(null)}>
             Back to the default scene

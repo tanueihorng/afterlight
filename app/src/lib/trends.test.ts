@@ -183,3 +183,23 @@ describe("is this the same as last time?", () => {
     expect(priorInstances(data, "glare", "left", "2026-01-01")).toEqual([]);
   });
 });
+
+describe("clinic and home readings are never one series", () => {
+  it("does not compute a difference or range across a clinic reading and a home check", () => {
+    const data = anAllData({
+      measurements: [
+        aMeasurement({ id: "c1", kind: "iop", eye: "right", date: "2026-03-01", value: "14", unit: "mmHg", source_type: "device_measurement" }),
+        aMeasurement({ id: "c2", kind: "iop", eye: "right", date: "2026-05-01", value: "16", unit: "mmHg", source_type: "device_measurement" }),
+        aMeasurement({ id: "h1", kind: "iop", eye: "right", date: "2026-06-01", value: "22", unit: "mmHg", source_type: "patient_reported" }),
+      ],
+    });
+    const notes = describeSeries(seriesFor(data, "iop", "right")).notes.join(" ");
+    // 22 (home) − 14 (clinic) would be the cross-kind comparison the rules forbid.
+    expect(notes).not.toMatch(/8 mmHg higher/);
+    expect(notes).not.toMatch(/range from 14 to 22/);
+    expect(notes).toMatch(/Clinic readings: recorded values range from 14 to 16 mmHg/);
+    expect(notes).toMatch(/Clinic readings: the most recent reading is 2 mmHg higher than the first/);
+    // One home check alone has nothing to compare against.
+    expect(notes).not.toMatch(/Home checks:/);
+  });
+});

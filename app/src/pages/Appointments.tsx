@@ -23,9 +23,20 @@ import {
   Modal,
   PageHeader,
   ProvenanceBadge,
+  useDialogFocus,
 } from "../components/ui";
 import { ShareBrief } from "../components/ShareBrief";
-import { addDays, formatDate, formatLongDate, isoToDateOnly, nowISO, todayLocal } from "../lib/util";
+import { addDays, formatDate, formatLongDate, isoToDateOnly, localNaiveNow, nowISO, todayLocal } from "../lib/util";
+
+/** A question is the person's own words, and is not about one eye until they say so. */
+function newQuestion(text: string): DoctorQuestion {
+  return newRecord({
+    text: text.trim(),
+    status: "pending" as const,
+    eye: "not_applicable" as const,
+    source_type: "patient_reported" as const,
+  });
+}
 
 export default function Appointments() {
   const store = useStore();
@@ -33,7 +44,9 @@ export default function Appointments() {
   const [editAppt, setEditAppt] = useState<Appointment | "new" | null>(null);
   const [qOpen, setQOpen] = useState(false);
 
-  const nowIso = new Date().toISOString();
+  // Stored date_times carry no zone, so "now" must be naive-local too — a UTC comparison put
+  // today's afternoon visit under Past before it happened and took the brief button with it.
+  const nowIso = localNaiveNow();
   const upcoming = store.appointments.list
     .filter((a) => a.date_time >= nowIso)
     .sort((a, b) => (a.date_time > b.date_time ? 1 : -1));
@@ -279,6 +292,8 @@ function AppointmentModal({ appt, onClose }: { appt: Appointment | null; onClose
                   follow_up_date: f.follow_up_date || undefined,
                   linked_document_ids: [],
                   linked_imaging_ids: [],
+                  eye: "not_applicable" as const,
+                  source_type: "clinician_reported" as const,
                 });
             await store.appointments.put(rec);
             onClose();
@@ -317,9 +332,7 @@ function QuestionsModal({ onClose }: { onClose: () => void }) {
           aria-label="New question"
           onKeyDown={async (e) => {
             if (e.key === "Enter" && text.trim()) {
-              await store.questions.put(
-                newRecord({ text: text.trim(), status: "pending" as const }),
-              );
+              await store.questions.put(newQuestion(text));
               setText("");
             }
           }}
@@ -328,7 +341,7 @@ function QuestionsModal({ onClose }: { onClose: () => void }) {
           className="btn primary"
           disabled={!text.trim()}
           onClick={async () => {
-            await store.questions.put(newRecord({ text: text.trim(), status: "pending" as const }));
+            await store.questions.put(newQuestion(text));
             setText("");
           }}
         >
@@ -717,6 +730,10 @@ function PresentMode({
   const [at, setAt] = useState(0);
   const [zoomed, setZoomed] = useState<string | null>(null);
   const awake = useWakeLock(true);
+  const presentRef = useRef<HTMLDivElement>(null);
+  // Focus moves into the presentation, Tab stays inside, and focus returns to the brief on exit.
+  // Escape backs out of a zoom first, then leaves the presentation.
+  useDialogFocus(presentRef, useCallback(() => (zoomed ? setZoomed(null) : onClose()), [zoomed, onClose]));
 
   const go = useCallback(
     (delta: number) => setAt((i) => Math.min(sections.length - 1, Math.max(0, i + delta))),
@@ -725,10 +742,7 @@ function PresentMode({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (zoomed) setZoomed(null);
-        else onClose();
-      } else if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
+      if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") {
         e.preventDefault();
         go(1);
       } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
@@ -756,7 +770,7 @@ function PresentMode({
       if (previousTheme) root.setAttribute("data-theme", previousTheme);
       else root.removeAttribute("data-theme");
     };
-  }, [go, onClose, sections.length, zoomed]);
+  }, [go, sections.length]);
 
   const touch = useRef<{ x: number; y: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
@@ -781,6 +795,8 @@ function PresentMode({
       role="dialog"
       aria-modal="true"
       aria-label="Appointment brief, presentation view"
+      ref={presentRef}
+      tabIndex={-1}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >

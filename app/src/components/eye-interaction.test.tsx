@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import EyeCanvas from "./EyeCanvas";
 
@@ -8,6 +8,7 @@ vi.mock("../engine", () => ({
   probeCapability: () => ({ webgl2: true }),
   EyeScene: class {
     pick = pick;
+    ready = Promise.resolve();
     onContextLoss() {}
     resize() {}
     renderOnce() {}
@@ -64,4 +65,12 @@ it("uses the latest selection callback", () => {
 it("does not offer a fullscreen button when the browser cannot enter fullscreen", () => {
   render(<EyeCanvas options={{}} />);
   expect(screen.queryByRole("button", { name: "Fullscreen" })).not.toBeInTheDocument();
+});
+
+it("says the 3D view is being prepared, then gets out of the way", async () => {
+  render(<EyeCanvas options={{}} />);
+  await waitFor(() =>
+    expect(screen.queryByText(/preparing the 3d view/i)).not.toBeInTheDocument(),
+  );
+  expect(screen.getByRole("img")).toBeInTheDocument();
 });
