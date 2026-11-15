@@ -37,12 +37,19 @@ jobs:
     # Desktop and phone run on separate runners: each is one long serial run of pages that
     # render in software GL, and side by side on one machine they starve each other (V-107).
     name: e2e (${{ matrix.project }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        project: [desktop, mobile]
+        include:
+          - project: desktop
+            os: ubuntu-latest
+          # The phone project is WebKit. On Linux, Playwright's WebKit is the WPE port, whose page
+          # process crashed at random on ordinary pages here ("Page crashed", V-107). The macOS
+          # port is the WebKit closest to iPhone Safari, and the one the suite passes on locally.
+          - project: mobile
+            os: macos-latest
     defaults:
       run:
         working-directory: app
@@ -67,7 +74,7 @@ jobs:
         env:
           DEBUG: pw:browser
         run: |
-          (while true; do echo "$(date -u +%T) $(free -m | awk 'NR==2{print "used="$3"MB avail="$7"MB"}')"; sleep 20; done) > memory.log &
+          if command -v free >/dev/null; then (while true; do echo "$(date -u +%T) $(free -m | awk 'NR==2{print "used="$3"MB avail="$7"MB"}')"; sleep 20; done) > memory.log & fi
           npm run e2e -- --project=${{ matrix.project }} 2> browser.log
 
       - name: Upload report on failure

@@ -218,8 +218,9 @@ test.describe("the eye engine", () => {
     // Under software GL a screenshot can race the element-stability wait, so take the "before"
     // frame with a few tries.
     let before: Buffer | null = null;
-    for (let attempt = 0; attempt < 3 && !before; attempt++) {
-      before = await canvas.screenshot({ timeout: 15_000 * GL }).catch(() => null);
+    // On a GPU-less runner one canvas screenshot has taken from 20s to over 45s.
+    for (let attempt = 0; attempt < 2 && !before; attempt++) {
+      before = await canvas.screenshot({ timeout: 30_000 * GL }).catch(() => null);
     }
     expect(before, "the canvas never produced a frame to compare against").not.toBeNull();
 
@@ -232,12 +233,12 @@ test.describe("the eye engine", () => {
     await expect
       .poll(
         async () => {
-          const after = await canvas.screenshot({ timeout: 15_000 * GL }).catch(() => null);
+          const after = await canvas.screenshot({ timeout: 30_000 * GL }).catch(() => null);
           return !!after && !after.equals(before!);
         },
         {
           message: "keyboard arrows never changed the rendered eye",
-          timeout: 30_000 * GL,
+          timeout: 50_000 * GL,
           intervals: [600, 1000],
         },
       )
