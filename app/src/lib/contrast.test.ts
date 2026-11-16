@@ -97,6 +97,25 @@ describe.each(THEMES)("$name theme", ({ selector, textMin, uiMin }) => {
     ).toBeGreaterThanOrEqual(uiMin);
   });
 
+  // A dialog sits on a dimmed page (dialog::backdrop). Someone has to be able to see where it
+  // ends: its border, or failing that its fill, must stand out from the dim by the UI minimum.
+  it.each(["modal", "sheet", "palette"])("a .%s's edge stands out from the dimmed page", (cls) => {
+    const rule = css.match(new RegExp(`\\n\\.${cls} \\{([^}]*)\\}`))?.[1] ?? "";
+    expect(rule, `.${cls} rule not found`).toMatch(/border:/);
+    expect(rule, `.${cls} must draw its edge in --border`).toMatch(/border: 1px solid var\(--border\)/);
+    const dim = css.match(/dialog::backdrop \{[^}]*background: (rgba\([^)]*\))/)?.[1];
+    expect(dim, "dialog::backdrop background not found").toBeTruthy();
+    const page = colour(tokens, "--bg", { r: 0, g: 0, b: 0 });
+    const backdrop = over(dim!, page)!;
+    const fill = colour(tokens, "--bg-elev", backdrop);
+    const edge = colour(tokens, "--border", fill);
+    const best = Math.max(contrastRatio(edge, backdrop), contrastRatio(fill, backdrop));
+    expect(
+      Number(best.toFixed(2)),
+      `.${cls} edge is ${best.toFixed(2)}:1 against the dim, needs 3:1`,
+    ).toBeGreaterThanOrEqual(3);
+  });
+
   it("keeps the accent readable as a button fill", () => {
     const fill = colour(tokens, "--accent-strong", { r: 0, g: 0, b: 0 });
     const ink = colour(tokens, "--accent-ink", fill);

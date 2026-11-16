@@ -2072,7 +2072,9 @@ dialog.onboarding::backdrop {
 .sheet {
   padding: 0;
   background: var(--bg-elev);
-  border: 1px solid var(--glass-edge);
+  /* --border, like .modal: the translucent glass edge measured about 1.6:1 against the dimmed
+     page in the dark theme, too faint to see where the sheet ends. */
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   width: calc(100% - 40px);

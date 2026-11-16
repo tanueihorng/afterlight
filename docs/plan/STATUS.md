@@ -32,6 +32,10 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-11-16** — Sheet edge contrast fixed: `.sheet` drew its border in the translucent
+  `--glass-edge` (about 1.6:1 against the dimmed page in the dark theme); it now uses `--border`
+  like `.modal`, and `contrast.test.ts` checks every dialog's edge against the dim in all four
+  themes.
 - **2026-11-16** — **Phase 18 done.** `Modal`, `Sheet`, the command palette, onboarding and
   the presentation view are native `<dialog>`s via `useNativeDialog` (ui.tsx); the hand-written
   Tab trap, Escape stack, `role`/`aria-modal`, backdrop-dismiss button and the shell's `inert`
@@ -44,8 +48,7 @@ scope cut, or a decision a future agent would otherwise have to re-derive.
   prints the whole brief. `npm run verify` clean (721 tests); 164 dialog-touching e2e tests pass
   on desktop Chromium and iPhone WebKit (8 expected skips). One earlier phone run failed a 44px
   target check at 43.99997px during the entry animation; it passed on rerun — a sub-pixel timing
-  artefact, left unaltered. **Not done:** the Sheet edge in the default dark theme is ~1.6:1
-  against the dim (pre-existing, out of scope); a menu item that opens a Modal would lose focus
+  artefact, left unaltered. **Not done:** a menu item that opens a Modal would lose focus
   return (no caller does this today); no real-device VoiceOver pass.
 - **2026-11-16** — Phase 18 started: overlays move to native `<dialog>`/`popover`. Numbered 18
   because 17 is the body dashboard on its own branch.
