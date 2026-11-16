@@ -17,7 +17,6 @@ const TOO_SMALL = /^(\d+(\.\d+)?)px$/;
 function undersizedControls(container: HTMLElement): string[] {
   const problems: string[] = [];
   for (const el of container.querySelectorAll<HTMLElement>("button, a[href], summary")) {
-    if (el.classList.contains("backdrop-dismiss")) continue;
     const declared = el.style.minHeight || el.style.height;
     const match = declared.match(TOO_SMALL);
     if (match && Number(match[1]) < 44) {

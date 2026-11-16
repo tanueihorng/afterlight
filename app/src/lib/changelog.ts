@@ -54,6 +54,7 @@ export const CHANGELOG: Release[] = [
       "Clinic readings and home checks are no longer compared with each other in the words under a chart.",
       "On a phone at the largest text size, pages no longer scroll sideways, and chart labels follow your text size.",
       "The skip-to-content link now stays on the page you are on.",
+      "Windows that open over a page now use the browser's own dialog, so a screen reader stays inside the window until it closes and the phone's back gesture closes it. When a window has no field to fill in, it starts on its title rather than on its first button. Printing while presenting a brief now prints the whole brief.",
     ],
     notes: [
       "The clinical wording in the condition atlas, the home checks and the safety messages has not yet been reviewed by an ophthalmologist or optometrist. Until it has, treat every explanation in the app as background reading, not as advice about your eyes.",

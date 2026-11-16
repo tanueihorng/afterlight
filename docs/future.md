@@ -82,7 +82,7 @@ does it better, without breaking the non-negotiables.
   guide says use `overscroll-behavior: contain` on the dialog and its `::backdrop` instead. Guide:
   `prevent-page-scroll-under-modal-dialog`.
 
-**Found, a phase of its own (structural).**
+**Found, a phase of its own (structural).** _Became phase 18 (`docs/plan/phase-18-native-dialog.md`), 2026-11-16._
 
 - **Native `<dialog>`.** Five overlays are hand-built `role="dialog"` divs with their own focus
   trap, Escape stack, focus return and `inert` toggling: `Modal` (`components/ui.tsx`), `Sheet`,

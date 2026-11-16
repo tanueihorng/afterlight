@@ -68,7 +68,11 @@ export function Dock({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-/** A small disclosure that closes on Escape or a click elsewhere, and returns focus when it does. */
+/**
+ * A small disclosure on the native popover API: `popover="auto"` + `popovertarget` give light
+ * dismiss, Escape, one-open-at-a-time and focus back to the button, and the top layer means no
+ * ancestor's overflow, blur or stacking context can clip it.
+ */
 export function Popover({
   label,
   icon,
@@ -84,32 +88,51 @@ export function Popover({
   showLabel?: boolean;
   children: (close: () => void) => ReactNode;
 }) {
+  // Mirrors the native open state for aria-expanded.
   const [open, setOpen] = useState(false);
-  const wrap = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const id = useId();
+  const centred = panelClass?.split(" ").includes("center") ?? false;
 
   useEffect(() => {
-    if (!open) return;
-    const onDown = (e: PointerEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        button.current?.focus();
+    const p = panel.current;
+    if (!p) return;
+    // In the top layer the panel is positioned against the viewport, not its button, so it is
+    // placed from the button's box. CSS anchor positioning would do this, but only Safari 27 has it.
+    const place = () => {
+      const b = button.current?.getBoundingClientRect();
+      if (!b) return;
+      p.style.top = `${b.bottom + 10}px`;
+      // A fixed box cannot be reached by scrolling the page, so at the largest text sizes the
+      // panel scrolls inside itself instead of running off the bottom of the screen.
+      p.style.maxHeight = `calc(100dvh - ${b.bottom + 26}px)`;
+      if (centred) {
+        p.style.left = `${b.left + b.width / 2}px`;
+        p.style.right = "auto";
+      } else {
+        p.style.right = `${document.documentElement.clientWidth - b.right}px`;
+        p.style.left = "auto";
       }
     };
-    document.addEventListener("pointerdown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDown);
-      document.removeEventListener("keydown", onKey);
+    const onBeforeToggle = (e: Event) => {
+      if ((e as ToggleEvent).newState === "open") place();
     };
-  }, [open]);
+    const onToggle = (e: Event) => setOpen((e as ToggleEvent).newState === "open");
+    p.addEventListener("beforetoggle", onBeforeToggle);
+    p.addEventListener("toggle", onToggle);
+    window.addEventListener("resize", place);
+    return () => {
+      p.removeEventListener("beforetoggle", onBeforeToggle);
+      p.removeEventListener("toggle", onToggle);
+      window.removeEventListener("resize", place);
+    };
+  }, [centred]);
+
+  const close = () => panel.current?.hidePopover();
 
   return (
-    <div className="popover-anchor" ref={wrap}>
+    <>
       <button
         ref={button}
         className={buttonClass}
@@ -117,17 +140,23 @@ export function Popover({
         aria-controls={id}
         aria-label={showLabel ? undefined : label}
         title={showLabel ? undefined : label}
-        onClick={() => setOpen((o) => !o)}
+        // React 18's types predate the popover attributes; the DOM receives them as written.
+        {...({ popovertarget: id } as object)}
       >
         <Icon name={icon} />
         {showLabel && <span className="dock-label">{label}</span>}
       </button>
-      {open && (
-        <div id={id} className={`popover glass ${panelClass ?? ""}`}>
-          {children(() => setOpen(false))}
-        </div>
-      )}
-    </div>
+      <div
+        id={id}
+        ref={panel}
+        className={`popover glass ${panelClass ?? ""}`}
+        {...({ popover: "auto" } as object)}
+      >
+        {/* Always rendered: a closed popover is display: none and out of the accessibility tree
+            already, and content rendered on open would paint the panel empty for a frame. */}
+        {children(close)}
+      </div>
+    </>
   );
 }
 

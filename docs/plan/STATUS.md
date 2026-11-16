@@ -25,11 +25,30 @@ marked blocked.
 | 14 | Interactive cornea, retina and layer inspection | done | phase-11-baseline-contract | 2026-09-13 | Cutaway default, accessible structure list, picking, focus-on-request, labelled layer magnification, in-place reset; copy registered for clinical review; verify clean |
 | 15 | Bring the original explorer to the same model quality | done | phase-11-baseline-contract | 2026-09-13 | Model embedded via generated adapter block; primitives replaced, lids removed, cut caps live; regression matrix in docs/eye-realism/phase-15-explorer.md |
 | 16 | Visual review, performance and offline completion gate | done, one capture-tooling gap | phase-11-baseline-contract | 2026-09-13 | Muscle-cone apex corrected (real defect from phase 12), 12 MB cap enforced, 32 settled final captures, acceptance report at docs/eye-realism/acceptance.md; report JSON incomplete (last phone click intercepted) — recorded |
+| 18 | Native dialog and popover | done | phase-18-native-dialog | 2026-11-16 | 5 overlays on `<dialog>`+`showModal()`, header menus on `popover="auto"`; verify 721 tests; 164 e2e pass desktop + iPhone WebKit |
 
 ## Log
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-11-16** — **Phase 18 done.** `Modal`, `Sheet`, the command palette, onboarding and
+  the presentation view are native `<dialog>`s via `useNativeDialog` (ui.tsx); the hand-written
+  Tab trap, Escape stack, `role`/`aria-modal`, backdrop-dismiss button and the shell's `inert`
+  toggle are gone. Header menus are `popover="auto"`, placed from their button (anchor
+  positioning is Safari 27 only). Focus now starts on the first field or the heading, never a
+  button (the a11y review found Delete took focus in the drawing and imaging detail views).
+  Onboarding uses `closedby="none"` and reopens with focus restored if a browser closes it.
+  A dev-only bug was caught in the browser: StrictMode's remount let a queued `close` dismiss the
+  reopened dialog; fixed and tested. Print now hides open dialogs, so Print from presentation
+  prints the whole brief. `npm run verify` clean (721 tests); 164 dialog-touching e2e tests pass
+  on desktop Chromium and iPhone WebKit (8 expected skips). One earlier phone run failed a 44px
+  target check at 43.99997px during the entry animation; it passed on rerun — a sub-pixel timing
+  artefact, left unaltered. **Not done:** the Sheet edge in the default dark theme is ~1.6:1
+  against the dim (pre-existing, out of scope); a menu item that opens a Modal would lose focus
+  return (no caller does this today); no real-device VoiceOver pass.
+- **2026-11-16** — Phase 18 started: overlays move to native `<dialog>`/`popover`. Numbered 18
+  because 17 is the body dashboard on its own branch.
 
 - **2026-09-23** — Existing-feature reliability and usability pass finished. Fixed committed-write
   visibility and reload behavior, made Today’s timeline action show the saved observations (including

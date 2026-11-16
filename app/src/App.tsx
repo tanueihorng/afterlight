@@ -52,12 +52,6 @@ export default function App() {
 
   const onboarded = store.meta?.onboarded ?? false;
 
-  // aria-hidden alone still leaves every dock button and input focusable behind the welcome
-  // dialog; inert removes them from the keyboard and the accessibility tree entirely.
-  useEffect(() => {
-    if (shellRef.current) shellRef.current.inert = !onboarded;
-  }, [onboarded]);
-
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -132,7 +126,9 @@ export default function App() {
         <i />
         <i />
       </div>
-      <div className="shell" aria-hidden={!onboarded} ref={shellRef}>
+      {/* No inert or aria-hidden here: the welcome dialog is opened with showModal(), which makes
+          everything else inert to the keyboard and to assistive tech while it is open. */}
+      <div className="shell" ref={shellRef}>
         <header className="app-header">
           <div className="brand">
             <BrandMark />

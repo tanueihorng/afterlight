@@ -24,13 +24,18 @@ tokens by a test that fails the build, not judged by eye.
 meaning on its own.
 
 **Keyboard.** Everything is reachable and operable without a mouse. A skip link jumps to the main
-content. Focus is always visible, at 3px (4px in high contrast) and never removed. Dialogs take
-focus when they open, keep Tab inside while they are open, close with Escape, and return focus to
-whatever opened them. A test walks the full daily entry, opens dialogs and generates an appointment
-brief using only the keyboard. That dialog contract lives in `useDialogFocus` (`components/ui.tsx`),
-which `Modal` uses and which the overlays built outside `Modal` — the command palette, presentation
-mode and first-run set-up — are required to use as well; with several dialogs open, Escape closes
-only the innermost one.
+content. Focus is always visible, at 3px (4px in high contrast) and never removed. Dialogs are the
+browser's own `<dialog>`, opened with `showModal()`: the rest of the page becomes inert to the
+keyboard and to a screen reader's virtual cursor, Tab stays inside, Escape (or the phone's back
+gesture) closes, and focus returns to whatever opened them. Focus starts on the first field, or on
+the dialog's heading when there is none — never on a button, because in a record's detail view the
+first button is often Delete. A test walks the full daily entry, opens dialogs and generates an
+appointment brief using only the keyboard. The contract lives in `useNativeDialog`
+(`components/ui.tsx`), which `Modal`, `Sheet`, the command palette, presentation mode and
+first-run set-up all use; with several dialogs open, Escape closes only the innermost one.
+First-run set-up cannot be dismissed by Escape or a click outside (`closedby="none"`, reopened if
+a browser closes it anyway), because leaving it writes records. The header menus are native
+`popover="auto"` panels.
 
 **Targets.** Every interactive control is at least 44×44px — larger than WCAG 2.5.8 requires,
 because of who is using it.
