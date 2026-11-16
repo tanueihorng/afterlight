@@ -44,7 +44,6 @@
   .no-print,
   .present-bar,
   .skip-link,
-  .backdrop-dismiss,
   button:not(.print-keep),
   input[type="range"],
   select {
@@ -66,10 +65,15 @@
     display: block !important;
   }
 
+  /* An open dialog sits in the top layer, laid over the page, and would print on top of the
+     record. The record is what prints; the overlay never does. */
+  dialog,
+  dialog::backdrop {
+    display: none !important;
+  }
+
   main,
-  .content,
-  .present,
-  .present-doc {
+  .content {
     position: static !important;
     overflow: visible !important;
     max-width: none !important;

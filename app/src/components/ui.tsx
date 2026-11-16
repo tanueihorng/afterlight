@@ -1,74 +1,141 @@
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
 import { SOURCE_LABELS, type Eye, type SourceType } from "../lib/models";
 import { t } from "../lib/i18n";
 
-/** Open dialogs, innermost last. Escape belongs to the innermost, so a dialog stacked over
- *  another does not close both at once. */
-const dialogStack: object[] = [];
+/**
+ * Where focus starts in a dialog. An explicit `autofocus` first; then the first form field, which
+ * is where someone wants to start typing; otherwise the dialog's heading, so a screen reader
+ * begins with what the dialog is. Never a button: in a record's detail view the first button is
+ * often Delete, and focus should not start two key presses from losing a record.
+ */
+function focusStart(dialog: HTMLDialogElement) {
+  const target =
+    dialog.querySelector<HTMLElement>("[autofocus]:not([disabled])") ??
+    dialog.querySelector<HTMLElement>(
+      'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])',
+    ) ??
+    dialog.querySelector<HTMLElement>("h1, h2");
+  if (!target) return; // showModal() has already focused the first focusable control.
+  if (/^H[12]$/.test(target.tagName) && !target.hasAttribute("tabindex")) {
+    target.setAttribute("tabindex", "-1");
+  }
+  target.focus();
+}
 
 /**
- * The dialog contract Modal implements: focus moves in, Tab stays inside, Escape closes the
- * innermost dialog, and focus returns to whatever opened it. Overlays built outside Modal
- * (the command palette, presentation mode, onboarding) use this so they cannot quietly opt
- * out of the keyboard.
+ * The dialog contract, on the platform's own `<dialog>`: `showModal()` puts it in the top layer,
+ * makes the rest of the page inert (to the keyboard and to a screen reader's virtual cursor),
+ * keeps Tab inside, and turns Escape or the phone's back gesture into a `cancel` event. Only the
+ * innermost of stacked dialogs receives it, so one Escape never closes two.
+ *
+ * React owns open and closed: the dialog opens when it mounts and closes when it unmounts, and
+ * every way of dismissing it goes through `onClose`.
+ *
+ * - `escape: false` — Escape and back do nothing (onboarding: leaving it writes records).
+ * - `lightDismiss: false` — a click on the dimmed backdrop does nothing.
  */
-export function useDialogFocus(
-  ref: RefObject<HTMLElement | null>,
+export function useNativeDialog(
+  ref: RefObject<HTMLDialogElement | null>,
   onClose: () => void,
-  opts?: { escape?: boolean },
+  opts?: { escape?: boolean; lightDismiss?: boolean },
 ) {
-  const openerRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
+  const escape = opts?.escape !== false;
+  const lightDismiss = opts?.lightDismiss !== false;
 
-  useEffect(() => {
-    // Mount/unmount only. Re-running on every parent render would yank focus back to the
-    // first field while someone is halfway through typing.
-    openerRef.current = document.activeElement as HTMLElement | null;
-    const token = {};
-    dialogStack.push(token);
+  // A layout effect: its cleanup runs while the dialog is still in the document, so close()
+  // can hand focus back before React removes the node.
+  useLayoutEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    const opener = document.activeElement as HTMLElement | null;
+    // A dialog nobody may dismiss says so to the browser too (Chromium, Firefox), so a first
+    // Escape before any click — when `cancel` cannot be prevented — does not close it at all.
+    if (!escape && !lightDismiss) dialog.setAttribute("closedby", "none");
+    if (!dialog.open) dialog.showModal();
+    focusStart(dialog);
 
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (opts?.escape === false) return;
-        if (dialogStack[dialogStack.length - 1] !== token) return;
-        e.preventDefault();
+    // Where focus was inside the dialog, so a forced reopen can put it back.
+    let lastFocus: HTMLElement | null = null;
+    const onFocusIn = (e: FocusEvent) => {
+      lastFocus = e.target as HTMLElement;
+    };
+
+    // Set when Escape was already handled, so the `close` that follows a cancel the browser
+    // would not let us prevent does not run onClose a second time (in the presentation view,
+    // that would back out of a zoom and then leave it in one key press).
+    let handledByCancel = false;
+    const onCancel = (e: Event) => {
+      // Keep the element open; React closes it by unmounting once onClose has run.
+      e.preventDefault();
+      if (escape) {
+        handledByCancel = !e.defaultPrevented;
         onCloseRef.current();
-        return;
-      }
-      if (e.key !== "Tab" || !ref.current) return;
-      // Keep Tab inside the dialog: a modal the keyboard can wander out of is not modal.
-      const focusable = Array.from(
-        ref.current.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
       }
     };
-    window.addEventListener("keydown", onKey);
 
-    const first = ref.current?.querySelector<HTMLElement>(
-      "input, textarea, select, button:not(.modal-close)",
-    );
-    (first ?? ref.current)?.focus();
+    // Browsers may close a dialog despite preventDefault (repeated Escape with no user
+    // activation in between). Treat that as a dismissal; if the owner keeps the dialog mounted
+    // (onboarding, or a presentation that only backed out of a zoom), open it again so it is
+    // never left in the tree but invisible.
+    let unmounting = false;
+    const onNativeClose = () => {
+      // `close` is queued, not synchronous: one left over from an earlier close() (React's
+      // StrictMode mounts, unmounts and remounts) can arrive after the dialog has reopened.
+      if (unmounting || dialog.open) return;
+      if (escape && !handledByCancel) onCloseRef.current();
+      handledByCancel = false;
+      requestAnimationFrame(() => {
+        if (unmounting || !dialog.isConnected || dialog.open) return;
+        dialog.showModal();
+        if (lastFocus?.isConnected && dialog.contains(lastFocus)) lastFocus.focus();
+        else focusStart(dialog);
+      });
+    };
 
+    // Click outside, by pointer position: a press on ::backdrop targets the dialog itself, and
+    // so does one on the dialog's own padding, so the target alone cannot tell them apart. Both
+    // press and release must land outside, so a text selection dragged past the edge does not
+    // close it. This also covers Safari, which has no `closedby`.
+    const outside = (e: PointerEvent) => {
+      if (e.target !== dialog) return false;
+      const r = dialog.getBoundingClientRect();
+      return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+    };
+    let pressedOutside = false;
+    const onDown = (e: PointerEvent) => {
+      pressedOutside = outside(e);
+    };
+    const onUp = (e: PointerEvent) => {
+      if (lightDismiss && pressedOutside && outside(e)) onCloseRef.current();
+      pressedOutside = false;
+    };
+
+    dialog.addEventListener("focusin", onFocusIn);
+    dialog.addEventListener("cancel", onCancel);
+    dialog.addEventListener("close", onNativeClose);
+    dialog.addEventListener("pointerdown", onDown);
+    dialog.addEventListener("pointerup", onUp);
     return () => {
-      dialogStack.splice(dialogStack.indexOf(token), 1);
-      window.removeEventListener("keydown", onKey);
-      const opener = openerRef.current;
-      if (opener && document.body.contains(opener)) opener.focus();
+      unmounting = true;
+      dialog.removeEventListener("focusin", onFocusIn);
+      dialog.removeEventListener("cancel", onCancel);
+      dialog.removeEventListener("close", onNativeClose);
+      dialog.removeEventListener("pointerdown", onDown);
+      dialog.removeEventListener("pointerup", onUp);
+      if (dialog.open) dialog.close();
+      // close() restores focus to the opener in current browsers. Where it did not, do it here,
+      // so focus never falls back to the top of the page.
+      const active = document.activeElement;
+      if (opener?.isConnected && (!active || active === document.body || dialog.contains(active))) {
+        opener.focus();
+      }
     };
+    // Mount/unmount only. Re-running on every parent render would yank focus back to the first
+    // field while someone is halfway through typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref]);
 }
@@ -156,37 +223,25 @@ export function Modal({
   children: ReactNode;
   wide?: boolean;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useDialogFocus(ref, onClose);
+  const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  useNativeDialog(ref, onClose);
 
   return (
-    <div className="modal-backdrop">
-      {/* Mouse convenience only — keyboard users close with Escape or the close button. */}
-      <button
-        type="button"
-        className="backdrop-dismiss"
-        aria-hidden="true"
-        tabIndex={-1}
-        onClick={onClose}
-      />
-      <div
-        className="modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        ref={ref}
-        tabIndex={-1}
-        style={wide ? { maxWidth: 860 } : undefined}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2>{title}</h2>
-          <button className="btn subtle modal-close" onClick={onClose} aria-label="Close dialog">
-            ✕
-          </button>
-        </div>
-        {children}
+    <dialog
+      className="modal"
+      aria-labelledby={titleId}
+      ref={ref}
+      style={wide ? { maxWidth: 860 } : undefined}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <h2 id={titleId}>{title}</h2>
+        <button className="btn subtle modal-close" onClick={onClose} aria-label="Close dialog">
+          ✕
+        </button>
       </div>
-    </div>
+      {children}
+    </dialog>
   );
 }
 

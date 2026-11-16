@@ -23,7 +23,7 @@ import {
   Modal,
   PageHeader,
   ProvenanceBadge,
-  useDialogFocus,
+  useNativeDialog,
 } from "../components/ui";
 import { ShareBrief } from "../components/ShareBrief";
 import { addDays, formatDate, formatLongDate, isoToDateOnly, localNaiveNow, nowISO, todayLocal } from "../lib/util";
@@ -322,7 +322,19 @@ function QuestionsModal({ onClose }: { onClose: () => void }) {
   const list = [...store.questions.list].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   return (
     <Modal title="Questions for my doctor" onClose={onClose} wide>
-      <div className="btn-row" style={{ marginBottom: 12 }}>
+      {/* A real form, not an Enter handler: the browser's implicit submission already ignores
+          the Enter that confirms Chinese, Japanese or Korean input, so a half-composed question
+          is never saved. */}
+      <form
+        className="btn-row"
+        style={{ marginBottom: 12 }}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!text.trim()) return;
+          await store.questions.put(newQuestion(text));
+          setText("");
+        }}
+      >
         <input
           type="text"
           value={text}
@@ -330,24 +342,12 @@ function QuestionsModal({ onClose }: { onClose: () => void }) {
           onChange={(e) => setText(e.target.value)}
           style={{ flex: 1, minWidth: 200 }}
           aria-label="New question"
-          onKeyDown={async (e) => {
-            if (e.key === "Enter" && text.trim()) {
-              await store.questions.put(newQuestion(text));
-              setText("");
-            }
-          }}
+          enterKeyHint="done"
         />
-        <button
-          className="btn primary"
-          disabled={!text.trim()}
-          onClick={async () => {
-            await store.questions.put(newQuestion(text));
-            setText("");
-          }}
-        >
+        <button type="submit" className="btn primary" disabled={!text.trim()}>
           Add question
         </button>
-      </div>
+      </form>
       {list.length === 0 ? (
         <p className="muted">
           Keep a running list between visits — Afterlight will carry pending questions into every
@@ -730,10 +730,15 @@ function PresentMode({
   const [at, setAt] = useState(0);
   const [zoomed, setZoomed] = useState<string | null>(null);
   const awake = useWakeLock(true);
-  const presentRef = useRef<HTMLDivElement>(null);
-  // Focus moves into the presentation, Tab stays inside, and focus returns to the brief on exit.
-  // Escape backs out of a zoom first, then leaves the presentation.
-  useDialogFocus(presentRef, useCallback(() => (zoomed ? setZoomed(null) : onClose()), [zoomed, onClose]));
+  const presentRef = useRef<HTMLDialogElement>(null);
+  // A full-screen native modal: focus moves in, the brief behind is inert, and focus returns to
+  // it on exit. Escape backs out of a zoom first, then leaves the presentation. There is no
+  // backdrop to click, so no light dismiss.
+  useNativeDialog(
+    presentRef,
+    useCallback(() => (zoomed ? setZoomed(null) : onClose()), [zoomed, onClose]),
+    { lightDismiss: false },
+  );
 
   const go = useCallback(
     (delta: number) => setAt((i) => Math.min(sections.length - 1, Math.max(0, i + delta))),
@@ -755,8 +760,6 @@ function PresentMode({
       }
     };
     window.addEventListener("keydown", onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
 
     // The audited high-contrast light palette, not a second set of colours invented for this
     // screen: a brief shown across a desk under clinic lighting needs black on white.
@@ -766,7 +769,6 @@ function PresentMode({
 
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prevOverflow;
       if (previousTheme) root.setAttribute("data-theme", previousTheme);
       else root.removeAttribute("data-theme");
     };
@@ -790,13 +792,10 @@ function PresentMode({
   const section = sections[at];
 
   return (
-    <div
+    <dialog
       className="present"
-      role="dialog"
-      aria-modal="true"
       aria-label="Appointment brief, presentation view"
       ref={presentRef}
-      tabIndex={-1}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
@@ -849,7 +848,7 @@ function PresentMode({
           <img src={zoomed} alt="Enlarged patient drawing of the field of view." />
         </button>
       )}
-    </div>
+    </dialog>
   );
 }
 

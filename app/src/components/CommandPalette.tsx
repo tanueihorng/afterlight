@@ -4,7 +4,7 @@ import { searchRecords, type SearchHit } from "../lib/search";
 import { toAllData, useStore } from "../lib/store";
 import type { Route } from "../lib/router";
 import { formatDate } from "../lib/util";
-import { DemoBadge, EyeBadge, ProvenanceBadge, useDialogFocus } from "./ui";
+import { DemoBadge, EyeBadge, ProvenanceBadge, useNativeDialog } from "./ui";
 import { t } from "../lib/i18n";
 
 type Mode = "search" | "ask";
@@ -61,9 +61,9 @@ export default function CommandPalette({
   const [asked, setAsked] = useState<{ question: string; answer: AskAnswer } | null>(null);
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const paletteRef = useRef<HTMLDivElement>(null);
-  // Focus in, Tab trapped, Escape closes, focus returns to what opened the palette.
-  useDialogFocus(paletteRef, onClose);
+  const paletteRef = useRef<HTMLDialogElement>(null);
+  // Native modal: focus in, Tab kept inside, Escape or a click outside closes, focus returns.
+  useNativeDialog(paletteRef, onClose);
 
   const hits: SearchHit[] = useMemo(
     () => (mode === "search" && q.trim().length > 1 ? searchRecords(data, q) : []),
@@ -80,7 +80,7 @@ export default function CommandPalette({
   useEffect(() => setCursor(0), [q, mode]);
 
   useEffect(() => {
-    // Escape is handled by useDialogFocus; these move the result cursor.
+    // Escape is the dialog's own cancel; these move the result cursor.
     const onKey = (e: KeyboardEvent) => {
       if (mode === "search" && total) {
         if (e.key === "ArrowDown") {
@@ -108,22 +108,10 @@ export default function CommandPalette({
   };
 
   return (
-    <div className="modal-backdrop palette-backdrop">
-      {/* Mouse convenience only — keyboard users close with Escape. */}
-      <button
-        type="button"
-        className="backdrop-dismiss"
-        aria-hidden="true"
-        tabIndex={-1}
-        onClick={onClose}
-      />
-      <div
+    <dialog
         className="palette"
-        role="dialog"
-        aria-modal="true"
         aria-label={mode === "search" ? "Search my records" : "Ask my records"}
         ref={paletteRef}
-        tabIndex={-1}
       >
         <div className="palette-tabs">
           {(["search", "ask"] as Mode[]).map((m) => (
@@ -197,8 +185,7 @@ export default function CommandPalette({
         <div className="palette-foot">
           Searches only your own locally stored records. Nothing is sent anywhere.
         </div>
-      </div>
-    </div>
+    </dialog>
   );
 }
 
