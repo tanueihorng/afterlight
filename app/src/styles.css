@@ -1933,6 +1933,9 @@ input[type="range"] {
   z-index: 80;
   background: var(--bg);
   overflow-y: auto;
+  /* Keeps scrolling here from reaching the brief underneath. Not a body overflow lock: that
+     drops the page scrollbar, shifts the layout and can jump the brief's scroll position. */
+  overscroll-behavior: contain;
   padding: 40px 6vw 80px;
 }
 

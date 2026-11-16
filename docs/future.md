@@ -57,3 +57,57 @@ zero-data-retention and no training on inputs.
 **Next step when picked up.** Build a small eval: 10–20 real questions with known answers from an
 exported record, run through each candidate (e.g. via one OpenRouter script), score date accuracy
 and citation correctness. Pick the cheapest model that gets them right.
+
+---
+
+## Modern Web Guidance audit (native dialog, popover, theming)
+
+_Discussed 2026-11-16._ Source: [GoogleChrome/modern-web-guidance](https://github.com/GoogleChrome/modern-web-guidance)
+(242 guides, read from a local clone; its `legacy-scan` CLI was not run).
+
+**Idea.** Swap hand-built UI plumbing for platform features where the guides say the browser now
+does it better, without breaking the non-negotiables.
+
+**Found, worth doing (small, low risk).** _Done 2026-11-16: all three fixed, with tests._
+
+- **Startup theme flash.** `index.html` ships `data-theme="dark"` and `theme-color #0a0e16`, but
+  the default theme is `light` (`lib/prefs.ts`) and prefs apply only after IndexedDB loads, so
+  first paint is dark and the browser chrome stays dark in every theme. Add
+  `<meta name="color-scheme">`, match the HTML default to the real default, and update
+  `theme-color` in `applyPrefs`. Guides: `dark-mode`, `browser-ui-theming`.
+- **IME Enter bug.** The new-question input (`pages/Appointments.tsx:334`) saves on raw `Enter`,
+  which also ends a CJK composition: half-typed text gets saved. Use a `<form>` submit or check
+  `isComposing` / `keyCode === 229`. Guide: `ime-safe-enter-submit`.
+- **Body scroll lock.** The presentation view sets `document.body.style.overflow = "hidden"`; the
+  guide says use `overscroll-behavior: contain` on the dialog and its `::backdrop` instead. Guide:
+  `prevent-page-scroll-under-modal-dialog`.
+
+**Found, a phase of its own (structural).**
+
+- **Native `<dialog>`.** Five overlays are hand-built `role="dialog"` divs with their own focus
+  trap, Escape stack, focus return and `inert` toggling: `Modal` (`components/ui.tsx`), `Sheet`,
+  `CommandPalette`, `Onboarding`, and the brief's presentation view. `showModal()` gives all of
+  that natively plus top layer and `::backdrop`. `closedby="any"` has no Safari support, so keep
+  a click-outside fallback. Touches a11y and keyboard tests; needs the `a11y-auditor`.
+- **Native popover.** The header `Popover` (`components/Chrome.tsx`) hand-rolls outside-click and
+  Escape. `popover="auto"` + `popovertarget` does it natively (Baseline 2025-01, iOS 18.3+).
+  Keep the current absolute positioning: anchor positioning is only in Safari 27.
+- **Overlay animation** with `@starting-style` + `transition-behavior: allow-discrete` once the
+  above land. Guide: `animate-to-from-top-layer`.
+
+**Minor.** Atlas and palette search aren't inside `<search>`; `.quick` hides its scrollbar on
+phones (`scrollbar-width: none`); two duplicate `prefers-reduced-motion` blocks in `styles.css`.
+
+**Deliberately not adopted.** Temporal (no Safari), CSS anchor positioning (Safari 27 only),
+`interestfor` tooltips and `popover="hint"` (Chromium/Firefox only), `ariaNotify()` (Baseline only
+since 2026-09), `<meta name="text-scale">` (Chromium only; the app already has its own type scale
+and leaves the root font size at 100%), WebMCP and built-in AI (non-negotiables 1 and 3),
+passkeys (there are no accounts).
+
+**Already in line with the guides.** Root `font-size: 100%` with a rem-based scale,
+`:focus-visible`, per-theme `color-scheme`, reduced-motion handling, local (non-UTC) day keys, no
+`innerHTML`, `text-wrap: balance`, `oklch`/`color-mix`.
+
+**Open question.** There's no written browser-support policy. The guides assume "Baseline Widely
+available" unless told otherwise. Decide the target (likely: current and previous iOS Safari) and
+write it into `AGENTS.md`.

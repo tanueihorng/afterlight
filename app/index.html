@@ -1,8 +1,32 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Both schemes, so the canvas and native controls never paint in the wrong one before the
+         stylesheet arrives. Each theme sets its own color-scheme in styles.css. -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#eceef7" />
+    <!-- Restore the last theme before first paint. The record (IndexedDB) loads asynchronously;
+         without this, anyone not on the default theme sees it flash. Values must match ThemeId
+         and THEME_COLOR in src/lib/prefs.ts. -->
+    <script>
+      (function () {
+        var colors = {
+          light: "#eceef7",
+          dark: "#0b0c16",
+          "hc-dark": "#000000",
+          "hc-light": "#ffffff",
+        };
+        var theme = "light";
+        try {
+          var saved = localStorage.getItem("afterlight.theme");
+          if (saved && colors[saved]) theme = saved;
+        } catch (e) {}
+        document.documentElement.setAttribute("data-theme", theme);
+        document.querySelector('meta[name="theme-color"]').setAttribute("content", colors[theme]);
+      })();
+    </script>
     <meta
       name="description"
       content="Afterlight — a local-first personal ophthalmology record and visual diary."
@@ -15,7 +39,6 @@
     <link rel="apple-touch-icon" href="./icon-180.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Afterlight" />
-    <meta name="theme-color" content="#0a0e16" />
   </head>
   <body>
     <div id="root"></div>

@@ -84,9 +84,32 @@ export function prefsFromMeta(meta?: AppMeta): DisplayPrefs {
   };
 }
 
+/** Each theme's page ground (`--bg` in styles.css), for the browser's own toolbar colour. */
+export const THEME_COLOR: Record<ThemeId, string> = {
+  light: "#eceef7",
+  dark: "#0b0c16",
+  "hc-dark": "#000000",
+  "hc-light": "#ffffff",
+};
+
+/**
+ * The theme is kept in the record, which loads asynchronously, so the first frame would always
+ * paint the default and then jump. This key is a paint-time cache read by the inline script in
+ * index.html; the record stays the only source of truth.
+ */
+export const THEME_CACHE_KEY = "afterlight.theme";
+
 /** Apply preferences to the document. Idempotent, and safe to call on every change. */
 export function applyPrefs(prefs: DisplayPrefs, root: HTMLElement): void {
   root.setAttribute("data-theme", prefs.theme);
+  root.ownerDocument
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", THEME_COLOR[prefs.theme]);
+  try {
+    localStorage.setItem(THEME_CACHE_KEY, prefs.theme);
+  } catch {
+    // Private mode or blocked storage: the first frame shows the default theme, nothing worse.
+  }
   root.style.setProperty("--type-scale", String(prefs.typeScale));
   // CSS cannot compare a custom property, so the compact layouts key off this instead.
   if (prefs.typeScale >= 1.25) root.setAttribute("data-text", "large");

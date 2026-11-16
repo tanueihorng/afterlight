@@ -83,8 +83,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Until the record loads, meta is undefined and its defaults would overwrite the theme
+    // index.html already restored, flashing the default in between.
+    if (!store.ready) return;
     applyPrefs(prefsFromMeta(store.meta), document.documentElement);
-  }, [store.meta]);
+  }, [store.ready, store.meta]);
 
   // The Visualize page runs live 3-D scenes; the aura and the glass blur step aside there.
   useEffect(() => {
