@@ -23,6 +23,22 @@ function focusStart(dialog: HTMLDialogElement) {
 }
 
 /**
+ * Where focus goes back to when a dialog closes. Usually the control that opened it; but a menu
+ * item lives in a popover that is closed by then (display: none, so focus() would silently fail),
+ * and the button that opens that menu is the place someone expects to land.
+ */
+function returnTarget(opener: HTMLElement | null): HTMLElement | null {
+  const popover = opener?.closest<HTMLElement>("[popover]");
+  if (!popover?.id) return opener;
+  // The same menu can have an invoker per layout (top bar on desktop, dock on a phone); only the
+  // one on screen can take focus.
+  const invokers = document.querySelectorAll<HTMLElement>(
+    `[popovertarget="${CSS.escape(popover.id)}"]`,
+  );
+  return [...invokers].find((el) => el.getClientRects().length > 0) ?? invokers[0] ?? opener;
+}
+
+/**
  * The dialog contract, on the platform's own `<dialog>`: `showModal()` puts it in the top layer,
  * makes the rest of the page inert (to the keyboard and to a screen reader's virtual cursor),
  * keeps Tab inside, and turns Escape or the phone's back gesture into a `cancel` event. Only the
@@ -51,7 +67,7 @@ export function useNativeDialog(
   useLayoutEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    const opener = document.activeElement as HTMLElement | null;
+    const opener = returnTarget(document.activeElement as HTMLElement | null);
     // A dialog nobody may dismiss says so to the browser too (Chromium, Firefox), so a first
     // Escape before any click — when `cancel` cannot be prevented — does not close it at all.
     if (!escape && !lightDismiss) dialog.setAttribute("closedby", "none");

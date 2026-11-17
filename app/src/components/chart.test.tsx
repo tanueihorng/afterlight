@@ -69,3 +69,19 @@ describe("Chart", () => {
     await expectNoA11yViolations(container);
   });
 });
+
+describe("treatment badges on a chart", () => {
+  it("never prints two numbers on top of each other, even crowded at the right edge", async () => {
+    const { layoutBadges } = await import("./Chart");
+    const xs = [40, 40, 40, 230, 236, 241, 241];
+    const { slots, badge } = layoutBadges(xs, 28, 263);
+    for (let i = 0; i < slots.length; i++) {
+      for (let j = i + 1; j < slots.length; j++) {
+        if (slots[i].row !== slots[j].row) continue;
+        expect(Math.abs(slots[i].x - slots[j].x)).toBeGreaterThanOrEqual(badge * 2);
+      }
+      expect(slots[i].x).toBeGreaterThanOrEqual(badge);
+      expect(slots[i].x).toBeLessThanOrEqual(263 - badge);
+    }
+  });
+});

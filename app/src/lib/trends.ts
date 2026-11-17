@@ -8,7 +8,7 @@
 // A clinician reading the brief gets the values. What they mean is their judgement, not ours.
 
 import type { AllData } from "./db";
-import { acuityForms } from "./acuity";
+import { acuityForms, type AcuityNotation } from "./acuity";
 import { select } from "./query";
 import type { Eye, LensType, MeasurementKind, SourceType } from "./models";
 import { MEASUREMENT_LABELS, METHOD_LABELS } from "./models";
@@ -55,6 +55,12 @@ export interface Series {
 /** logMAR runs the opposite way to how people read acuity, so the axis is flipped for display. */
 const INVERTED: MeasurementKind[] = ["visual_acuity"];
 
+function notationOf(unit?: string): AcuityNotation | undefined {
+  if (unit === "logMAR") return "logmar";
+  if (unit === "decimal") return "decimal";
+  return undefined;
+}
+
 function provenanceOf(source: SourceType, method?: string): "clinic" | "home" {
   if (method === "home_screen_test") return "home";
   return source === "patient_reported" ? "home" : "clinic";
@@ -75,7 +81,9 @@ export function seriesFor(data: AllData, kind: MeasurementKind, eye: Eye): Serie
     let numeric = Number.isFinite(value);
 
     if (kind === "visual_acuity") {
-      const forms = acuityForms(raw);
+      // The unit the person chose says how a bare number was written; without it, "0.3" is
+      // ambiguous and is not guessed at.
+      const forms = acuityForms(raw, notationOf(row.unit));
       if (forms.logmar !== undefined) {
         value = forms.logmar;
         numeric = true;
@@ -243,6 +251,34 @@ function arithmeticNotes(values: number[], unit: string, prefix: string): string
   return notes;
 }
 
+/**
+ * Acuity is plotted in logMAR, which nobody reads and which runs backwards (a smaller number is
+ * finer detail). Stating its arithmetic — "0.9 lower than the first" — would read as the opposite
+ * of what was recorded. So acuity is described only in the values as they were written, each
+ * with its date, and never as a range a reader could take for a change over time.
+ */
+function acuityNotes(points: SeriesPoint[], prefix: string, someNotNumbers: boolean): string[] {
+  const written = (p: SeriesPoint) =>
+    p.unit && !p.unit.startsWith("Snellen") ? `${p.raw} ${p.unit}` : p.raw;
+  // CF, HM and the like are not in `points`; the sentence must not claim to cover them.
+  const lead = someNotNumbers ? `${prefix}${prefix ? "of" : "Of"} the readings written as numbers, ` : prefix;
+  const cap = (t: string) => (lead ? t : t.charAt(0).toUpperCase() + t.slice(1));
+
+  const coarsest = points.reduce((a, b) => (b.value > a.value ? b : a));
+  const finest = points.reduce((a, b) => (b.value < a.value ? b : a));
+  if (coarsest.value === finest.value) {
+    const forms = [...new Set(points.map(written))];
+    return [
+      forms.length === 1
+        ? `${lead}${cap(someNotNumbers ? "each was" : "every reading was")} recorded as ${forms[0]}.`
+        : `${lead}${cap("these readings are the same acuity, written as")} ${forms.join(" and ")}.`,
+    ];
+  }
+  return [
+    `${lead}${cap(`${written(coarsest)} (${formatDate(coarsest.date)}) is the one with the largest letters and ${written(finest)} (${formatDate(finest.date)}) the one with the smallest.`)} This compares letter size, not the order they were taken in.`,
+  ];
+}
+
 export function describe(series: Series): SeriesDescription {
   const numeric = series.points.filter((p) => p.numeric);
   const notes: string[] = [];
@@ -289,6 +325,10 @@ export function describe(series: Series): SeriesDescription {
       : [{ prefix: "", points: numeric }];
     for (const group of groups) {
       if (group.points.length < 2) continue;
+      if (series.kind === "visual_acuity") {
+        notes.push(...acuityNotes(group.points, group.prefix, nonNumeric.length > 0));
+        continue;
+      }
       notes.push(...arithmeticNotes(group.points.map((p) => p.value), unit, group.prefix));
     }
   }

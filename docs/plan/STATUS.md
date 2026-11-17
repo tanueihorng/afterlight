@@ -26,11 +26,29 @@ marked blocked.
 | 15 | Bring the original explorer to the same model quality | done | phase-11-baseline-contract | 2026-09-13 | Model embedded via generated adapter block; primitives replaced, lids removed, cut caps live; regression matrix in docs/eye-realism/phase-15-explorer.md |
 | 16 | Visual review, performance and offline completion gate | done, one capture-tooling gap | phase-11-baseline-contract | 2026-09-13 | Muscle-cone apex corrected (real defect from phase 12), 12 MB cap enforced, 32 settled final captures, acceptance report at docs/eye-realism/acceptance.md; report JSON incomplete (last phone click intercepted) — recorded |
 | 18 | Native dialog and popover | done | phase-18-native-dialog | 2026-11-16 | 5 overlays on `<dialog>`+`showModal()`, header menus on `popover="auto"`; verify 721 tests; 164 e2e pass desktop + iPhone WebKit |
+| 19 | My Eyes dashboard (clinical-dashboard look, eyes only) | done, pending clinical review | chore/loose-ends | 2026-11-18 | Measurement cards placed against the person's own readings, trend chart with numbered treatment dates; acuity notes rewritten; a11y + clinical-copy reviews applied |
 
 ## Log
 
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
+
+- **2026-11-18** — **My Eyes dashboard (19) done, pending clinical review.** At the user's
+  request the "clinical dashboard" look comes to the eye app, eyes only (AI assistant and
+  whole-body stay parked). Top of My Eyes: a card per eye measurement (`lib/eyedash.ts`) with a
+  bar between the person's own lowest and highest readings taken the same way, never a
+  reference range; the chosen one over time with numbered treatment dates (procedures, medicine
+  start/stop, latest injection) drawn on `Chart` and listed in words. Clinical-copy review: six
+  must-fixes applied — notably the acuity notes, which stated logMAR arithmetic ("0.9 lower than
+  the first", backwards to a reader) and now name the largest- and smallest-letter readings with
+  dates; bare logMAR/decimal values are now plotted using the unit the person recorded. A11y
+  review applied: selection said in words ("Showing") not by outline, focus moves to the chart in
+  one column, badges never overlap (new rows), chart re-measures on text-size change, contrast
+  fixes. **Needs a clinician:** the acuity sentence wording, "same acuity, written as 6/6 and
+  20/20", plotting bare logMAR/decimal, the coarse-left/fine-right bar direction, and whether
+  `cycle_number` names the injection on `last_given`. Also on this branch: a dialog opened from a
+  header-menu item now returns focus to the visible menu button; search landmarks named; phone
+  shortcut row shows its scrollbar; a duplicate reduced-motion block removed.
 
 - **2026-11-16** — Sheet edge contrast fixed: `.sheet` drew its border in the translucent
   `--glass-edge` (about 1.6:1 against the dimmed page in the dark theme); it now uses `--border`

@@ -13,6 +13,7 @@ import {
 } from "../lib/models";
 import { ConfirmButton, Field, Modal, NeedsCheckingBadge, PageHeader, ProvenanceBadge, StatusBadge } from "../components/ui";
 import Trends from "../components/Trends";
+import EyeDashboard from "../components/EyeDashboard";
 import { DiagnosisModal, MedicationModal, ProcedureModal } from "../components/RecordModals";
 import { formatDate, isoToDateOnly, localNaiveNow, nowISO, todayLocal } from "../lib/util";
 import { t } from "../lib/i18n";
@@ -54,6 +55,7 @@ export default function MyEyes() {
           </a>
         }
       />
+      <EyeDashboard />
       <div className="grid-2">
         <EyeProfile eye="right" onEditBaseline={() => { setEditEye("right"); setModal("baseline"); }} onAdd={(k) => { setEditProc(undefined); setModal(k); }} onEditProcedure={(p) => { setEditProc(p); setModal("procedure"); }} />
         <EyeProfile eye="left" onEditBaseline={() => { setEditEye("left"); setModal("baseline"); }} onAdd={(k) => { setEditProc(undefined); setModal(k); }} onEditProcedure={(p) => { setEditProc(p); setModal("procedure"); }} />

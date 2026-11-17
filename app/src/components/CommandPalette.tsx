@@ -133,6 +133,8 @@ export default function CommandPalette({
 
         <form
           className="palette-input-row"
+          role={mode === "search" ? "search" : undefined}
+          aria-label={mode === "search" ? "Search records" : undefined}
           onSubmit={(e) => {
             e.preventDefault();
             if (mode === "ask") submitAsk();

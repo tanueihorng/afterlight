@@ -93,14 +93,17 @@ export default function Atlas({
           suggests what you might have and never compares your symptoms with anything here.
         </p>
 
-        <Field label="Search by name, symptom word, or a term from a letter">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. distortion, drusen, buckle, macula-off"
-          />
-        </Field>
+        {/* role="search" rather than <search>: React 18's JSX types do not know the element. */}
+        <div role="search" aria-label="Look something up">
+          <Field label="Search by name, symptom word, or a term from a letter">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="e.g. distortion, drusen, buckle, macula-off"
+            />
+          </Field>
+        </div>
 
         <div className="btn-row" style={{ flexWrap: "wrap" }}>
           <button

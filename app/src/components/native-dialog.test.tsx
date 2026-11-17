@@ -206,4 +206,43 @@ describe("Popover on the native popover API", () => {
     expect(button).toHaveAttribute("aria-expanded", "false");
     expect(panel).not.toHaveAttribute("data-popover-open");
   });
+
+  it("hands focus back to the menu's button when a menu item opened a dialog", async () => {
+    function Menu() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <Popover label="More" icon="palette" buttonClass="icon-btn">
+            {(close) => (
+              <button
+                onClick={() => {
+                  close();
+                  setOpen(true);
+                }}
+              >
+                Export
+              </button>
+            )}
+          </Popover>
+          {open && (
+            <Modal title="Export" onClose={() => setOpen(false)}>
+              <p>Body</p>
+            </Modal>
+          )}
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<Menu />);
+    const button = screen.getByRole("button", { name: "More" });
+    await user.click(button);
+    const item = screen.getByRole("button", { name: "Export", hidden: true });
+    // The item keeps focus while the panel closes, as it does when picked from the keyboard.
+    item.focus();
+    fireEvent.click(item);
+    expect(screen.getByRole("dialog", { name: "Export" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(button);
+  });
 });

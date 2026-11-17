@@ -95,8 +95,10 @@ does it better, without breaking the non-negotiables.
 - **Overlay animation** with `@starting-style` + `transition-behavior: allow-discrete` once the
   above land. Guide: `animate-to-from-top-layer`.
 
-**Minor.** Atlas and palette search aren't inside `<search>`; `.quick` hides its scrollbar on
-phones (`scrollbar-width: none`); two duplicate `prefers-reduced-motion` blocks in `styles.css`.
+**Minor.** _Done 2026-11-18._ Atlas and palette search aren't inside `<search>` (now
+`role="search"`, named; React 18's types lack the element); `.quick` hides its scrollbar on
+phones (now thin and themed); two duplicate `prefers-reduced-motion` blocks in `styles.css`
+(one removed).
 
 **Deliberately not adopted.** Temporal (no Safari), CSS anchor positioning (Safari 27 only),
 `interestfor` tooltips and `popover="hint"` (Chromium/Firefox only), `ariaNotify()` (Baseline only
@@ -111,3 +113,26 @@ passkeys (there are no accounts).
 **Open question.** There's no written browser-support policy. The guides assume "Baseline Widely
 available" unless told otherwise. Decide the target (likely: current and previous iOS Safari) and
 write it into `AGENTS.md`.
+
+---
+
+## Clinical-dashboard look in the eye app
+
+_Discussed 2026-11-18._ The user asked for the "clinical dashboard" visual style (the vision
+board behind the separate body dashboard) in the eye app, and explicitly **not** the AI
+assistant or whole-body work.
+
+**Done 2026-11-18** (phase 19 in the ledger): measurement cards, the trend chart with treatment
+dates, and the two-column wide layout, at the top of My Eyes.
+
+**Left, needs a decision or a clinician.**
+
+- Small neutral captions under the acuity bar's ends ("larger letters" / "smaller letters") —
+  the clinical-copy reviewer suggested them; held until a clinician confirms the bar direction.
+- A big latest-number readout (the vision board's gauge): the cards already show the latest in
+  large type; a gauge would add nothing a grade-free version can say.
+- Eye hero with the clinician-named region, and a "what my clinician asked me to do" card: both
+  need a model change and `record-integrity-reviewer`.
+- Global small text: `.card-title` and `.badge` render at 13px (`--fs-xs`) across the app; the
+  a11y audit flagged them in the dashboard. Changing them is app-wide, so not done here.
+

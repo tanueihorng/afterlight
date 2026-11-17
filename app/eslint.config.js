@@ -30,6 +30,9 @@ export default tseslint.config(
           return [rule, off ? "off" : ["error", ...options]];
         }),
       ),
+      // Safari (VoiceOver) drops the list role from a list styled with `list-style: none`, so an
+      // explicit role="list" on <ul>/<ol> is not redundant there.
+      "jsx-a11y/no-redundant-roles": ["error", { nav: ["navigation"], ul: ["list"], ol: ["list"] }],
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "error",
       "no-console": ["warn", { allow: ["warn", "error"] }],

@@ -203,3 +203,45 @@ describe("clinic and home readings are never one series", () => {
     expect(notes).not.toMatch(/Home checks:/);
   });
 });
+
+describe("describing acuity", () => {
+  const va = (date: string, value: string, unit?: string) =>
+    aMeasurement({ kind: "visual_acuity", value, date, eye: "right", unit });
+  const notesFor = (...ms: ReturnType<typeof va>[]) =>
+    describeSeries(seriesFor(anAllData({ measurements: ms }), "visual_acuity", "right")).notes.join(" ");
+
+  it("names the largest- and smallest-letter readings with their dates, never logMAR arithmetic", () => {
+    const notes = notesFor(va("2024-10-19", "20/200"), va("2025-01-01", "20/50"), va("2026-11-05", "20/25"));
+    expect(notes).toMatch(/20\/200 \(19 Oct 2024\) is the one with the largest letters and 20\/25 \(5 Nov 2026\) the one with the smallest/);
+    expect(notes).toMatch(/not the order they were taken in/);
+    // "0.9 lower than the first" was true of logMAR and backwards to anyone reading it.
+    expect(notes).not.toMatch(/lower than the first|higher than the first|around their average|0\.1/);
+  });
+
+  it("does not read as an improvement when the finer reading came first", () => {
+    const notes = notesFor(va("2024-01-01", "20/25"), va("2026-01-01", "20/200"));
+    expect(notes).toMatch(/20\/200 \(1 Jan 2026\) is the one with the largest letters/);
+    expect(notes).not.toMatch(/run from|went from/);
+  });
+
+  it("says the sentence covers only the readings written as numbers when there are others", () => {
+    const notes = notesFor(va("2026-01-01", "20/40"), va("2026-02-01", "HM"), va("2026-03-01", "20/25"));
+    expect(notes).toMatch(/Of the readings written as numbers, 20\/40/);
+    const same = notesFor(va("2026-01-01", "6/6"), va("2026-02-01", "6/6"), va("2026-03-01", "CF"));
+    expect(same).toMatch(/Of the readings written as numbers, each was recorded as 6\/6/);
+    expect(same).not.toMatch(/Every reading/);
+  });
+
+  it("says so when every reading is the same, and shows each way it was written", () => {
+    expect(notesFor(va("2026-01-01", "6/6"), va("2026-02-01", "6/6"))).toMatch(/Every reading was recorded as 6\/6\./);
+    expect(notesFor(va("2026-01-01", "6/6"), va("2026-02-01", "20/20"))).toMatch(
+      /These readings are the same acuity, written as 6\/6 and 20\/20/,
+    );
+  });
+
+  it("plots a bare number when its unit says how it was written, with that unit", () => {
+    const series = seriesFor(anAllData({ measurements: [va("2026-01-01", "0.3", "logMAR"), va("2026-02-01", "0.5", "decimal"), va("2026-03-01", "0.3")] }), "visual_acuity", "right");
+    expect(series.points.map((p) => p.numeric)).toEqual([true, true, false]);
+    expect(describeSeries(series).notes.join(" ")).toMatch(/0\.3 logMAR/);
+  });
+});
