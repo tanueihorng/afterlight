@@ -68,7 +68,18 @@ load, so shots never settle — recorded as a capture-tooling gap, not a product
 phone explorer is the same page as the desktop explorer, which passes; its desktop shots and
 the existing explorer offline e2e stand in for it). The machine-readable `capture-report.json`
 for the full matrix is therefore not written; the per-shot evidence and the desktop run's
-console record carry the measurements:
+console record carry the measurements.
+
+**Closed 2026-11-18.** The capture script now records a failing section in the report instead of
+aborting, and clicks the explorer's toolbar buttons directly. A rerun against the current build
+completed the whole matrix and wrote the report
+([`captures/rerun-2026-11-18/capture-report.json`](captures/rerun-2026-11-18/capture-report.json);
+the screenshots were kept out of git): 32 shots, the phone explorer complete with no page errors,
+no remote requests and its boundary visible; both standalone files rendered offline with no
+non-file requests; the installed app reloaded Visualize offline. Four explorer shots taken right
+after moving the cut slider (`cut-40`, `cut-100`, desktop and phone) did not settle within the
+retry budget on a loaded 8-core M2 — the same on desktop as on phone, so it is the explorer
+still easing the cut, not a phone defect. The measurements below are from the original run:
 
 - Initial JS 81.2 KB gzip / 120 KB — enforced. Visualize lazy renderer chunk ~1.37 MB gzip /
   12 MB — **now enforced** by `check-bundle.mjs` (previously reported only; the enforcement was

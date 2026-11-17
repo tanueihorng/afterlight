@@ -24,7 +24,7 @@ marked blocked.
 | 13 | Browser rendering and solid interactive sections | done | phase-11-baseline-contract | 2026-09-13 | Scene rebuilt on the model: capped sections, vessel tubes, live appearance; verify clean (570 tests, 7 engine e2e); evidence in docs/eye-realism/phase-13-browser.md |
 | 14 | Interactive cornea, retina and layer inspection | done | phase-11-baseline-contract | 2026-09-13 | Cutaway default, accessible structure list, picking, focus-on-request, labelled layer magnification, in-place reset; copy registered for clinical review; verify clean |
 | 15 | Bring the original explorer to the same model quality | done | phase-11-baseline-contract | 2026-09-13 | Model embedded via generated adapter block; primitives replaced, lids removed, cut caps live; regression matrix in docs/eye-realism/phase-15-explorer.md |
-| 16 | Visual review, performance and offline completion gate | done, one capture-tooling gap | phase-11-baseline-contract | 2026-09-13 | Muscle-cone apex corrected (real defect from phase 12), 12 MB cap enforced, 32 settled final captures, acceptance report at docs/eye-realism/acceptance.md; report JSON incomplete (last phone click intercepted) — recorded |
+| 16 | Visual review, performance and offline completion gate | done, one capture-tooling gap | phase-11-baseline-contract | 2026-09-13 | Muscle-cone apex corrected (real defect from phase 12), 12 MB cap enforced, 32 settled final captures, acceptance report at docs/eye-realism/acceptance.md; report JSON incomplete (last phone click intercepted) — closed 2026-11-18 by a full rerun, see acceptance.md |
 | 18 | Native dialog and popover | done | phase-18-native-dialog | 2026-11-16 | 5 overlays on `<dialog>`+`showModal()`, header menus on `popover="auto"`; verify 721 tests; 164 e2e pass desktop + iPhone WebKit |
 | 19 | My Eyes dashboard (clinical-dashboard look, eyes only) | done, pending clinical review | chore/loose-ends | 2026-11-18 | Measurement cards placed against the person's own readings, trend chart with numbered treatment dates; acuity notes rewritten; a11y + clinical-copy reviews applied |
 
@@ -33,6 +33,10 @@ marked blocked.
 Newest first. One line per meaningful event: phase started, phase finished, invariant changed,
 scope cut, or a decision a future agent would otherwise have to re-derive.
 
+- **2026-11-18** — Phase 16's capture-tooling gap closed: the script records a failing section
+  instead of aborting, and a full rerun wrote `capture-report.json` (32 shots, phone explorer
+  complete, offline checks pass). Four explorer cut-slider shots did not settle on desktop or
+  phone under load; recorded in `docs/eye-realism/acceptance.md`.
 - **2026-11-18** — **My Eyes dashboard (19) done, pending clinical review.** At the user's
   request the "clinical dashboard" look comes to the eye app, eyes only (AI assistant and
   whole-body stay parked). Top of My Eyes: a card per eye measurement (`lib/eyedash.ts`) with a

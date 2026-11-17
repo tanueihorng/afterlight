@@ -1,0 +1,424 @@
+{
+  "capturedAt": "2026-11-17T19:14:32.178Z",
+  "baseURL": "http://localhost:4173",
+  "host": {
+    "cpus": 8,
+    "model": "Apple M2",
+    "memGB": 8,
+    "loadAtStart": [
+      6.04931640625,
+      16.224609375,
+      19.5009765625
+    ],
+    "loadAtEnd": [
+      7.2314453125,
+      8.89599609375,
+      10.53271484375
+    ]
+  },
+  "gl": "Chromium + SwiftShader (software). Timings are relative on this machine, not device evidence.",
+  "shots": [
+    {
+      "file": "app-desktop-default-cutaway.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 201386,
+      "calls": 80,
+      "triangles": 264472,
+      "geometries": 30,
+      "textures": 7
+    },
+    {
+      "file": "app-desktop-exterior.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 95198,
+      "calls": 58,
+      "triangles": 256858,
+      "geometries": 19,
+      "textures": 7
+    },
+    {
+      "file": "app-desktop-cornea.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 123876,
+      "calls": 14,
+      "triangles": 62930,
+      "geometries": 19,
+      "textures": 7
+    },
+    {
+      "file": "app-desktop-retina.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 247081,
+      "calls": 6,
+      "triangles": 39114,
+      "geometries": 19,
+      "textures": 7
+    },
+    {
+      "file": "app-desktop-exploded.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 223166,
+      "calls": 80,
+      "triangles": 264472,
+      "geometries": 30,
+      "textures": 7
+    },
+    {
+      "file": "app-desktop-slice-0.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 114299,
+      "calls": 82,
+      "triangles": 262854,
+      "geometries": 31,
+      "textures": 7,
+      "slice": 0
+    },
+    {
+      "file": "app-desktop-slice-25.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 145620,
+      "calls": 80,
+      "triangles": 264822,
+      "geometries": 30,
+      "textures": 7,
+      "slice": 0.25
+    },
+    {
+      "file": "app-desktop-slice-50.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 201334,
+      "calls": 80,
+      "triangles": 264472,
+      "geometries": 30,
+      "textures": 7,
+      "slice": 0.5
+    },
+    {
+      "file": "app-desktop-slice-75.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 180108,
+      "calls": 80,
+      "triangles": 264252,
+      "geometries": 30,
+      "textures": 7,
+      "slice": 0.75
+    },
+    {
+      "file": "app-desktop-slice-100.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 150419,
+      "calls": 80,
+      "triangles": 263928,
+      "geometries": 30,
+      "textures": 7,
+      "slice": 1
+    },
+    {
+      "file": "app-desktop-left-eye-cutaway.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 93898,
+      "calls": 58,
+      "triangles": 256858,
+      "geometries": 19,
+      "textures": 7
+    },
+    {
+      "file": "app-desktop-after-reset.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 200954,
+      "calls": 80,
+      "triangles": 264472,
+      "geometries": 30,
+      "textures": 7
+    },
+    {
+      "file": "app-phone-default-cutaway.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 741410,
+      "calls": 76,
+      "triangles": 264180,
+      "geometries": 30,
+      "textures": 7
+    },
+    {
+      "file": "app-phone-exterior.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 493842,
+      "calls": 58,
+      "triangles": 256858,
+      "geometries": 19,
+      "textures": 7
+    },
+    {
+      "file": "app-phone-cornea.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 614242,
+      "calls": 14,
+      "triangles": 62930,
+      "geometries": 19,
+      "textures": 7
+    },
+    {
+      "file": "app-phone-retina.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 671765,
+      "calls": 6,
+      "triangles": 39114,
+      "geometries": 19,
+      "textures": 7
+    },
+    {
+      "file": "app-phone-exploded.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 667072,
+      "calls": 70,
+      "triangles": 237582,
+      "geometries": 30,
+      "textures": 7
+    },
+    {
+      "file": "app-phone-slice-0.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 341224,
+      "calls": 80,
+      "triangles": 262660,
+      "geometries": 30,
+      "textures": 7,
+      "slice": 0
+    },
+    {
+      "file": "app-phone-slice-25.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 446428,
+      "calls": 76,
+      "triangles": 264490,
+      "geometries": 28,
+      "textures": 7,
+      "slice": 0.25
+    },
+    {
+      "file": "app-phone-slice-50.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 740973,
+      "calls": 76,
+      "triangles": 264180,
+      "geometries": 28,
+      "textures": 7,
+      "slice": 0.5
+    },
+    {
+      "file": "app-phone-slice-75.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 728588,
+      "calls": 76,
+      "triangles": 264002,
+      "geometries": 28,
+      "textures": 7,
+      "slice": 0.75
+    },
+    {
+      "file": "app-phone-slice-100.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 589589,
+      "calls": 76,
+      "triangles": 263718,
+      "geometries": 28,
+      "textures": 7,
+      "slice": 1
+    },
+    {
+      "file": "app-phone-left-eye-cutaway.png",
+      "settled": true,
+      "attempts": 2,
+      "bytes": 478963,
+      "calls": 58,
+      "triangles": 256858,
+      "geometries": 19,
+      "textures": 7
+    },
+    {
+      "file": "app-phone-after-reset.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 746383,
+      "calls": 76,
+      "triangles": 264180,
+      "geometries": 30,
+      "textures": 7
+    },
+    {
+      "file": "explorer-desktop-default.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 193243,
+      "calls": 152,
+      "triangles": 440880,
+      "geometries": null,
+      "textures": null
+    },
+    {
+      "file": "explorer-desktop-cut-40.png",
+      "settled": false,
+      "attempts": 12,
+      "bytes": 237958,
+      "calls": 176,
+      "triangles": 449872,
+      "geometries": null,
+      "textures": null,
+      "cut": 40
+    },
+    {
+      "file": "explorer-desktop-cut-100.png",
+      "settled": false,
+      "attempts": 12,
+      "bytes": 163270,
+      "calls": 208,
+      "triangles": 451692,
+      "geometries": null,
+      "textures": null,
+      "cut": 100
+    },
+    {
+      "file": "explorer-desktop-after-reset.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 193243,
+      "calls": 152,
+      "triangles": 440880,
+      "geometries": null,
+      "textures": null
+    },
+    {
+      "file": "explorer-phone-default.png",
+      "settled": true,
+      "attempts": 4,
+      "bytes": 757494,
+      "calls": 152,
+      "triangles": 440880,
+      "geometries": null,
+      "textures": null
+    },
+    {
+      "file": "explorer-phone-cut-40.png",
+      "settled": false,
+      "attempts": 12,
+      "bytes": 996460,
+      "calls": 176,
+      "triangles": 449872,
+      "geometries": null,
+      "textures": null,
+      "cut": 40
+    },
+    {
+      "file": "explorer-phone-cut-100.png",
+      "settled": false,
+      "attempts": 12,
+      "bytes": 905455,
+      "calls": 208,
+      "triangles": 451692,
+      "geometries": null,
+      "textures": null,
+      "cut": 100
+    },
+    {
+      "file": "explorer-phone-after-reset.png",
+      "settled": true,
+      "attempts": 3,
+      "bytes": 757494,
+      "calls": 152,
+      "triangles": 440880,
+      "geometries": null,
+      "textures": null
+    }
+  ],
+  "measurements": {
+    "appDesktopBoundary": {
+      "visible": true,
+      "canvasName": "A generic model of a human eye, tuned to look roughly like yours. It is not your anatomy, not built from your scans, and shows nothing about your own condition. Drag, or use the arrow keys, to turn it."
+    },
+    "appDesktop": {
+      "idleGpuCallsOver2s": 0,
+      "interaction": {
+        "frames": 3,
+        "p50": 16.699999999982538,
+        "p95": 1366.7000000000116,
+        "max": 1366.7000000000116,
+        "gpuCalls": 2000
+      },
+      "callsBefore": 0,
+      "sliceSweep10StepsMs": 842,
+      "memAfterSweep": {
+        "calls": 246,
+        "triangles": 790632,
+        "geometries": 31,
+        "textures": 7
+      },
+      "memAfterSecondSweep": {
+        "calls": 246,
+        "triangles": 790632,
+        "geometries": 31,
+        "textures": 7
+      },
+      "tier": "high"
+    },
+    "reducedMotion": {
+      "framesWithDrawCalls": 1,
+      "drawCalls": 80
+    },
+    "appPhoneBoundary": {
+      "visible": true,
+      "canvasName": "A generic model of a human eye, tuned to look roughly like yours. It is not your anatomy, not built from your scans, and shows nothing about your own condition. Drag, or use the arrow keys, to turn it."
+    },
+    "appPhoneTier": "high",
+    "explorerDesktop": {
+      "remote": [],
+      "errors": [],
+      "boundary": true,
+      "autoRotateOnByDefault": false
+    },
+    "explorerPhone": {
+      "remote": [],
+      "errors": [],
+      "boundary": true,
+      "autoRotateOnByDefault": false
+    },
+    "standaloneEngineOffline": {
+      "rendered": true,
+      "nonFileRequests": [],
+      "errors": [],
+      "boundary": true
+    },
+    "standaloneExplorerOffline": {
+      "rendered": true,
+      "nonFileRequests": [],
+      "errors": [],
+      "boundary": true
+    },
+    "installedVisualizeOfflineReload": {
+      "canvasOffline": true,
+      "bodyTextIfNot": ""
+    }
+  }
+}
