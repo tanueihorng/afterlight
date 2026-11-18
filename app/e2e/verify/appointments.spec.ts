@@ -10,7 +10,10 @@ test.describe("appointments and the brief", () => {
     const dialog = page.getByRole("dialog");
     for (const label of ["Date", "Time", "Clinic", "Clinician", "Specialty", "Reason"]) {
       const bounds = await dialog.getByLabel(label, { exact: true }).boundingBox();
-      expect(bounds?.height, `${label} must be a usable touch target`).toBeGreaterThanOrEqual(44);
+      // 44px exactly can come back as 43.99998: the box is measured as two float positions a few
+      // hundred pixels down the page, and their difference loses the last digits. A hundredth of a
+      // pixel is rounding, not a smaller target.
+      expect(bounds?.height, `${label} must be a usable touch target`).toBeGreaterThanOrEqual(43.99);
     }
     const tomorrow = new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
     await dialog.getByLabel(/^date/i).fill(tomorrow);
