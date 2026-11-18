@@ -140,3 +140,12 @@ eye toggle's focus ring no longer spills past its pill (`.seg` padding follows `
 ring on the button's edge). On phones the four Today shortcuts sit 2×2 instead of in a row that
 scrolled sideways.
 
+**Small print audited 2026-11-18 (chore/small-print-audit).** Every other `--fs-xs` use was
+checked against the rule that small print is for labels and captions only. Moved to `--fs-sm`
+because they are content: the drawing disclaimer, Today's latest-acuity line and recent-entry
+dates, the search hit's date and source, Ask's "Read as" and "Source", the brief's identifier and
+section headings, and the QR card's text. Left as captions: menu and palette footers, the "esc"
+hint, swatch names, page kickers, OD/OS beside a named eye, drawing-tool and dock labels (each
+has an icon and a name), table column headers, atlas region tags, the 14-day strip's day numbers
+and the visit tile's month (both repeated in text), and the shortcut hints (hidden on phones).
+

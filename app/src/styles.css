@@ -1565,7 +1565,8 @@ dialog.onboarding::backdrop {
 }
 
 .draw-disclaimer {
-  font-size: var(--fs-xs);
+  /* It says a drawing is not a clinical image: the record's own boundary, not a caption. */
+  font-size: var(--fs-sm);
   color: var(--text-3);
   margin-top: 10px;
   font-style: italic;
@@ -1885,7 +1886,8 @@ dialog.onboarding::backdrop {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
-  font-size: var(--fs-xs);
+  /* A hit's date and source; often its only date. */
+  font-size: var(--fs-sm);
 }
 
 .palette-foot {
@@ -1907,7 +1909,8 @@ dialog.onboarding::backdrop {
 }
 
 .ask-interpretation {
-  font-size: var(--fs-xs);
+  /* How the question was read: the person needs it to judge the answer. */
+  font-size: var(--fs-sm);
   letter-spacing: 0.04em;
   margin-bottom: 10px;
 }
@@ -1926,7 +1929,8 @@ dialog.onboarding::backdrop {
 }
 
 .ask-citations-title {
-  font-size: var(--fs-xs);
+  /* Names where an answer came from, as a heading. */
+  font-size: var(--fs-sm);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -2582,7 +2586,8 @@ dialog.onboarding::backdrop {
 
 .brief-identifier {
   text-align: right;
-  font-size: var(--fs-xs);
+  /* Who the brief belongs to, so a clinic can match it. */
+  font-size: var(--fs-sm);
   color: var(--text-3);
   margin-bottom: 6px;
 }
@@ -2612,7 +2617,8 @@ dialog.onboarding::backdrop {
 }
 
 .brief-bucket {
-  font-size: var(--fs-xs);
+  /* Section headings of the brief. */
+  font-size: var(--fs-sm);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent-strong);
@@ -2639,7 +2645,8 @@ dialog.onboarding::backdrop {
 
 .qr-card-text {
   white-space: pre-wrap;
-  font-size: var(--fs-xs);
+  /* The exact text the QR card carries: content, not a caption. */
+  font-size: var(--fs-sm);
   background: var(--bg);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-sm);
@@ -3207,7 +3214,8 @@ a:hover {
 }
 
 .meas-meta {
-  font-size: var(--fs-xs);
+  /* The latest acuity's date and source, or that there is none: missing shown as missing. */
+  font-size: var(--fs-sm);
   color: var(--text-3);
   display: flex;
   flex-wrap: wrap;
@@ -3247,7 +3255,8 @@ a:hover {
 
 .recent-when {
   font-family: var(--font-mono);
-  font-size: var(--fs-xs);
+  /* When each recent entry happened. */
+  font-size: var(--fs-sm);
   color: var(--text-3);
   padding-top: 3px;
 }
