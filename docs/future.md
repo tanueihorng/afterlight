@@ -133,6 +133,10 @@ dates, and the two-column wide layout, at the top of My Eyes.
   large type; a gauge would add nothing a grade-free version can say.
 - Eye hero with the clinician-named region, and a "what my clinician asked me to do" card: both
   need a model change and `record-integrity-reviewer`.
-- Global small text: `.card-title` and `.badge` render at 13px (`--fs-xs`) across the app; the
-  a11y audit flagged them in the dashboard. Changing them is app-wide, so not done here.
+
+**Done 2026-11-18 (chore/a11y-small-fixes).** `.card-title` and `.badge` now use `--fs-sm`
+(14px at 100%): a heading and a provenance badge carry meaning, so they are not small print. The
+eye toggle's focus ring no longer spills past its pill (`.seg` padding follows `--focus-width`;
+ring on the button's edge). On phones the four Today shortcuts sit 2×2 instead of in a row that
+scrolled sideways.
 
