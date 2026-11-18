@@ -702,9 +702,15 @@ button {
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   gap: 4px;
-  padding: 4px;
+  /* Room for the focus ring, which sits on the button's edge here rather than 2px out, so it
+     never spills past the pill (the high-contrast themes use a 4px ring). */
+  padding: calc(var(--focus-width) + 1px);
   border-radius: 999px;
   background: var(--accent-soft);
+}
+
+.seg button:focus-visible {
+  outline-offset: 0;
 }
 
 .seg button {
@@ -841,8 +847,9 @@ button {
   margin-top: 16px;
 }
 
+/* A heading, not small print: --fs-sm, the smallest size that may carry meaning. */
 .card-title {
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -1169,7 +1176,8 @@ input[type="range"] {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: var(--fs-xs);
+  /* Provenance is meaning, so a badge is never small print. */
+  font-size: var(--fs-sm);
   letter-spacing: 0.04em;
   padding: 3px 10px;
   border-radius: 99px;
@@ -3299,8 +3307,8 @@ a:hover {
   line-height: 1.1;
 }
 
-/* Shortcuts: a compact row of glass pills under the greeting. On a phone the row scrolls
-   sideways inside itself; the page never does. */
+/* Shortcuts: a compact row of glass pills under the greeting. On a phone they sit two by two,
+   so all four are on screen at once; a row that scrolled sideways hid half of them. */
 .quick {
   display: flex;
   flex-wrap: wrap;
@@ -3398,19 +3406,20 @@ a:hover {
 
 @media (max-width: 760px) {
   .quick {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    margin: -8px -16px 18px;
-    padding: 2px 16px 8px;
-    /* Kept visible: for someone with low vision a cut-off row with no scrollbar reads as
-       everything there is. */
-    scrollbar-width: thin;
-    scrollbar-color: var(--text-3) transparent;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: -8px 0 18px;
   }
   .quick-btn {
-    flex: none;
-    scroll-snap-align: start;
+    min-width: 0;
+    padding-right: 12px;
+    border-radius: 26px;
+  }
+  /* Two to a row is narrow: a title wraps rather than running out of its pill. */
+  .quick-title {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .quick-hint {
     display: none;
