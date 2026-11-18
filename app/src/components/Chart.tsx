@@ -15,9 +15,15 @@ import { EYE_LABELS } from "../lib/models";
 export default function Chart({
   series,
   height: minHeight = 160,
+  markers = [],
 }: {
   series: Series;
   height?: number;
+  /**
+   * Dated events drawn as numbered lines across the chart (a treatment, a procedure). The caller
+   * lists the same numbers in words; on the chart they only say "something happened here".
+   */
+  markers?: { date: string; n: number }[];
 }) {
   const id = useId();
   const points = series.points.filter((p) => p.numeric);
@@ -26,23 +32,29 @@ export default function Chart({
   // on a phone), and the marks stay the size they were drawn at.
   const box = useRef<HTMLDivElement>(null);
   const [measured, setMeasured] = useState({ width: 520, font: 14 });
-  useLayoutEffect(() => {
+  const read = () => {
     const el = box.current;
     if (!el) return;
-    const read = () => {
-      const font = parseFloat(getComputedStyle(el).fontSize) || 14;
-      setMeasured((m) =>
-        m.width === (el.clientWidth || 520) && m.font === font
-          ? m
-          : { width: el.clientWidth || 520, font },
-      );
-    };
-    read();
-    if (typeof ResizeObserver === "undefined") return;
+    const font = parseFloat(getComputedStyle(el).fontSize) || 14;
+    setMeasured((m) =>
+      m.width === (el.clientWidth || 520) && m.font === font
+        ? m
+        : { width: el.clientWidth || 520, font },
+    );
+  };
+  // Every render: a changed text size moves no box edge, so no observer would report it. The
+  // state only changes when the numbers do, so this settles after one pass.
+  useLayoutEffect(read);
+  const plottable = points.length > 0;
+  useLayoutEffect(() => {
+    // Keyed on whether the box exists: a series with nothing plottable renders no box, and the
+    // next one must still get an observer.
+    const el = box.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(read);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [plottable]);
 
   if (points.length === 0) {
     return (
@@ -74,12 +86,27 @@ export default function Chart({
     bottom: Math.ceil(font * 1.6) + (stackDates ? Math.ceil(font * 1.3) : 0),
     left: Math.ceil(longest * font * 0.62) + 10,
   };
-  const height =
-    Math.max(minHeight, Math.ceil(font * 8)) + (stackDates ? Math.ceil(font * 1.3) : 0);
   const dates = points.map((p) => new Date(p.date).getTime());
   const firstDate = Math.min(...dates);
   const lastDate = Math.max(...dates);
   const dateSpan = lastDate - firstDate || 1;
+
+  const xOf = (date: string) =>
+    pad.left + ((new Date(date).getTime() - firstDate) / dateSpan) * (width - pad.left - pad.right);
+  // With one reading there is no span of dates for an event to fall within.
+  const drawn =
+    points.length > 1
+      ? markers.filter((m) => {
+          const t = new Date(m.date).getTime();
+          return t >= firstDate && t <= lastDate;
+        })
+      : [];
+  const { badge, rowGap, slots, rows } = layoutBadges(drawn.map((m) => xOf(m.date)), font, width);
+  pad.top += rows * rowGap;
+  const height =
+    Math.max(minHeight, Math.ceil(font * 8)) +
+    (stackDates ? Math.ceil(font * 1.3) : 0) +
+    rows * rowGap;
 
   const x = (p: (typeof points)[number]) =>
     pad.left +
@@ -90,6 +117,7 @@ export default function Chart({
     const norm = series.invertForDisplay ? t : 1 - t;
     return pad.top + norm * (height - pad.top - pad.bottom);
   };
+
 
   const clinic = points.filter((p) => p.provenance === "clinic");
   const home = points.filter((p) => p.provenance === "home");
@@ -106,9 +134,12 @@ export default function Chart({
           aria-describedby={`${id}-table`}
         >
           <title id={`${id}-title`}>
-            {series.label}, {EYE_LABELS[series.eye]}, {series.points.length}{" "}
-            {series.noun?.many ?? "readings"} from {formatDate(points[0].date)} to{" "}
-            {formatDate(points[points.length - 1].date)}
+            {series.label}, {EYE_LABELS[series.eye]},{" "}
+            {series.points.length === 1
+              ? `one ${series.noun?.one ?? "reading"} on ${formatDate(points[0].date)}`
+              : `${series.points.length} ${series.noun?.many ?? "readings"} from ${formatDate(points[0].date)} to ${formatDate(points[points.length - 1].date)}`}
+            {drawn.length > 0 &&
+              `, ${drawn.length} treatment ${drawn.length === 1 ? "date" : "dates"} marked, listed below`}
           </title>
 
           {/* Two gridlines only: the extremes, labelled. Anything more is noise.
@@ -129,6 +160,35 @@ export default function Chart({
                 />
                 <text x={4} y={yy + font * 0.35} fontSize={font} fill="var(--text-3)">
                   {label}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Events under the data, so a reading is never hidden behind one. Each is a dashed
+            line with its number at the top; the numbers match the list beside the chart. */}
+          {drawn.map((m, i) => {
+            const mx = xOf(m.date);
+            const { x: bx, row } = slots[i];
+            const cy = badge + 1 + row * rowGap;
+            return (
+              <g key={`m${m.n}`} className="chart-event">
+                <polyline
+                  points={`${bx},${cy + badge} ${mx},${pad.top} ${mx},${height - pad.bottom}`}
+                  fill="none"
+                  stroke="var(--text-3)"
+                  strokeWidth={Math.max(1.5, font / 8)}
+                  strokeDasharray="4 4"
+                />
+                <circle cx={bx} cy={cy} r={badge} fill="var(--bg-elev2)" stroke="var(--text-3)" />
+                <text
+                  x={bx}
+                  y={cy + font * 0.35}
+                  fontSize={font}
+                  fill="var(--text)"
+                  textAnchor="middle"
+                >
+                  {m.n}
                 </text>
               </g>
             );
@@ -220,4 +280,39 @@ export default function Chart({
       )}
     </figure>
   );
+}
+
+/**
+ * Where each event's numbered badge goes. A badge sits over its own date when there is room;
+ * events close together go to another row rather than printing over each other, and a row that
+ * runs off the right edge is pushed back left so every number stays readable.
+ */
+export function layoutBadges(xs: number[], font: number, width: number) {
+  const badge = Math.ceil(font * 0.9);
+  const gap = badge * 2.2;
+  const rowGap = badge * 2 + 4;
+  const lo = badge + 1;
+  const hi = width - badge - 1;
+  const rowsLast: number[] = [];
+  const slots = xs.map((want) => {
+    let row = rowsLast.findIndex((last) => want - last >= gap);
+    // A few badges for days close together sit side by side before a second row is started.
+    if (row === -1) row = rowsLast.findIndex((last) => last + gap - want <= gap * 2 && last + gap <= hi);
+    // Otherwise a new row: a taller chart is better than a number printed over another.
+    if (row === -1) row = rowsLast.length;
+    const x = rowsLast[row] === undefined ? want : Math.max(want, rowsLast[row] + gap);
+    rowsLast[row] = x;
+    return { x, row };
+  });
+  // Right to left within each row: keep the last badge on the drawing, then its neighbours a
+  // badge-width apart from it.
+  for (let row = 0; row < rowsLast.length; row++) {
+    let next = Infinity;
+    for (let i = slots.length - 1; i >= 0; i--) {
+      if (slots[i].row !== row) continue;
+      slots[i].x = Math.max(lo, Math.min(slots[i].x, hi, next - gap));
+      next = slots[i].x;
+    }
+  }
+  return { badge, rowGap, slots, rows: rowsLast.length };
 }

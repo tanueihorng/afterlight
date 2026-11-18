@@ -288,7 +288,7 @@ async function explorer(prefix, contextOptions, url) {
   // the default condition auto-rotates, which by definition never settles: turn it off so
   // screenshots can be compared, and exercise the rotate button itself
   const autoRotateWasOn = await page.locator("#btnRotate").evaluate((el) => el.classList.contains("on"));
-  if (autoRotateWasOn) await page.locator("#btnRotate").click();
+  if (autoRotateWasOn) await page.locator("#btnRotate").evaluate((el) => el.click());
   await page.waitForTimeout(600);
   let prev = await record(page, canvas, `${prefix}-default.png`, null);
   for (const [value, name] of [[40, "cut-40"], [100, "cut-100"]]) {
@@ -316,11 +316,14 @@ report.measurements.explorerDesktop = await explorer(
   { viewport: { width: 1280, height: 800 } },
   baseURL + "/EyeExplorer.html",
 );
+// The phone explorer has failed to complete under software GL before (its sticky header covers
+// the toolbar and the page animates under load). A failure there is recorded in the report, not
+// allowed to stop the run: the rest of the matrix and capture-report.json must still be written.
 report.measurements.explorerPhone = await explorer(
   "explorer-phone",
   { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
   baseURL + "/EyeExplorer.html",
-);
+).catch((e) => ({ completed: false, error: String(e?.message ?? e).split("\n")[0] }));
 
 // ---------------------------------------------------------------- standalone files, no network
 async function standaloneOffline(file) {
@@ -332,7 +335,8 @@ async function standaloneOffline(file) {
   });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(pathToFileURL(resolve(root, file)).href);
+  // A multi-megabyte single file parses slowly on a loaded machine; 30 s has not been enough.
+  await page.goto(pathToFileURL(resolve(root, file)).href, { timeout: 90_000 });
   const canvas = page.locator("canvas").first();
   let rendered = false;
   try {
@@ -346,11 +350,14 @@ async function standaloneOffline(file) {
   await context.close();
   return { rendered, nonFileRequests: requests, errors, boundary };
 }
-report.measurements.standaloneEngineOffline = await standaloneOffline("EyeExplorer-engine.html");
-report.measurements.standaloneExplorerOffline = await standaloneOffline("EyeExplorer.html");
+// Past this point a failure is recorded, not fatal: the report for everything already captured
+// must still be written.
+const failed = (e) => ({ completed: false, error: String(e?.message ?? e).split("\n")[0] });
+report.measurements.standaloneEngineOffline = await standaloneOffline("EyeExplorer-engine.html").catch(failed);
+report.measurements.standaloneExplorerOffline = await standaloneOffline("EyeExplorer.html").catch(failed);
 
 // ---------------------------------------------------------------- installed app, offline reload of Visualize
-{
+try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   await page.goto(baseURL + "/");
@@ -368,6 +375,8 @@ report.measurements.standaloneExplorerOffline = await standaloneOffline("EyeExpl
   const text = canvasOffline ? "" : (await page.locator("body").innerText()).slice(0, 300);
   report.measurements.installedVisualizeOfflineReload = { canvasOffline, bodyTextIfNot: text };
   await context.close();
+} catch (e) {
+  report.measurements.installedVisualizeOfflineReload = failed(e);
 }
 
 report.host.loadAtEnd = loadavg();
