@@ -55,6 +55,7 @@ export const CHANGELOG: Release[] = [
       "On a phone at the largest text size, pages no longer scroll sideways, and chart labels follow your text size.",
       "The skip-to-content link now stays on the page you are on.",
       "Windows that open over a page now use the browser's own dialog, so a screen reader stays inside the window until it closes and the phone's back gesture closes it. When a window has no field to fill in, it starts on its title rather than on its first button. Printing while presenting a brief now prints the whole brief.",
+      "Delete buttons that ask twice now wait 10 seconds for the second press instead of under 3, so there is time to find and read the question. A screen reader announces the question, and moving away from the button cancels it.",
     ],
     notes: [
       "The clinical wording in the condition atlas, the home checks and the safety messages has not yet been reviewed by an ophthalmologist or optometrist. Until it has, treat every explanation in the app as background reading, not as advice about your eyes.",

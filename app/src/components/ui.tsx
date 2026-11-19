@@ -1,4 +1,12 @@
-import { useEffect, useId, useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { SOURCE_LABELS, type Eye, type SourceType } from "../lib/models";
 import { t } from "../lib/i18n";
 
@@ -319,6 +327,15 @@ export function SourceSelect({
   );
 }
 
+/** How long a two-step button stays armed. Long enough to find, read and press it again with a
+ * magnifier or a screen reader; the second press still has to land on the same button. */
+export const CONFIRM_ARMED_MS = 10_000;
+
+/**
+ * A destructive action that takes two presses. The first changes the button's wording to the
+ * question and says so to a screen reader; the second, on the same button, does it. Moving away
+ * (focus leaving the button) or waiting cancels, so a stray press later never deletes anything.
+ */
 export function ConfirmButton({
   onConfirm,
   label,
@@ -330,25 +347,36 @@ export function ConfirmButton({
   confirmLabel?: string;
   className?: string;
 }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const timer = setTimeout(() => setArmed(false), CONFIRM_ARMED_MS);
+    return () => clearTimeout(timer);
+  }, [armed]);
+
   return (
-    <button
-      className={className}
-      onClick={(e) => {
-        const btn = e.currentTarget;
-        if (btn.dataset.armed === "1") {
+    <>
+      <button
+        type="button"
+        className={className}
+        data-armed={armed ? "1" : "0"}
+        onClick={() => {
+          if (!armed) {
+            setArmed(true);
+            return;
+          }
+          setArmed(false);
           onConfirm();
-        } else {
-          btn.dataset.armed = "1";
-          btn.textContent = confirmLabel;
-          setTimeout(() => {
-            btn.dataset.armed = "0";
-            btn.textContent = label;
-          }, 2600);
-        }
-      }}
-    >
-      {label}
-    </button>
+        }}
+        onBlur={() => setArmed(false)}
+      >
+        {armed ? confirmLabel : label}
+      </button>
+      {/* Always present, so the change is announced; a region added already full is not. */}
+      <span className="visually-hidden" aria-live="polite">
+        {armed ? `${confirmLabel} Press again to confirm.` : ""}
+      </span>
+    </>
   );
 }
 
