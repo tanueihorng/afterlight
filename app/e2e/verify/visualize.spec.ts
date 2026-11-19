@@ -104,9 +104,10 @@ test.describe("visualize — understanding, not diagnosing", () => {
     await expect(frame.locator("body")).toContainText(/afterlight|explorer|eye/i, { timeout: 45_000 }); // the 2.8 MB explorer builds its scene from scratch; this is a presence check, not a budget
   });
 
-  test("inside the app the explorer has no Diagnose tab; the standalone file keeps it", async ({
-    page,
-  }) => {
+  // Two tests, not one: each boots the explorer from scratch in software GL, and one budget for
+  // both, plus the stall a previous GL test leaves on opening the next context (V-107: 43s on
+  // CI), did not fit 120s.
+  test("inside the app the explorer has no Diagnose tab", async ({ page }) => {
     // The 3D scene builds from scratch under software rendering, which can pass 30s on a busy
     // machine; the waits below already allow 45s, so the test budget has to allow them.
     test.setTimeout(120_000);
@@ -119,9 +120,17 @@ test.describe("visualize — understanding, not diagnosing", () => {
     await expect(frame.locator("#bootmsg")).not.toBeVisible();
     await expect(frame.getByRole("button", { name: /diagnose/i })).toHaveCount(0);
     await expect(frame.locator("#tabDx")).toBeHidden();
+  });
 
+  test("the standalone explorer file keeps its Diagnose tab", async ({ page }) => {
     // The same file opened on its own is the clinician-led teaching tool, and is unchanged.
-    await page.goto("/EyeExplorer.html");
+    test.setTimeout(120_000);
+    // Not the full `load`, which also waits on the scene; what matters is that the tab script
+    // ran (it sets aria-pressed) and, outside an iframe, left Diagnose in place.
+    await page.goto("/EyeExplorer.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('#gtabs button[data-t="dx"][aria-pressed]')).toHaveCount(1, {
+      timeout: 45_000,
+    });
     await expect(page.locator("#gtabs button", { hasText: "Diagnose" })).toHaveCount(1);
   });
 });
