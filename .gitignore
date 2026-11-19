@@ -18,6 +18,8 @@ app/public/EyeExplorer.html
 # playwright
 app/test-results/
 app/playwright-report/
+app/e2e-results.json
+app/shard-tests.txt
 app/blob-report/
 
 # Assembled for publishing; built from app/dist by scripts/build-site.mjs

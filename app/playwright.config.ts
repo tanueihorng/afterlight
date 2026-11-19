@@ -21,8 +21,11 @@ export default defineConfig({
   // machine still fails. Retries stay at zero: a pass on retry would not explain the failure.
   timeout: process.env.CI ? 120_000 : 30_000,
   expect: { timeout: process.env.CI ? 20_000 : 5_000 },
-  // CI prints each test as it runs and keeps a report with traces for any failure.
-  reporter: process.env.CI ? [["list"], ["github"], ["html", { open: "never" }]] : "list",
+  // CI prints each test as it runs and keeps a report with traces for any failure, plus each
+  // test's duration so the CI shards can be rebalanced (scripts/e2e-shard.mjs).
+  reporter: process.env.CI
+    ? [["list"], ["github"], ["html", { open: "never" }], ["json", { outputFile: "e2e-results.json" }]]
+    : "list",
   use: {
     baseURL: "http://localhost:4173",
     trace: "retain-on-failure",
