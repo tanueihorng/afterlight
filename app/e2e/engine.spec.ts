@@ -208,41 +208,88 @@ test.describe("the eye engine", () => {
 
   test("turns with the keyboard, not only the mouse", async ({ page }) => {
     test.setTimeout(120_000 * GL);
+    // With reduced motion the engine snaps to each pose instead of easing. Software GL draws
+    // well under one frame a second, and the easing advances per frame, so the opening turn
+    // alone took ~67s to come to rest locally and longer on CI, and a frame comparison raced
+    // it. The arrow keys reach the same handler either way; reduced motion is also how many
+    // people with low vision use the app.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     await page.getByRole("button", { name: /skip setup/i }).click();
     await page.goto("/#/visualize");
     const canvas = page.locator("canvas").first();
     await expect(canvas).toBeVisible({ timeout: 30_000 * GL });
-    await page.waitForTimeout(1500);
     await canvas.focus();
-    // Under software GL a screenshot can race the element-stability wait, so take the "before"
-    // frame with a few tries.
-    let before: Buffer | null = null;
-    // On a GPU-less runner one canvas screenshot has taken from 20s to over 45s.
-    for (let attempt = 0; attempt < 2 && !before; attempt++) {
-      before = await canvas.screenshot({ timeout: 30_000 * GL }).catch(() => null);
-    }
-    expect(before, "the canvas never produced a frame to compare against").not.toBeNull();
+
+    // The pixels the engine draws, read back from the canvas's own WebGL context right after a
+    // draw. Page screenshots wait on the browser's compositor, and on a GPU-less runner each one
+    // took 20–90s, which ate the test budget (V-107). This reads the same rendered frame without
+    // that round trip. The eye only redraws when something changes, so draw once, then read.
+    const frame = () =>
+      page.evaluate(async () => {
+        const scene = (
+          window as unknown as {
+            __eyeScene?: { ready: Promise<void>; renderOnce: () => void };
+          }
+        ).__eyeScene;
+        const el = document.querySelector("canvas");
+        if (!scene || !el) return null;
+        await scene.ready; // shaders compile first; until then nothing is drawn
+        const gl = el.getContext("webgl2") ?? el.getContext("webgl");
+        if (!gl) return null;
+        scene.renderOnce();
+        const w = gl.drawingBufferWidth;
+        const h = gl.drawingBufferHeight;
+        const px = new Uint8Array(w * h * 4);
+        gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        let hash = 2166136261;
+        let min = 255;
+        let max = 0;
+        for (let i = 0; i < px.length; i += 4) {
+          hash = Math.imul(hash ^ px[i] ^ (px[i + 1] << 8) ^ (px[i + 2] << 16), 16777619);
+          min = Math.min(min, px[i + 1]);
+          max = Math.max(max, px[i + 1]);
+        }
+        // A blank or single-colour buffer would compare equal to itself and prove nothing.
+        return { hash: hash >>> 0, drawn: max - min > 16 };
+      });
+
+    // Textures can still arrive after the first draw, so the frame may change on its own for a
+    // moment. Wait until two reads in a row agree; only a change after that can be put down to
+    // the keys. (Checked: with the arrow keys swallowed before they reach the canvas, this test
+    // fails.)
+    const settled: { last: Awaited<ReturnType<typeof frame>> } = { last: null };
+    await expect
+      .poll(
+        async () => {
+          const previous = settled.last;
+          settled.last = await frame();
+          return !!settled.last && settled.last.hash === previous?.hash;
+        },
+        {
+          message: "the eye never settled to a still frame",
+          timeout: 30_000 * GL,
+          intervals: [500, 1000],
+        },
+      )
+      .toBe(true);
+    const before = settled.last!;
+    expect(before.drawn, "the canvas holds no drawn eye to compare against").toBe(true);
 
     for (let i = 0; i < 4; i++) {
       await page.keyboard.press("ArrowRight");
       await page.waitForTimeout(150);
     }
-    // The turn eases over several frames, and a GPU-less runner draws each one slowly, so keep
-    // looking until the eye has moved rather than checking once at a fixed moment.
+    // Poll rather than check once: each key press is drawn when the browser gets to it.
     await expect
-      .poll(
-        async () => {
-          const after = await canvas.screenshot({ timeout: 30_000 * GL }).catch(() => null);
-          return !!after && !after.equals(before!);
-        },
-        {
-          message: "keyboard arrows never changed the rendered eye",
-          timeout: 50_000 * GL,
-          intervals: [600, 1000],
-        },
-      )
-      .toBe(true);
+      .poll(async () => (await frame())?.hash, {
+        message: "keyboard arrows never changed the rendered eye",
+        timeout: 30_000 * GL,
+        intervals: [300, 600, 1000],
+      })
+      .not.toBe(before.hash);
+    // And it is still a drawn eye after turning, not a cleared or broken buffer.
+    expect((await frame())?.drawn, "turning left the canvas blank").toBe(true);
   });
 });
 
