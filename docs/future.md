@@ -149,3 +149,67 @@ hint, swatch names, page kickers, OD/OS beside a named eye, drawing-tool and doc
 has an icon and a name), table column headers, atlas region tags, the 14-day strip's day numbers
 and the visit tile's month (both repeated in text), and the shortcut hints (hidden on phones).
 
+
+---
+
+## Verification loops: lessons from the Claude Code team and pstack
+
+_Discussed 2026-11-19._ Sources: Anthropic's "How the Claude Code team thinks about verification",
+"Building verification loops in Claude Code with skills", and Atlasnote's write-up of Lauren Tan's
+pstack. (Her two X posts were paywalled and not read.)
+
+**Idea.** Treat the gate, the e2e suite and the reviewer subagents as one verification loop, and
+apply what those teams learned: done means runnable evidence; slow or flaky checks get run less and
+gamed more; checks must sit where the change they judge cannot edit them; every miss becomes a
+reviewed rule, and rules get pruned.
+
+**Decided so far.**
+
+- **Done (2026-11-19): e2e sharded by measured duration.** Desktop e2e was one 32–45 min serial
+  run because software-GL pages starve each other (V-107). It now runs on 5 runners (phone on 3),
+  each still one worker, packed by `scripts/e2e-shard.mjs` from `app/e2e/timings.json`. The script
+  lists every test from Playwright and fails if any test is missing, doubled, or a shard is empty,
+  so speed never comes from running less. Expected wall time ~10–12 min instead of ~33–45.
+  Refresh the timings when the shard summary drifts: download a run's `e2e-results-*` artifacts and
+  run `npm run e2e:shard -- --record *.json`.
+- **Done (2026-11-19): superseded PR runs are cancelled.** A verdict on a commit nobody will merge
+  is noise; runs on `main` are never cancelled.
+- **Retries stay at zero.** Matches the article's rule exactly: a flaky test is fixed at the root
+  or deleted with the reason written down — never retried, slept, or skipped into passing.
+
+**Candidates, roughly in order of value.**
+
+1. **Flaky-test ledger.** Three of the four desktop e2e runs on 2026-11-18 failed:
+   `settings.spec.ts` "export re-imports as merge … danger zone" timed out in two,
+   `engine.spec.ts` "turns with the keyboard" in one, and the appointment touch-target check in
+   two (fixed in 29bd799). Each open flake gets a V-number, a root cause or a deletion. A failure
+   that eats a 2-minute CI timeout also costs shard time.
+2. **Checks a change cannot edit.** `check-invariants.mjs` enforces the non-negotiables but runs
+   from the PR's own tree, so a PR can weaken the rule it is judged by. Run the guard from the base
+   branch against the PR's files. Start in observe mode (report what would fail), then enforce.
+3. **Diff-triggered checklist.** One file of items, each with a trigger readable from a diff, a
+   check, and the V-number or PR it came from (e.g. touches `lib/` → record-integrity-reviewer;
+   new user-facing health wording → clinical-copy-reviewer; touches the renderer → GPU-leak e2e).
+   `/gate` runs only the matching items, typically a handful, instead of everything or nothing.
+4. **Property tests for the record.** Hand-rolled seeded generators (no new dependency):
+   export → import round-trips losslessly with provenance intact; import-as-merge is idempotent;
+   every migration run twice equals once. These catch what example tests written by the same
+   author don't think of.
+5. **Escalate after three rounds.** An agent that fails the gate three times stops and reports to
+   a human with the evidence, instead of loosening the check.
+6. **Stamp commits with what was verified** (a `Verified:` trailer: gate, e2e projects, reviewers
+   run, or "none") so unverified commits can be found later.
+7. **Prune on a schedule.** The invariants script, reviewer prompts and e2e suite only grow; review
+   them quarterly for rules that no longer catch anything.
+
+**Not taken, and why.**
+
+- More Playwright workers per runner: reintroduces V-107 starvation.
+- Playwright's built-in `--shard`: splits by count into contiguous chunks, which put all of
+  `engine.spec.ts` (15 of the 32 desktop minutes) on one runner.
+- Skipping e2e on docs-only changes: saves runner time, not wall time, and nothing yet guarantees
+  the path filter stays right. Revisit if runner minutes become a cost.
+- Reusing the verify job's build in e2e: saves ~1 min per shard but makes e2e wait for verify.
+
+**Open questions.** Is the base-branch guard worth the extra CI step for a one-person repo? Which
+of the open flakes are real product bugs (the settings export timeout could be one)?
