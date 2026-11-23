@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+# A new push to a PR makes the old run's verdict meaningless: it judged a commit nobody will merge.
+# Cancel it and spend the runners on the current commit. Runs on main are never cancelled.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -36,20 +42,26 @@ jobs:
   e2e:
     # Desktop and phone run on separate runners: each is one long serial run of pages that
     # render in software GL, and side by side on one machine they starve each other (V-107).
-    name: e2e (${{ matrix.project }})
+    # The same holds within a project, so each project is split across several runners, each
+    # still running one test at a time. scripts/e2e-shard.mjs packs the tests by their measured
+    # duration (e2e/timings.json) and checks every test lands in exactly one shard; timings only
+    # balance the shards, they never decide whether a test runs.
+    name: e2e (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 75
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
+        project: [desktop]
+        os: [ubuntu-latest]
+        shard: [1/5, 2/5, 3/5, 4/5, 5/5]
+        # The phone project is WebKit. On Linux, Playwright's WebKit is the WPE port, whose page
+        # process crashed at random on ordinary pages here ("Page crashed", V-107). The macOS
+        # port is the WebKit closest to iPhone Safari, and the one the suite passes on locally.
         include:
-          - project: desktop
-            os: ubuntu-latest
-          # The phone project is WebKit. On Linux, Playwright's WebKit is the WPE port, whose page
-          # process crashed at random on ordinary pages here ("Page crashed", V-107). The macOS
-          # port is the WebKit closest to iPhone Safari, and the one the suite passes on locally.
-          - project: mobile
-            os: macos-latest
+          - { project: mobile, os: macos-latest, shard: 1/3 }
+          - { project: mobile, os: macos-latest, shard: 2/3 }
+          - { project: mobile, os: macos-latest, shard: 3/3 }
     defaults:
       run:
         working-directory: app
@@ -68,22 +80,37 @@ jobs:
       - name: Install browser
         run: npx playwright install --with-deps ${{ matrix.project == 'desktop' && 'chromium' || 'webkit' }}
 
-      - name: End-to-end, ${{ matrix.project }} (including offline)
+      - name: Pick this shard's tests
+        run: node scripts/e2e-shard.mjs --project ${{ matrix.project }} --shard ${{ matrix.shard }} --out shard-tests.txt
+
+      - name: End-to-end, ${{ matrix.project }} ${{ matrix.shard }} (including offline)
         # The browser's own stderr and the runner's memory, so a page that dies mid-test leaves
         # evidence of why (V-107).
         env:
           DEBUG: pw:browser
         run: |
           if command -v free >/dev/null; then (while true; do echo "$(date -u +%T) $(free -m | awk 'NR==2{print "used="$3"MB avail="$7"MB"}')"; sleep 20; done) > memory.log & fi
-          npm run e2e -- --project=${{ matrix.project }} 2> browser.log
+          npm run e2e -- --project=${{ matrix.project }} --test-list shard-tests.txt 2> browser.log
 
       - name: Upload report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.project }}
+          name: playwright-report-${{ matrix.project }}-${{ strategy.job-index }}
           path: |
             app/playwright-report
             app/memory.log
             app/browser.log
+            app/shard-tests.txt
           retention-days: 7
+
+      # Durations from this run, so e2e/timings.json can be refreshed when the shards drift:
+      # download every e2e-results-* artifact of a run, then `npm run e2e:shard -- --record *.json`.
+      - name: Upload timings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-${{ matrix.project }}-${{ strategy.job-index }}
+          path: app/e2e-results.json
+          if-no-files-found: ignore
+          retention-days: 14
